@@ -18,10 +18,7 @@ export enum WorkflowStatus {
   FAILED = 'FAILED'
 }
 
-export enum TextModel {
-  GEMINI_3_FLASH = 'gemini-3-flash-preview',
-  GEMINI_3_PRO = 'gemini-3-pro-preview'
-}
+export type TextModelId = string;
 
 export enum EnrichmentMode {
   NONE = 'NONE',
@@ -59,7 +56,7 @@ export interface ScriptResult {
   sections: ScriptSection[];
   wordCount: Record<string, number>;
   estimatedCost: number;
-  model: TextModel;
+  model: TextModelId;
   isEnriched: boolean;
   generatedAt: number;
   researchData?: string;
@@ -106,7 +103,7 @@ export interface ProjectSession {
   historyIndex: number;
   isEditing: boolean;
   manualEditText: string;
-  selectedModel: TextModel;
+  selectedModel: TextModelId;
   publishedOn: PublishPlatform[];
 }
 
@@ -121,7 +118,7 @@ export interface ProjectState {
   finalSelections: Record<string, ScriptLength>;
   segmentVersions: Record<string, ScriptLength>;
   segmentControls: Record<string, SegmentControls>;
-  selectedModel: TextModel;
+  selectedModel: TextModelId;
   activeSegmentIdx: number;
   logs: BackgroundLog[];
   history: HistoryItem[];

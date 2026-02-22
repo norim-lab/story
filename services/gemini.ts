@@ -1,6 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { TextModel, ScriptResult, ScriptSection, SegmentControls } from "../types";
+import { ScriptResult, ScriptSection, SegmentControls } from "../types";
+import { getGoogleKey } from "./settings";
 import { loadPrompt } from "./prompts";
 
 async function handleApiCall<T>(call: () => Promise<T>): Promise<T> {
@@ -58,7 +59,7 @@ const deepUpgradeSchema = {
 };
 
 // Vereinfachte Funktion: Nimmt den Raw Text und packt ihn in eine Section
-export const generateZeitblitzScript = async (rawText: string, model: TextModel): Promise<ScriptResult> => {
+export const generateZeitblitzScript = async (rawText: string, model: string): Promise<ScriptResult> => {
     // Wir erstellen EINE Sektion für das gesamte Skript
     const mainSection: ScriptSection = {
         id: "main-script",
@@ -96,7 +97,7 @@ export const generateZeitblitzScript = async (rawText: string, model: TextModel)
 
 export const enrichScriptWithDeep = async (script: ScriptResult, research: string): Promise<ScriptResult['sections']> => {
   return handleApiCall(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
     const systemInstruction = loadPrompt('script_generation', 'deep_upgrade');
     
     // Da wir nur eine Section haben
@@ -127,9 +128,9 @@ export const mapResearchToSegments = async (script: ScriptResult, research: stri
     return { "main-script": research };
 };
 
-export const regenerateHook = async (text: string, controls: SegmentControls, model: TextModel): Promise<string> => {
+export const regenerateHook = async (text: string, controls: SegmentControls, model: string): Promise<string> => {
   return handleApiCall(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
     
     // Provide first 1000 chars as context for the hook
     const context = text.slice(0, 1000) + "...";
@@ -148,14 +149,14 @@ export const regenerateHook = async (text: string, controls: SegmentControls, mo
   });
 };
 
-export const refineSegmentWithControls = async (text: string, controls: SegmentControls, model: TextModel, researchData?: string, factText?: string): Promise<any> => {
+export const refineSegmentWithControls = async (text: string, controls: SegmentControls, model: string, researchData?: string, factText?: string): Promise<any> => {
     // Legacy function support
     return { short_1: text }; 
 };
 
-export const generateDialogue = async (rawText: string, factText: string, controls: SegmentControls, model: TextModel): Promise<string> => {
+export const generateDialogue = async (rawText: string, factText: string, controls: SegmentControls, model: string): Promise<string> => {
   return handleApiCall(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
     
     const seconds = controls.dialogue_seconds || 60;
     // Calculation: 100 words = 45 seconds
@@ -185,9 +186,9 @@ export const generateDialogue = async (rawText: string, factText: string, contro
 };
 
 // NEW FUNCTION: Writes script from scratch based on raw input + controls
-export const generateScriptWithControls = async (dossier: string, facts: string, controls: SegmentControls, model: TextModel): Promise<string> => {
+export const generateScriptWithControls = async (dossier: string, facts: string, controls: SegmentControls, model: string): Promise<string> => {
   return handleApiCall(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
     
     const seconds = controls.target_seconds || 60;
     // Calculation: 100 words = 45 seconds
@@ -231,14 +232,14 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
   });
 };
 
-export const retimeSegment = async (text: string, seconds: number, controls: SegmentControls, model: TextModel): Promise<string> => {
+export const retimeSegment = async (text: string, seconds: number, controls: SegmentControls, model: string): Promise<string> => {
     // Deprecated for the new logic
     return text;
 };
 
-export const generateCTA = async (text: string, controls: SegmentControls, model: TextModel): Promise<string> => {
+export const generateCTA = async (text: string, controls: SegmentControls, model: string): Promise<string> => {
   return handleApiCall(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
     
     const isDialogue = text.includes("USER 1:") || text.includes("USER 2:") || text.includes("SPEAKER 1:") || text.includes("SPEAKER 2:");
     const wordCount = text.split(/\s+/).length;
@@ -269,9 +270,9 @@ export const generateCTA = async (text: string, controls: SegmentControls, model
   });
 };
 
-export const rewriteSelectionWithTone = async (text: string, tone: string, model: TextModel): Promise<string> => {
+export const rewriteSelectionWithTone = async (text: string, tone: string, model: string): Promise<string> => {
   return handleApiCall(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
     let systemInstruction = loadPrompt('script_generation', 'tone_transformation');
     systemInstruction = safeReplace(systemInstruction, '{toneKey}', tone);
     const response = await ai.models.generateContent({ model, contents: text, config: { systemInstruction, temperature: 0.8 } });
@@ -279,9 +280,9 @@ export const rewriteSelectionWithTone = async (text: string, tone: string, model
   });
 };
 
-export const rewriteSelectionWithCustomPrompt = async (text: string, prompt: string, model: TextModel): Promise<string> => {
+export const rewriteSelectionWithCustomPrompt = async (text: string, prompt: string, model: string): Promise<string> => {
   return handleApiCall(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
     let systemInstruction = loadPrompt('script_generation', 'custom_selection_rewrite');
     systemInstruction = safeReplace(systemInstruction, '{instruction}', prompt);
     const response = await ai.models.generateContent({ model, contents: text, config: { systemInstruction, temperature: 0.7 } });

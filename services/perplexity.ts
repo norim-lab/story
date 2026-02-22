@@ -1,7 +1,6 @@
 
 import { EnrichmentMode } from "../types";
-
-const PPLX_KEY = "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";
+import { getPerplexityKey } from "./settings";
 
 export const getPerplexityResearch = async (dossier: string, mode: EnrichmentMode = EnrichmentMode.DEEP): Promise<string> => {
   if (mode === EnrichmentMode.NONE) return "";
@@ -21,7 +20,7 @@ Antworte strukturiert, detailliert und mit Fokus auf "Was bisher nicht im Dossie
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
           method: 'POST',
           headers: {
-              'Authorization': `Bearer ${PPLX_KEY}`,
+              'Authorization': `Bearer ${getPerplexityKey()}`,
               'Content-Type': 'application/json'
           },
           body: JSON.stringify({

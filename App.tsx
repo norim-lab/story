@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import JSZip from 'jszip';
 import { 
-    WorkflowStatus, ScriptResult, TextModel, 
+    WorkflowStatus, ScriptResult, 
     ScriptLength, BackgroundLog, SegmentControls, 
     HistoryItem, HistoryStateSnapshot, ProjectSession, WorkspaceExport,
     CloudStatus, PublishPlatform
@@ -17,6 +17,8 @@ import {
     generateCTA
 } from './services/gemini';
 import { initStorage, listProjects, saveProject, deleteProject as deleteCloudProject, checkConnection } from './services/storage';
+import SettingsModal from './components/SettingsModal';
+import { getSettings } from './services/settings';
 
 const MAX_HISTORY_STEPS = 50;
 const MAIN_ID = "main-script";
@@ -352,6 +354,9 @@ export const App: React.FC = () => {
     const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
     const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus>(WorkflowStatus.IDLE);
     const [logs, setLogs] = useState<BackgroundLog[]>([]);
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const [settingsVersion, setSettingsVersion] = useState(0);
+    const SETTINGS = useMemo(() => getSettings(), [settingsVersion]);
     
     // Cloud State
     const [isCloudLoading, setIsCloudLoading] = useState(true);
@@ -482,7 +487,7 @@ export const App: React.FC = () => {
                             historyIndex: typeof p.historyIndex === 'number' ? p.historyIndex : -1,
                             isEditing: !!p.isEditing,
                             manualEditText: p.manualEditText || "",
-                            selectedModel: p.selectedModel || TextModel.GEMINI_3_FLASH,
+                            selectedModel: p.selectedModel || getSettings().googleFastModel,
                             publishedOn: p.publishedOn || [] 
                         } as ProjectSession;
                     });
@@ -578,7 +583,7 @@ export const App: React.FC = () => {
             historyIndex: -1,
             isEditing: false,
             manualEditText: "",
-            selectedModel: TextModel.GEMINI_3_FLASH,
+            selectedModel: SETTINGS.googleFastModel,
             publishedOn: []
         };
         
@@ -968,7 +973,7 @@ export const App: React.FC = () => {
                         historyIndex: -1,
                         isEditing: false,
                         manualEditText: "",
-                        selectedModel: TextModel.GEMINI_3_FLASH,
+                        selectedModel: getSettings().googleFastModel,
                         publishedOn: []
                     };
                     setProjects(prev => [recoveredProject, ...prev]);
@@ -1051,20 +1056,33 @@ export const App: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex gap-2 md:gap-4 items-center">
-                    <div className="hidden md:flex bg-white/5 rounded-lg p-1 border border-white/10">
-                        <button 
-                            onClick={() => updateActiveProject({ selectedModel: TextModel.GEMINI_3_FLASH })} 
-                            className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all flex items-center gap-1.5 ${activeProject.selectedModel === TextModel.GEMINI_3_FLASH ? 'bg-emerald-500/20 text-emerald-400 shadow-sm border border-emerald-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}
-                        >
-                            ⚡ Flash
-                        </button>
-                        <div className="w-px bg-white/10 my-1 mx-1"></div>
-                        <button 
-                            onClick={() => updateActiveProject({ selectedModel: TextModel.GEMINI_3_PRO })} 
-                            className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all flex items-center gap-1.5 ${activeProject.selectedModel === TextModel.GEMINI_3_PRO ? 'bg-blue-500/20 text-blue-400 shadow-sm border border-blue-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}
-                        >
-                            💎 Pro
-                        </button>
+                    <button onClick={() => setSettingsOpen(true)} className="w-8 h-8 bg-white/5 hover:bg-white/10 rounded-lg flex items-center justify-center transition-all group shrink-0 border border-white/10">
+                        <svg className="w-4 h-4 text-slate-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </button>
+                    <div className="hidden md:flex items-center gap-1">
+                        <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
+                            {SETTINGS.activeProvider === 'google' && (
+                                <>
+                                    <button onClick={() => updateActiveProject({ selectedModel: SETTINGS.googleFastModel })} className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all ${activeProject.selectedModel === SETTINGS.googleFastModel ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>⚡ {SETTINGS.googleFastModel}</button>
+                                    <div className="w-px bg-white/10 my-1 mx-1"></div>
+                                    <button onClick={() => updateActiveProject({ selectedModel: SETTINGS.googleProModel })} className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all ${activeProject.selectedModel === SETTINGS.googleProModel ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>💎 {SETTINGS.googleProModel}</button>
+                                </>
+                            )}
+                            {SETTINGS.activeProvider === 'openai' && (
+                                <>
+                                    <button onClick={() => updateActiveProject({ selectedModel: SETTINGS.openaiFastModel })} className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all ${activeProject.selectedModel === SETTINGS.openaiFastModel ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>🟢 {SETTINGS.openaiFastModel}</button>
+                                    <div className="w-px bg-white/10 my-1 mx-1"></div>
+                                    <button onClick={() => updateActiveProject({ selectedModel: SETTINGS.openaiProModel })} className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all ${activeProject.selectedModel === SETTINGS.openaiProModel ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>🔷 {SETTINGS.openaiProModel}</button>
+                                </>
+                            )}
+                            {SETTINGS.activeProvider === 'anthropic' && (
+                                <>
+                                    <button onClick={() => updateActiveProject({ selectedModel: SETTINGS.anthropicFastModel })} className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all ${activeProject.selectedModel === SETTINGS.anthropicFastModel ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>🟠 {SETTINGS.anthropicFastModel}</button>
+                                    <div className="w-px bg-white/10 my-1 mx-1"></div>
+                                    <button onClick={() => updateActiveProject({ selectedModel: SETTINGS.anthropicProModel })} className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all ${activeProject.selectedModel === SETTINGS.anthropicProModel ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>🔶 {SETTINGS.anthropicProModel}</button>
+                                </>
+                            )}
+                        </div>
                     </div>
 
                     <button onClick={handleGlobalExport} className="px-3 py-1.5 md:px-4 md:py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-[9px] md:text-[10px] font-black uppercase transition-all whitespace-nowrap">Export All</button>
@@ -1073,7 +1091,10 @@ export const App: React.FC = () => {
             
             <div className="md:hidden h-6 bg-slate-900/80 border-b border-white/5 flex items-center justify-between px-4">
                 <CloudStatusIndicator status={cloudStatus} lastSaved={lastSavedTime} />
-                <div className="text-[9px] font-mono text-slate-500">{activeProject.selectedModel.replace('gemini-', '')}</div>
+                <div className="flex items-center gap-2">
+                    <span className="text-[8px] font-bold text-slate-600 uppercase">{SETTINGS.activeProvider}</span>
+                    <span className="text-[9px] font-mono text-slate-500">{activeProject.selectedModel.split('-').slice(-2).join('-')}</span>
+                </div>
             </div>
 
             <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
@@ -1386,6 +1407,13 @@ export const App: React.FC = () => {
                     )}
                 </div>
             </main>
+            <SettingsModal 
+                open={settingsOpen} 
+                onClose={() => { 
+                    setSettingsOpen(false); 
+                    setSettingsVersion(v => v + 1); 
+                }} 
+            />
         </div>
     );
 };
