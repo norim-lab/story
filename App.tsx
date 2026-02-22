@@ -258,9 +258,9 @@ const HomeDashboard: React.FC<{
     onDelete: (id: string) => void,
     onImport: (e: React.ChangeEvent<HTMLInputElement>) => void,
     isLoading: boolean,
-    cloudStatus: CloudStatus
-}> = ({ projects, onCreate, onSelect, onDelete, onImport, isLoading, cloudStatus }) => {
-    // ... (rest of HomeDashboard unchanged)
+    cloudStatus: CloudStatus,
+    onOpenSettings: () => void
+}> = ({ projects, onCreate, onSelect, onDelete, onImport, isLoading, cloudStatus, onOpenSettings }) => {
     return (
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-16">
             <div className="max-w-6xl mx-auto space-y-8 md:space-y-12">
@@ -272,10 +272,16 @@ const HomeDashboard: React.FC<{
                             <CloudStatusIndicator status={cloudStatus} lastSaved={null} />
                         </div>
                     </div>
-                    <label className="w-full md:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-black uppercase cursor-pointer transition-all flex items-center justify-center gap-2">
-                        <span>Import Backup</span>
-                        <input type="file" accept=".json" className="hidden" onChange={onImport} />
-                    </label>
+                    <div className="flex gap-2">
+                        <button onClick={onOpenSettings} className="px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-black uppercase transition-all flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            <span>API Keys</span>
+                        </button>
+                        <label className="w-full md:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-black uppercase cursor-pointer transition-all flex items-center justify-center gap-2">
+                            <span>Import Backup</span>
+                            <input type="file" accept=".json" className="hidden" onChange={onImport} />
+                        </label>
+                    </div>
                 </div>
 
                 {isLoading ? (
@@ -988,15 +994,25 @@ export const App: React.FC = () => {
     };
 
     if (!activeProject || !activeProjectId) {
-        return <HomeDashboard 
-            projects={projects} 
-            onCreate={createNewProject} 
-            onSelect={setActiveProjectId} 
-            onDelete={deleteProject}
-            onImport={handleImport}
-            isLoading={isCloudLoading}
-            cloudStatus={cloudStatus}
-        />;
+        return <>
+            <HomeDashboard 
+                projects={projects} 
+                onCreate={createNewProject} 
+                onSelect={setActiveProjectId} 
+                onDelete={deleteProject}
+                onImport={handleImport}
+                isLoading={isCloudLoading}
+                cloudStatus={cloudStatus}
+                onOpenSettings={() => setSettingsOpen(true)}
+            />
+            <SettingsModal 
+                open={settingsOpen} 
+                onClose={() => { 
+                    setSettingsOpen(false); 
+                    setSettingsVersion(v => v + 1); 
+                }} 
+            />
+        </>;
     }
 
     const versions = activeProject.scriptResult?.sections?.[0]?.versions ?? {};
