@@ -28,15 +28,15 @@ const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 
 // Updated Version Order for UI
 const VERSION_ORDER: ScriptLength[] = [
-    'short_1', 'short_2', 'short_3', 'short_4', 'short_5',
-    'long_1', 'long_2', 'long_3', 'long_4', 'long_5',
-    'dialogue_1', 'dialogue_2', 'dialogue_3', 'dialogue_4', 'dialogue_5'
+    'short_1', 'short_2', 'short_3', 'short_4', 'short_5', 'short_6', 'short_7', 'short_8',
+    'long_1', 'long_2', 'long_3', 'long_4', 'long_5', 'long_6', 'long_7', 'long_8',
+    'dialogue_1', 'dialogue_2', 'dialogue_3', 'dialogue_4', 'dialogue_5', 'dialogue_6', 'dialogue_7', 'dialogue_8'
 ];
 
 const VERSION_LABELS: Record<string, string> = {
-    short_1: 'Short 1', short_2: 'Short 2', short_3: 'Short 3', short_4: 'Short 4', short_5: 'Short 5',
-    long_1: 'Long 1', long_2: 'Long 2', long_3: 'Long 3', long_4: 'Long 4', long_5: 'Long 5',
-    dialogue_1: 'Dialog 1', dialogue_2: 'Dialog 2', dialogue_3: 'Dialog 3', dialogue_4: 'Dialog 4', dialogue_5: 'Dialog 5'
+    short_1: 'Short 1', short_2: 'Short 2', short_3: 'Short 3', short_4: 'Short 4', short_5: 'Short 5', short_6: 'Short 6', short_7: 'Short 7', short_8: 'Short 8',
+    long_1: 'Long 1', long_2: 'Long 2', long_3: 'Long 3', long_4: 'Long 4', long_5: 'Long 5', long_6: 'Long 6', long_7: 'Long 7', long_8: 'Long 8',
+    dialogue_1: 'Dialog 1', dialogue_2: 'Dialog 2', dialogue_3: 'Dialog 3', dialogue_4: 'Dialog 4', dialogue_5: 'Dialog 5', dialogue_6: 'Dialog 6', dialogue_7: 'Dialog 7', dialogue_8: 'Dialog 8'
 };
 
 const TONE_OPTIONS = [
@@ -375,6 +375,7 @@ export const App: React.FC = () => {
     const [selectionMenu, setSelectionMenu] = useState<{ x: number, y: number, text: string, visible: boolean } | null>(null);
     const [mobileTab, setMobileTab] = useState<'inputs' | 'editor'>('inputs');
     const [editorMode, setEditorMode] = useState<'controls' | 'source'>('controls');
+    const [confirmClearSlot, setConfirmClearSlot] = useState<ScriptLength | null>(null);
 
     // --- Helpers ---
     const addLog = useCallback((message: string, type: any = 'info') => {
@@ -954,6 +955,29 @@ export const App: React.FC = () => {
         commitAction("Status Änderung", { scriptResult: updatedResult });
     };
 
+    const clearSlot = (slot: ScriptLength) => {
+        if (!activeProject?.scriptResult) return;
+        const section = activeProject.scriptResult.sections[0];
+        const isFinal = section.isFinal?.[slot] || false;
+        
+        if (isFinal) {
+            addLog("Slot ist finalisiert und kann nicht geleert werden", "error");
+            return;
+        }
+        
+        const updatedVersions = { ...section.versions };
+        delete updatedVersions[slot];
+        
+        const updatedResult = {
+            ...activeProject.scriptResult,
+            sections: [{
+                ...section,
+                versions: updatedVersions
+            }]
+        };
+        commitAction(`Slot ${slot} geleert`, { scriptResult: updatedResult });
+    };
+
     const handleGlobalExport = () => {
         const exportData: WorkspaceExport = { version: 1, projects: projects };
         const blob = new Blob([JSON.stringify(exportData)], { type: "application/json" });
@@ -1020,6 +1044,24 @@ export const App: React.FC = () => {
                     setSettingsVersion(v => v + 1); 
                 }} 
             />
+            {confirmClearSlot && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-slate-900 border border-white/20 rounded-xl p-6 max-w-sm mx-4 shadow-2xl">
+                        <h3 className="text-lg font-black text-white mb-2">Slot leeren?</h3>
+                        <p className="text-slate-400 text-sm mb-4">
+                            Der Inhalt von <span className="text-white font-bold">{VERSION_LABELS[confirmClearSlot] || confirmClearSlot}</span> wird unwiderruflich gelöscht.
+                        </p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setConfirmClearSlot(null)} className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold text-white transition-all">
+                                Abbrechen
+                            </button>
+                            <button onClick={() => { clearSlot(confirmClearSlot); setConfirmClearSlot(null); }} className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-sm font-bold text-white transition-all">
+                                Löschen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>;
     }
 
@@ -1035,15 +1077,12 @@ export const App: React.FC = () => {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     const readingTime = `${minutes}:${seconds.toString().padStart(2, '0')} min`;
-    const sortedVersions = activeProject.scriptResult && activeProject.scriptResult.sections?.[0]?.versions
-        ? (Object.keys(activeProject.scriptResult.sections[0].versions) as ScriptLength[]).sort((a, b) => VERSION_ORDER.indexOf(a) - VERSION_ORDER.indexOf(b))
-        : [];
-
-    // Helper to group versions
-    const versionGroups = {
-        shorts: sortedVersions.filter(v => v.startsWith('short') || v.includes('short_long') || v.includes('ultra_short')), // Legacy support
-        longs: sortedVersions.filter(v => v.startsWith('long') || v.includes('long_long')),
-        dialogues: sortedVersions.filter(v => v.startsWith('dialogue'))
+    
+    // All 8 slots per category always visible
+    const allSlotGroups = {
+        shorts: ['short_1', 'short_2', 'short_3', 'short_4', 'short_5', 'short_6', 'short_7', 'short_8'] as ScriptLength[],
+        longs: ['long_1', 'long_2', 'long_3', 'long_4', 'long_5', 'long_6', 'long_7', 'long_8'] as ScriptLength[],
+        dialogues: ['dialogue_1', 'dialogue_2', 'dialogue_3', 'dialogue_4', 'dialogue_5', 'dialogue_6', 'dialogue_7', 'dialogue_8'] as ScriptLength[]
     };
 
     return (
@@ -1174,15 +1213,20 @@ export const App: React.FC = () => {
                                 <div className="space-y-2">
                                     <div className="text-[9px] font-bold text-slate-600 uppercase">Shorts (&lt; 3min)</div>
                                     <div className="flex flex-wrap gap-2">
-                                        {versionGroups.shorts.map(v => {
+                                        {allSlotGroups.shorts.map(v => {
                                             const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
                                             const hasContent = activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0 > 0;
                                             return (
-                                            <button key={v} onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-emerald-600 border-emerald-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
-                                                {isFinal && <span className="text-[10px]">🔒</span>}
-                                                {(VERSION_LABELS[v] || v).replace('Short ', '').replace(' (Deep)', '')}
-                                                {isFinal && activeProject.segmentVersions[MAIN_ID] !== v && <span className="text-emerald-500 ml-0.5">✓</span>}
-                                            </button>
+                                            <div key={v} className="relative flex items-center">
+                                                <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-emerald-600 border-emerald-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
+                                                    {isFinal && <span className="text-[10px]">🔒</span>}
+                                                    {(VERSION_LABELS[v] || v).replace('Short ', '').replace(' (Deep)', '')}
+                                                    {isFinal && activeProject.segmentVersions[MAIN_ID] !== v && <span className="text-emerald-500 ml-0.5">✓</span>}
+                                                </button>
+                                                {hasContent && !isFinal && (
+                                                    <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot(v); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none">×</button>
+                                                )}
+                                            </div>
                                         )})}
                                     </div>
                                 </div>
@@ -1190,14 +1234,19 @@ export const App: React.FC = () => {
                                 <div className="space-y-2">
                                     <div className="text-[9px] font-bold text-slate-600 uppercase">Longs (&gt; 3min)</div>
                                     <div className="flex flex-wrap gap-2">
-                                        {versionGroups.longs.map(v => {
+                                        {allSlotGroups.longs.map(v => {
                                             const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
                                             const hasContent = activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0 > 0;
                                             return (
-                                            <button key={v} onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-indigo-600 border-indigo-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
-                                                {isFinal && <span className="text-[10px]">🔒</span>}
-                                                {(VERSION_LABELS[v] || v).replace('Long ', '').replace(' (Deep)', '')}
-                                            </button>
+                                            <div key={v} className="relative flex items-center">
+                                                <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-indigo-600 border-indigo-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
+                                                    {isFinal && <span className="text-[10px]">🔒</span>}
+                                                    {(VERSION_LABELS[v] || v).replace('Long ', '').replace(' (Deep)', '')}
+                                                </button>
+                                                {hasContent && !isFinal && (
+                                                    <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot(v); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none">×</button>
+                                                )}
+                                            </div>
                                         )})}
                                     </div>
                                 </div>
@@ -1205,14 +1254,19 @@ export const App: React.FC = () => {
                                 <div className="space-y-2">
                                     <div className="text-[9px] font-bold text-slate-600 uppercase">Dialogues</div>
                                     <div className="flex flex-wrap gap-2">
-                                        {versionGroups.dialogues.map(v => {
+                                        {allSlotGroups.dialogues.map(v => {
                                             const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
                                             const hasContent = activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0 > 0;
                                             return (
-                                            <button key={v} onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-purple-600 border-purple-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
-                                                {isFinal && <span className="text-[10px]">🔒</span>}
-                                                {(VERSION_LABELS[v] || v).replace('Dialog ', '')}
-                                            </button>
+                                            <div key={v} className="relative flex items-center">
+                                                <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-purple-600 border-purple-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
+                                                    {isFinal && <span className="text-[10px]">🔒</span>}
+                                                    {(VERSION_LABELS[v] || v).replace('Dialog ', '')}
+                                                </button>
+                                                {hasContent && !isFinal && (
+                                                    <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot(v); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none">×</button>
+                                                )}
+                                            </div>
                                         )})}
                                     </div>
                                 </div>

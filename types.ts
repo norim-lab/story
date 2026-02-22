@@ -36,9 +36,9 @@ export enum CloudStatus {
 
 // Updated Slot System
 export type ScriptLength = 
-  | 'short_1' | 'short_2' | 'short_3' | 'short_4' | 'short_5'
-  | 'long_1' | 'long_2' | 'long_3' | 'long_4' | 'long_5'
-  | 'dialogue_1' | 'dialogue_2' | 'dialogue_3' | 'dialogue_4' | 'dialogue_5';
+  | 'short_1' | 'short_2' | 'short_3' | 'short_4' | 'short_5' | 'short_6' | 'short_7' | 'short_8'
+  | 'long_1' | 'long_2' | 'long_3' | 'long_4' | 'long_5' | 'long_6' | 'long_7' | 'long_8'
+  | 'dialogue_1' | 'dialogue_2' | 'dialogue_3' | 'dialogue_4' | 'dialogue_5' | 'dialogue_6' | 'dialogue_7' | 'dialogue_8';
 
 export type PublishPlatform = 'yt_shorts' | 'yt_long' | 'tiktok';
 
