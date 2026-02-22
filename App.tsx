@@ -302,7 +302,9 @@ const HomeDashboard: React.FC<{
                                 
                                 <div className="relative z-10 space-y-2">
                                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                                        <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase">{p.scriptResult?.model.replace('gemini-', '') || 'Draft'}</span>
+                                        <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase">
+                                            {(p.scriptResult?.model?.replace('gemini-', '') ?? p.selectedModel?.replace('gemini-', '') ?? 'Draft')}
+                                        </span>
                                         {p.scriptResult?.isEnriched && <span className="px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-[9px] font-black uppercase">Deep Dive</span>}
                                         {finalized.map(f => (
                                             <span key={f} className="px-2 py-1 rounded bg-amber-500/10 text-amber-400 text-[9px] font-black uppercase border border-amber-500/20 flex items-center gap-1">
