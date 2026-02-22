@@ -914,17 +914,25 @@ export const App: React.FC = () => {
         } catch (e) { addLog("Hook Error", "error"); } finally { setIsZapping(false); }
     };
 
-    const handleResetVersion = () => {
-        if (!activeProject) return;
+    const handleEmptyEditor = () => {
+        if (!activeProject || !activeProject.scriptResult) return;
         
-        if (window.confirm("⚠️ Alles zurücksetzen?\n\nDas gesamte generierte Skript wird gelöscht. Nur Ihre Eingabedaten (Grok Dossier & Fakten) bleiben erhalten.")) {
-            commitAction("Projekt Reset", {
-                scriptResult: null, // Löscht das generierte Skript
-                segmentVersions: { [MAIN_ID]: 'short_1' },
-                segmentControls: { [MAIN_ID]: { ...DEFAULT_CONTROLS } }, // Setzt Regler auf Standard
-                isEditing: false
-            });
-            setMobileTab('inputs'); // Wechselt UI zurück zur Eingabe
+        if (window.confirm("⚠️ Editor leeren?\n\nNur der Inhalt des aktuellen Slots wird gelöscht.")) {
+            const currentSlot = activeProject.segmentVersions[MAIN_ID];
+            const section = activeProject.scriptResult.sections[0];
+            
+            if (section?.versions[currentSlot]) {
+                const updatedVersions = { ...section.versions, [currentSlot]: "" };
+                const updatedResult: ScriptResult = {
+                    ...activeProject.scriptResult,
+                    wordCount: activeProject.scriptResult.wordCount || {},
+                    estimatedCost: activeProject.scriptResult.estimatedCost || 0,
+                    model: activeProject.scriptResult.model || "",
+                    sections: [{ ...section, versions: updatedVersions }]
+                };
+                commitAction(`Editor geleert: ${currentSlot}`, { scriptResult: updatedResult });
+                addLog(`✅ Slot ${currentSlot} geleert`, "success");
+            }
         }
     };
 
@@ -1499,8 +1507,8 @@ export const App: React.FC = () => {
                                         <HistoryMenu history={activeProject.history} currentIndex={activeProject.historyIndex} onSelect={navigateHistory} />
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <button onClick={handleResetVersion} className="px-3 py-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/20" title="Version zurücksetzen">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                        <button onClick={handleEmptyEditor} className="px-3 py-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/20" title="Editor leeren">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                         </button>
                                         <button onClick={handleToggleFinal} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border flex items-center gap-2 ${isCurrentFinal ? 'bg-white/10 text-white border-white/20' : 'bg-transparent text-slate-500 border-transparent hover:text-white'}`}>
                                             {isCurrentFinal ? 'Finalized' : 'Mark as Final'}
