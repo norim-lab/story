@@ -456,10 +456,11 @@ export const App: React.FC = () => {
             setCloudStatus(CloudStatus.CONNECTING);
             const success = await initStorage();
             if (success) {
+                setCloudStatus(CloudStatus.ONLINE);
                 try {
                     const cloudProjects = await listProjects();
                     const migratedProjects = cloudProjects.map((p: any) => {
-                        const safeId = p.id || (p.name ? p.name.toLowerCase().replace(/\s+/g, '-') : crypto.randomUUID());
+                        const safeId = p.id || (p.name ? p.name.toLowerCase().replace(/\s+/g, '-') : (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)));
                         const mergedControls = {
                             [MAIN_ID]: { 
                                 ...DEFAULT_CONTROLS, 
@@ -484,7 +485,7 @@ export const App: React.FC = () => {
                         } as ProjectSession;
                     });
                     setProjects(migratedProjects);
-                    setCloudStatus(CloudStatus.ONLINE);
+                    console.log("Loaded projects:", migratedProjects.length);
                     addLog("Verbindung zum Web-Speicher hergestellt", "success");
                 } catch (e) {
                     setCloudStatus(CloudStatus.ERROR);
