@@ -54,6 +54,20 @@ export function getActiveModel(): string {
   return s.anthropicFastModel;
 }
 
+export function getFastModel(): string {
+  const s = getSettings();
+  if (s.activeProvider === 'google') return s.googleFastModel;
+  if (s.activeProvider === 'openai') return s.openaiFastModel;
+  return s.anthropicFastModel;
+}
+
+export function getProModel(): string {
+  const s = getSettings();
+  if (s.activeProvider === 'google') return s.googleProModel;
+  if (s.activeProvider === 'openai') return s.openaiProModel;
+  return s.anthropicProModel;
+}
+
 export function getGoogleKey(): string {
   return getSettings().googleApiKey || '';
 }

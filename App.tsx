@@ -20,7 +20,7 @@ import {
 } from './services/provider';
 import { initStorage, listProjects, saveProject, deleteProject as deleteCloudProject, checkConnection } from './services/storage';
 import SettingsModal from './components/SettingsModal';
-import { getSettings } from './services/settings';
+import { getSettings, getFastModel, getProModel } from './services/settings';
 
 const MAX_HISTORY_STEPS = 50;
 const MAIN_ID = "main-script";
@@ -387,6 +387,11 @@ export const App: React.FC = () => {
 
     const activeProject = useMemo(() => projects.find(p => p.id === activeProjectId), [projects, activeProjectId]);
 
+    // Always get current model from settings (not from project)
+    const getCurrentModel = useCallback((usePro: boolean = false) => {
+        return usePro ? getProModel() : getFastModel();
+    }, [settingsVersion]);
+
     // Helper to check if current version is final
     const checkProtection = useCallback(() => {
         if (!activeProject?.scriptResult) return true;
@@ -652,7 +657,7 @@ export const App: React.FC = () => {
         addLog("Starte Import...", "info");
         try {
             const sourceText = activeProject.rawInput.trim() || activeProject.factText;
-            const res = await orchestrator.generateStandardShow(sourceText, activeProject.selectedModel);
+            const res = await orchestrator.generateStandardShow(sourceText, getCurrentModel());
             
             setProjects(prev => prev.map(p => {
                 if (p.id !== activeProjectId) return p;
@@ -707,13 +712,13 @@ export const App: React.FC = () => {
             let generatedText: string;
             
             if (hasExistingText) {
-                generatedText = await improveExistingScript(currentText, controls, activeProject.selectedModel);
+                generatedText = await improveExistingScript(currentText, controls, getCurrentModel());
             } else {
                 generatedText = await generateScriptWithControls(
                     activeProject.rawInput, 
                     activeProject.factText, 
                     controls, 
-                    activeProject.selectedModel
+                    getCurrentModel()
                 );
             }
 
@@ -785,7 +790,7 @@ export const App: React.FC = () => {
                 activeProject.rawInput, 
                 activeProject.factText, 
                 controls, 
-                activeProject.selectedModel
+                getCurrentModel()
             );
             
             if (!dialogueText || dialogueText.trim().length === 0) {
@@ -818,7 +823,7 @@ export const App: React.FC = () => {
 
         setIsZapping(true);
         try {
-            const ctaText = await generateCTA(text, controls, activeProject.selectedModel);
+            const ctaText = await generateCTA(text, controls, getCurrentModel());
             const updatedText = text + "\n\n" + ctaText;
             const updatedResult = { 
                 ...activeProject.scriptResult, 
@@ -842,7 +847,7 @@ export const App: React.FC = () => {
 
         setIsZapping(true);
         try {
-            const newHook = await regenerateHook(text, controls, activeProject.selectedModel);
+            const newHook = await regenerateHook(text, controls, getCurrentModel());
             let updatedText = text;
 
             if (isDialogue) {
@@ -921,7 +926,7 @@ export const App: React.FC = () => {
         setSelectionMenu(null); setIsZapping(true);
         const currentV = activeProject.segmentVersions[MAIN_ID] || 'short_1';
         try {
-            const transformed = await rewriteSelectionWithTone(selectionMenu.text, toneKey, activeProject.selectedModel);
+            const transformed = await rewriteSelectionWithTone(selectionMenu.text, toneKey, getCurrentModel());
             const sourceText = activeProject.scriptResult.sections[0].versions[currentV];
             const range = mapSelectionToRaw(sourceText, selectionMenu.text);
             
@@ -1129,23 +1134,23 @@ export const App: React.FC = () => {
                         <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
                             {SETTINGS.activeProvider === 'google' && (
                                 <>
-                                    <button onClick={() => updateActiveProject({ selectedModel: SETTINGS.googleFastModel })} className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all ${activeProject.selectedModel === SETTINGS.googleFastModel ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>⚡ {SETTINGS.googleFastModel}</button>
+                                    <button onClick={() => { /* Model is now from settings */ }} className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30`}>⚡ {SETTINGS.googleFastModel}</button>
                                     <div className="w-px bg-white/10 my-1 mx-1"></div>
-                                    <button onClick={() => updateActiveProject({ selectedModel: SETTINGS.googleProModel })} className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all ${activeProject.selectedModel === SETTINGS.googleProModel ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>💎 {SETTINGS.googleProModel}</button>
+                                    <span className="px-3 py-1.5 text-[10px] font-black uppercase text-slate-500">💎 {SETTINGS.googleProModel}</span>
                                 </>
                             )}
                             {SETTINGS.activeProvider === 'openai' && (
                                 <>
-                                    <button onClick={() => updateActiveProject({ selectedModel: SETTINGS.openaiFastModel })} className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all ${activeProject.selectedModel === SETTINGS.openaiFastModel ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>🟢 {SETTINGS.openaiFastModel}</button>
+                                    <button onClick={() => { /* Model is now from settings */ }} className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all bg-green-500/20 text-green-400 border border-green-500/30`}>🟢 {SETTINGS.openaiFastModel}</button>
                                     <div className="w-px bg-white/10 my-1 mx-1"></div>
-                                    <button onClick={() => updateActiveProject({ selectedModel: SETTINGS.openaiProModel })} className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all ${activeProject.selectedModel === SETTINGS.openaiProModel ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>🔷 {SETTINGS.openaiProModel}</button>
+                                    <span className="px-3 py-1.5 text-[10px] font-black uppercase text-slate-500">🔷 {SETTINGS.openaiProModel}</span>
                                 </>
                             )}
                             {SETTINGS.activeProvider === 'anthropic' && (
                                 <>
-                                    <button onClick={() => updateActiveProject({ selectedModel: SETTINGS.anthropicFastModel })} className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all ${activeProject.selectedModel === SETTINGS.anthropicFastModel ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>🟠 {SETTINGS.anthropicFastModel}</button>
+                                    <button onClick={() => { /* Model is now from settings */ }} className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all bg-orange-500/20 text-orange-400 border border-orange-500/30`}>🟠 {SETTINGS.anthropicFastModel}</button>
                                     <div className="w-px bg-white/10 my-1 mx-1"></div>
-                                    <button onClick={() => updateActiveProject({ selectedModel: SETTINGS.anthropicProModel })} className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-all ${activeProject.selectedModel === SETTINGS.anthropicProModel ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>🔶 {SETTINGS.anthropicProModel}</button>
+                                    <span className="px-3 py-1.5 text-[10px] font-black uppercase text-slate-500">🔶 {SETTINGS.anthropicProModel}</span>
                                 </>
                             )}
                         </div>
@@ -1159,7 +1164,7 @@ export const App: React.FC = () => {
                 <CloudStatusIndicator status={cloudStatus} lastSaved={lastSavedTime} />
                 <div className="flex items-center gap-2">
                     <span className="text-[8px] font-bold text-slate-600 uppercase">{SETTINGS.activeProvider}</span>
-                    <span className="text-[9px] font-mono text-slate-500">{activeProject.selectedModel.split('-').slice(-2).join('-')}</span>
+                    <span className="text-[9px] font-mono text-slate-500">{getCurrentModel().split('-').slice(-2).join('-')}</span>
                 </div>
             </div>
 
