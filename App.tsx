@@ -458,12 +458,31 @@ export const App: React.FC = () => {
             if (success) {
                 try {
                     const cloudProjects = await listProjects();
-                    const migratedProjects = cloudProjects.map(p => ({ 
-                        ...p, 
-                        factText: p.factText || "", 
-                        segmentControls: { [MAIN_ID]: { ...DEFAULT_CONTROLS, ...p.segmentControls[MAIN_ID] } },
-                        publishedOn: p.publishedOn || [] 
-                    }));
+                    const migratedProjects = cloudProjects.map((p: any) => {
+                        const safeId = p.id || (p.name ? p.name.toLowerCase().replace(/\s+/g, '-') : crypto.randomUUID());
+                        const mergedControls = {
+                            [MAIN_ID]: { 
+                                ...DEFAULT_CONTROLS, 
+                                ...(p?.segmentControls?.[MAIN_ID] || p?.segmentControls || {}) 
+                            }
+                        };
+                        return { 
+                            id: safeId,
+                            name: p.name || safeId,
+                            lastModified: p.lastModified || Date.now(),
+                            rawInput: p.rawInput || "",
+                            factText: p.factText || "", 
+                            scriptResult: p.scriptResult ?? null,
+                            segmentVersions: p.segmentVersions || { [MAIN_ID]: 'short_1' },
+                            segmentControls: mergedControls,
+                            history: Array.isArray(p.history) ? p.history : [],
+                            historyIndex: typeof p.historyIndex === 'number' ? p.historyIndex : -1,
+                            isEditing: !!p.isEditing,
+                            manualEditText: p.manualEditText || "",
+                            selectedModel: p.selectedModel || TextModel.GEMINI_3_FLASH,
+                            publishedOn: p.publishedOn || [] 
+                        } as ProjectSession;
+                    });
                     setProjects(migratedProjects);
                     setCloudStatus(CloudStatus.ONLINE);
                     addLog("Verbindung zum Web-Speicher hergestellt", "success");
