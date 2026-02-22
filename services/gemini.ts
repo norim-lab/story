@@ -1,0 +1,290 @@
+
+import { GoogleGenAI, Type } from "@google/genai";
+import { TextModel, ScriptResult, ScriptSection, SegmentControls } from "../types";
+import { loadPrompt } from "./prompts";
+
+async function handleApiCall<T>(call: () => Promise<T>): Promise<T> {
+  try { return await call(); } 
+  catch (err: any) { 
+    console.error("Gemini API Error details:", err); 
+    throw err; 
+  }
+}
+
+// Helper to safely replace all occurrences without regex/special char issues
+function safeReplace(template: string, key: string, value: string): string {
+    return template.split(key).join(value);
+}
+
+function extractFirstJsonObject(text: string): string {
+  if (!text) return "{}";
+  let sanitized = text.replace(/```json\s?|```/g, "").trim();
+  const start = sanitized.indexOf('{');
+  if (start === -1) return "{}";
+  let stack = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = start; i < sanitized.length; i++) {
+    const char = sanitized[i];
+    if (escape) { escape = false; continue; }
+    if (char === '\\') { escape = true; continue; }
+    if (char === '"') { inString = !inString; continue; }
+    if (!inString) {
+      if (char === '{') stack++;
+      if (char === '}') {
+        stack--;
+        if (stack === 0) return sanitized.substring(start, i + 1);
+      }
+    }
+  }
+  return sanitized.substring(start);
+}
+
+const deepUpgradeSchema = {
+  type: Type.OBJECT,
+  properties: {
+    versions: {
+      type: Type.OBJECT,
+      properties: {
+        short_long_deep: { type: Type.STRING },
+        long_short_deep: { type: Type.STRING },
+        ultra_short_deep: { type: Type.STRING },
+        long_long_deep: { type: Type.STRING }
+      },
+      required: ["short_long_deep", "long_short_deep", "ultra_short_deep", "long_long_deep"]
+    }
+  },
+  required: ["versions"]
+};
+
+// Vereinfachte Funktion: Nimmt den Raw Text und packt ihn in eine Section
+export const generateZeitblitzScript = async (rawText: string, model: TextModel): Promise<ScriptResult> => {
+    // Wir erstellen EINE Sektion für das gesamte Skript
+    const mainSection: ScriptSection = {
+        id: "main-script",
+        title: "Hauptskript",
+        newsHeadline: "Manuskript",
+        versions: {
+            short_1: rawText, // Default start
+            short_2: "",
+            short_3: "",
+            short_4: "",
+            short_5: "",
+            long_1: "",
+            long_2: "",
+            long_3: "",
+            long_4: "",
+            long_5: "",
+            dialogue_1: "",
+            dialogue_2: "",
+            dialogue_3: "",
+            dialogue_4: "",
+            dialogue_5: ""
+        },
+        sources: []
+    };
+
+    return {
+        sections: [mainSection],
+        wordCount: {},
+        estimatedCost: 0,
+        model,
+        isEnriched: false,
+        generatedAt: Date.now()
+    };
+};
+
+export const enrichScriptWithDeep = async (script: ScriptResult, research: string): Promise<ScriptResult['sections']> => {
+  return handleApiCall(async () => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const systemInstruction = loadPrompt('script_generation', 'deep_upgrade');
+    
+    // Da wir nur eine Section haben
+    const currentText = script.sections[0].versions['short_1'];
+    
+    const prompt = `RECHERCHE-DATEN:\n${research}\n\nGEGENWÄRTIGER TEXT:\n${currentText}`;
+    
+    const response = await ai.models.generateContent({
+      model: script.model,
+      contents: prompt,
+      config: { systemInstruction, temperature: 0.3, responseMimeType: "application/json", responseSchema: deepUpgradeSchema as any }
+    });
+    
+    const parsed = JSON.parse(extractFirstJsonObject(response.text || "{}"));
+    
+    // Update der einzigen Section
+    return [{
+        ...script.sections[0],
+        versions: {
+            ...script.sections[0].versions,
+            ...parsed.versions
+        }
+    }];
+  });
+};
+
+export const mapResearchToSegments = async (script: ScriptResult, research: string): Promise<Record<string, string>> => {
+    return { "main-script": research };
+};
+
+export const regenerateHook = async (text: string, controls: SegmentControls, model: TextModel): Promise<string> => {
+  return handleApiCall(async () => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    // Provide first 1000 chars as context for the hook
+    const context = text.slice(0, 1000) + "...";
+
+    let systemInstruction = loadPrompt('script_generation', 'hook_regen');
+    systemInstruction = safeReplace(systemInstruction, '{style}', controls.style.toString());
+    systemInstruction = safeReplace(systemInstruction, '{metaphor}', controls.metaphor.toString());
+    systemInstruction = safeReplace(systemInstruction, '{context}', context);
+
+    const response = await ai.models.generateContent({ 
+        model, 
+        contents: "Generiere den Hook jetzt.", 
+        config: { systemInstruction, temperature: 0.85 } 
+    });
+    return response.text?.trim() || text;
+  });
+};
+
+export const refineSegmentWithControls = async (text: string, controls: SegmentControls, model: TextModel, researchData?: string, factText?: string): Promise<any> => {
+    // Legacy function support
+    return { short_1: text }; 
+};
+
+export const generateDialogue = async (rawText: string, factText: string, controls: SegmentControls, model: TextModel): Promise<string> => {
+  return handleApiCall(async () => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    const seconds = controls.dialogue_seconds || 60;
+    // Calculation: 100 words = 45 seconds
+    const targetWords = Math.round((seconds / 45) * 100);
+    
+    let systemInstruction = loadPrompt('script_generation', 'dialogue_generation');
+    systemInstruction = safeReplace(systemInstruction, '{seconds}', seconds.toString());
+    systemInstruction = safeReplace(systemInstruction, '{targetWords}', targetWords.toString());
+    systemInstruction = safeReplace(systemInstruction, '{style}', controls.style.toString());
+    systemInstruction = safeReplace(systemInstruction, '{metaphor}', controls.metaphor.toString());
+    systemInstruction = safeReplace(systemInstruction, '{info}', controls.info.toString());
+
+    // Combine raw source and facts for full context
+    const fullContext = `DOSSIER:\n${rawText}\n\nZUSÄTZLICHE FAKTEN:\n${factText}`;
+
+    const response = await ai.models.generateContent({
+        model,
+        contents: fullContext,
+        config: {
+            systemInstruction,
+            temperature: 0.85
+        }
+    });
+
+    return response.text || "";
+  });
+};
+
+// NEW FUNCTION: Writes script from scratch based on raw input + controls
+export const generateScriptWithControls = async (dossier: string, facts: string, controls: SegmentControls, model: TextModel): Promise<string> => {
+  return handleApiCall(async () => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    const seconds = controls.target_seconds || 60;
+    // Calculation: 100 words = 45 seconds
+    const targetWords = Math.round((seconds / 45) * 100);
+    
+    // Check if long format (>= 8 mins / 480 seconds)
+    const isLongFormat = seconds >= 480;
+
+    // Load template based on format length
+    let promptTemplate = isLongFormat 
+        ? loadPrompt('script_generation', 'write_and_fit_long')
+        : loadPrompt('script_generation', 'write_and_fit');
+    
+    // Use safeReplace to handle potential special characters in user input (dossier/facts)
+    promptTemplate = safeReplace(promptTemplate, '{seconds}', seconds.toString());
+    promptTemplate = safeReplace(promptTemplate, '{targetWords}', targetWords.toString());
+    promptTemplate = safeReplace(promptTemplate, '{style}', controls.style.toString());
+    promptTemplate = safeReplace(promptTemplate, '{metaphor}', controls.metaphor.toString());
+    promptTemplate = safeReplace(promptTemplate, '{info}', controls.info.toString());
+    promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "Kein Dossier verfügbar.");
+    promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "Keine Zusatzfakten.");
+
+    console.log(`Sending Prompt to Gemini (${isLongFormat ? 'LONG' : 'STANDARD'}):`, promptTemplate.substring(0, 200) + "...");
+
+    const response = await ai.models.generateContent({
+        model,
+        contents: promptTemplate, 
+        config: {
+            systemInstruction: "Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Skript.",
+            temperature: 0.7 
+        }
+    });
+
+    const result = response.text || "";
+    if (!result) {
+        console.warn("Gemini returned empty text for write_and_fit", response);
+        throw new Error("Kein Text generiert. Die API hat eine leere Antwort zurückgegeben.");
+    }
+
+    return result;
+  });
+};
+
+export const retimeSegment = async (text: string, seconds: number, controls: SegmentControls, model: TextModel): Promise<string> => {
+    // Deprecated for the new logic
+    return text;
+};
+
+export const generateCTA = async (text: string, controls: SegmentControls, model: TextModel): Promise<string> => {
+  return handleApiCall(async () => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    const isDialogue = text.includes("USER 1:") || text.includes("USER 2:") || text.includes("SPEAKER 1:") || text.includes("SPEAKER 2:");
+    const wordCount = text.split(/\s+/).length;
+    const isShort = wordCount < 150;
+    const scriptType = isShort ? "Kurzformat (Short/Reel)" : "Langformat (Video/Deep Dive)";
+    const targetWords = isShort ? "3-10" : "10-20";
+    const context = text.length > 1000 ? "..." + text.slice(-1000) : text;
+
+    const promptKey = isDialogue ? 'cta_dialogue_generation' : 'cta_generation';
+    
+    let systemInstruction = loadPrompt('script_generation', promptKey);
+    systemInstruction = safeReplace(systemInstruction, '{style}', controls.style.toString());
+    systemInstruction = safeReplace(systemInstruction, '{metaphor}', controls.metaphor.toString());
+    systemInstruction = safeReplace(systemInstruction, '{context}', context);
+    systemInstruction = safeReplace(systemInstruction, '{scriptType}', scriptType);
+    systemInstruction = safeReplace(systemInstruction, '{targetWords}', targetWords);
+
+    const response = await ai.models.generateContent({
+        model,
+        contents: "Generiere jetzt den Abschluss.",
+        config: {
+            systemInstruction,
+            temperature: 1.0 
+        }
+    });
+
+    return response.text || "";
+  });
+};
+
+export const rewriteSelectionWithTone = async (text: string, tone: string, model: TextModel): Promise<string> => {
+  return handleApiCall(async () => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    let systemInstruction = loadPrompt('script_generation', 'tone_transformation');
+    systemInstruction = safeReplace(systemInstruction, '{toneKey}', tone);
+    const response = await ai.models.generateContent({ model, contents: text, config: { systemInstruction, temperature: 0.8 } });
+    return response.text || text;
+  });
+};
+
+export const rewriteSelectionWithCustomPrompt = async (text: string, prompt: string, model: TextModel): Promise<string> => {
+  return handleApiCall(async () => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    let systemInstruction = loadPrompt('script_generation', 'custom_selection_rewrite');
+    systemInstruction = safeReplace(systemInstruction, '{instruction}', prompt);
+    const response = await ai.models.generateContent({ model, contents: text, config: { systemInstruction, temperature: 0.7 } });
+    return response.text || text;
+  });
+};
