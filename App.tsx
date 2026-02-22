@@ -994,17 +994,21 @@ export const App: React.FC = () => {
         />;
     }
 
-    const currentText = activeProject.scriptResult ? (activeProject.scriptResult.sections[0].versions[activeProject.segmentVersions[MAIN_ID] || 'short_1'] || "") : "";
-    const controls = activeProject.segmentControls[MAIN_ID];
-    const isCurrentFinal = activeProject.scriptResult?.sections[0].isFinal?.[activeProject.segmentVersions[MAIN_ID] || 'short_1'] || false;
+    const versions = activeProject.scriptResult?.sections?.[0]?.versions ?? {};
+    const currentSlot = activeProject.segmentVersions?.[MAIN_ID] ?? 'short_1';
+    const currentText = typeof (versions as any)[currentSlot] === 'string' ? (versions as any)[currentSlot] : "";
+    const controls = activeProject.segmentControls?.[MAIN_ID] ?? DEFAULT_CONTROLS;
+    const isCurrentFinal = activeProject.scriptResult?.sections?.[0]?.isFinal?.[currentSlot] || false;
     
-    const getTextWordCount = (txt: string) => txt.replace(/<[^>]*>/g, '').trim().split(/\s+/).filter(w => w.length > 0).length;
+    const getTextWordCount = (txt: string) => (txt || "").replace(/<[^>]*>/g, '').trim().split(/\s+/).filter(w => w.length > 0).length;
     const words = activeProject.isEditing ? getTextWordCount(activeProject.manualEditText) : getTextWordCount(currentText);
     const totalSeconds = Math.round((words / 100) * 45);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     const readingTime = `${minutes}:${seconds.toString().padStart(2, '0')} min`;
-    const sortedVersions = activeProject.scriptResult ? (Object.keys(activeProject.scriptResult.sections[0].versions) as ScriptLength[]).sort((a, b) => VERSION_ORDER.indexOf(a) - VERSION_ORDER.indexOf(b)) : [];
+    const sortedVersions = activeProject.scriptResult && activeProject.scriptResult.sections?.[0]?.versions
+        ? (Object.keys(activeProject.scriptResult.sections[0].versions) as ScriptLength[]).sort((a, b) => VERSION_ORDER.indexOf(a) - VERSION_ORDER.indexOf(b))
+        : [];
 
     // Helper to group versions
     const versionGroups = {
