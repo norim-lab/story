@@ -229,6 +229,9 @@ export const improveExistingScript = async (existingText: string, controls: Segm
     return handleApiCall(async () => {
         const apiKey = getOpenAIKey();
         
+        const seconds = controls.target_seconds || 60;
+        const targetWords = Math.round((seconds / 45) * 100);
+
         const systemInstruction = `Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. 
 Deine Aufgabe ist es, einen bestehenden Skriptentwurf zu verbessern und weiterzuentwickeln.
 
@@ -238,6 +241,14 @@ RICHTLINIEN:
 - Optimiere den Rhythmus für gesprochene Sprache
 - Füge passende Metaphern oder Vergleiche hinzu
 - Entferne unnötige Füllwörter
+
+LÄNGENVORGABE (STRIKT):
+- Zielzeit: ${seconds} Sekunden
+- Rechengrundlage: 100 Wörter = 45 Sekunden
+- ZIEL-WORTZAHL: ca. ${targetWords} Wörter
+- Passe den Text an diese Länge an (kürzen oder erweitern)!
+
+STIL-CONTROLS:
 - Style-Wert: ${controls.style} (höher = formeller, niedriger = lockerer)
 - Metaphern-Wert: ${controls.metaphor} (höher = mehr Bilder/Vergleiche)
 - Info-Dichte: ${controls.info} (höher = mehr Fakten pro Satz)
