@@ -47,7 +47,19 @@ function loadProjects(): array {
             if ($content === false) continue;
             
             $data = json_decode($content, true);
-            if (is_array($data) && isset($data['id']) && !isset($loadedIds[$data['id']])) {
+            if (!is_array($data)) $data = [];
+            
+            $inferredId = pathinfo($basename, PATHINFO_FILENAME);
+            $data['id'] = isset($data['id']) && $data['id'] !== '' ? sanitizeId($data['id']) : sanitizeId($inferredId);
+            
+            if (!isset($loadedIds[$data['id']])) {
+                if (!isset($data['lastModified'])) {
+                    $mtime = @filemtime($file);
+                    $data['lastModified'] = $mtime !== false ? $mtime : time();
+                }
+                if (!isset($data['name']) || $data['name'] === '') {
+                    $data['name'] = $data['id'];
+                }
                 $projects[] = $data;
                 $loadedIds[$data['id']] = true;
             }
