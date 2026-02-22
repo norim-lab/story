@@ -781,6 +781,7 @@ export const App: React.FC = () => {
 
             const updatedResult = { 
                 ...activeProject.scriptResult, 
+                model,
                 sections: [{ 
                     ...activeProject.scriptResult.sections[0], 
                     versions: { ...versions, [targetSlot]: generatedText } 
@@ -823,11 +824,12 @@ export const App: React.FC = () => {
         setIsZapping(true);
         try {
             const controls = activeProject.segmentControls[MAIN_ID] || DEFAULT_CONTROLS;
+            const model = getCurrentModel();
             const dialogueText = await generateDialogue(
                 activeProject.rawInput, 
                 activeProject.factText, 
                 controls, 
-                getCurrentModel()
+                model
             );
             
             if (!dialogueText || dialogueText.trim().length === 0) {
@@ -836,6 +838,7 @@ export const App: React.FC = () => {
 
             const updatedResult = { 
                 ...activeProject.scriptResult, 
+                model,
                 sections: [{ 
                     ...activeProject.scriptResult.sections[0], 
                     versions: { ...activeProject.scriptResult.sections[0].versions, [targetSlot]: dialogueText } 
@@ -857,13 +860,15 @@ export const App: React.FC = () => {
         const currentV = activeProject.segmentVersions[MAIN_ID] || 'short_1';
         const text = activeProject.scriptResult.sections[0].versions[currentV];
         const controls = activeProject.segmentControls[MAIN_ID];
+        const model = getCurrentModel();
 
         setIsZapping(true);
         try {
-            const ctaText = await generateCTA(text, controls, getCurrentModel());
+            const ctaText = await generateCTA(text, controls, model);
             const updatedText = text + "\n\n" + ctaText;
             const updatedResult = { 
                 ...activeProject.scriptResult, 
+                model,
                 sections: [{ 
                     ...activeProject.scriptResult.sections[0], 
                     versions: { ...activeProject.scriptResult.sections[0].versions, [currentV]: updatedText } 
@@ -881,10 +886,11 @@ export const App: React.FC = () => {
         const text = activeProject.scriptResult.sections[0].versions[currentV];
         const controls = activeProject.segmentControls[MAIN_ID];
         const isDialogue = currentV.includes('dialogue');
+        const model = getCurrentModel();
 
         setIsZapping(true);
         try {
-            const newHook = await regenerateHook(text, controls, getCurrentModel());
+            const newHook = await regenerateHook(text, controls, model);
             let updatedText = text;
 
             if (isDialogue) {
@@ -911,6 +917,7 @@ export const App: React.FC = () => {
 
             const updatedResult = { 
                 ...activeProject.scriptResult, 
+                model,
                 sections: [{ 
                     ...activeProject.scriptResult.sections[0], 
                     versions: { ...activeProject.scriptResult.sections[0].versions, [currentV]: updatedText } 
@@ -970,8 +977,9 @@ export const App: React.FC = () => {
 
         setSelectionMenu(null); setIsZapping(true);
         const currentV = activeProject.segmentVersions[MAIN_ID] || 'short_1';
+        const model = getCurrentModel();
         try {
-            const transformed = await rewriteSelectionWithTone(selectionMenu.text, toneKey, getCurrentModel());
+            const transformed = await rewriteSelectionWithTone(selectionMenu.text, toneKey, model);
             const sourceText = activeProject.scriptResult.sections[0].versions[currentV];
             const range = mapSelectionToRaw(sourceText, selectionMenu.text);
             
@@ -979,6 +987,7 @@ export const App: React.FC = () => {
                 const updatedText = sourceText.substring(0, range.start) + transformed + sourceText.substring(range.end);
                 const updatedResult = {
                     ...activeProject.scriptResult,
+                    model,
                     sections: [{
                         ...activeProject.scriptResult.sections[0],
                         versions: { ...activeProject.scriptResult.sections[0].versions, [currentV]: updatedText }
