@@ -18,14 +18,14 @@ export interface ZBSettings {
 
 const defaults: ZBSettings = {
   googleApiKey: '',
-  googleFastModel: 'gemini-2.5-flash-preview-05-20',
-  googleProModel: 'gemini-2.5-pro-preview-06-05',
+  googleFastModel: 'gemini-2.5-flash',
+  googleProModel: 'gemini-2.5-pro',
   openaiApiKey: '',
   openaiFastModel: 'gpt-4o-mini',
-  openaiProModel: 'o3-pro',
+  openaiProModel: 'gpt-4o',
   anthropicApiKey: '',
-  anthropicFastModel: 'claude-sonnet-4-20250514',
-  anthropicProModel: 'claude-opus-4-20250514',
+  anthropicFastModel: 'claude-haiku-4-5-20250514',
+  anthropicProModel: 'claude-sonnet-4-6-20250514',
   perplexityApiKey: '',
   activeProvider: 'anthropic'
 };

@@ -1,7 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { getSettings, saveSettings, ZBSettings } from '../services/settings';
+import { getSettings, saveSettings, ZBSettings, Provider } from '../services/settings';
 
 interface Props { open: boolean; onClose: () => void; }
+
+const MODEL_OPTIONS = {
+  google: [
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Schnell)' },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Leistungsstark)' },
+  ],
+  anthropic: [
+    { value: 'claude-haiku-4-5-20250514', label: 'Claude Haiku 4.5 (Schnell)' },
+    { value: 'claude-sonnet-4-6-20250514', label: 'Claude Sonnet 4.6 (Ausgewogen)' },
+    { value: 'claude-opus-4-6-20250514', label: 'Claude Opus 4.6 (Leistungsstark)' },
+  ],
+  openai: [
+    { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Schnell)' },
+    { value: 'gpt-4o', label: 'GPT-4o (Ausgewogen)' },
+    { value: 'gpt-4.1', label: 'GPT-4.1 (Leistungsstark)' },
+  ]
+};
 
 const SettingsModal: React.FC<Props> = ({ open, onClose }) => {
   const [s, setS] = useState<ZBSettings>(getSettings());
@@ -10,49 +27,78 @@ const SettingsModal: React.FC<Props> = ({ open, onClose }) => {
   const onSave = () => { saveSettings(s); onClose(); };
   if (!open) return null;
 
+  const renderProviderSection = (provider: Provider, label: string, apiKey: string, onKeyChange: (v: string) => void) => (
+    <div className="space-y-2">
+      <div className="text-[10px] uppercase font-bold text-slate-500">{label}</div>
+      <input 
+        value={apiKey} 
+        onChange={e => onKeyChange(e.target.value)} 
+        placeholder="API Key" 
+        className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm" 
+      />
+      <select 
+        value={provider === 'google' ? s.googleFastModel : provider === 'anthropic' ? s.anthropicFastModel : s.openaiFastModel}
+        onChange={e => {
+          if (provider === 'google') setS({...s, googleFastModel: e.target.value});
+          else if (provider === 'anthropic') setS({...s, anthropicFastModel: e.target.value});
+          else setS({...s, openaiFastModel: e.target.value});
+        }}
+        className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm"
+      >
+        {MODEL_OPTIONS[provider].map(opt => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70">
-      <div className="w-[92%] max-w-3xl bg-slate-900 border border-white/10 rounded-2xl overflow-hidden">
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="w-[92%] max-w-3xl bg-slate-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
         <div className="p-4 border-b border-white/10 flex items-center justify-between">
           <h3 className="text-sm font-black uppercase tracking-widest text-slate-300">Einstellungen · KI & API Keys</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
+          <button onClick={onClose} className="text-slate-400 hover:text-white text-lg">✕</button>
         </div>
+        
         <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <div className="text-[10px] uppercase font-bold text-slate-500 mb-2">Google AI Studio</div>
-            <input value={s.googleApiKey} onChange={e=>setS({...s, googleApiKey: e.target.value})} placeholder="API Key" className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm mb-2" />
-            <input value={s.googleFastModel} onChange={e=>setS({...s, googleFastModel: e.target.value})} placeholder="Fast Model (z.B. gemini-2.5-flash)" className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm mb-2" />
-            <input value={s.googleProModel} onChange={e=>setS({...s, googleProModel: e.target.value})} placeholder="Pro Model (z.B. gemini-2.5-pro)" className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm" />
+          {renderProviderSection('google', 'Google AI Studio', s.googleApiKey, v => setS({...s, googleApiKey: v}))}
+          {renderProviderSection('anthropic', 'Anthropic (Claude)', s.anthropicApiKey, v => setS({...s, anthropicApiKey: v}))}
+          {renderProviderSection('openai', 'OpenAI (GPT)', s.openaiApiKey, v => setS({...s, openaiApiKey: v}))}
+          
+          <div className="space-y-2">
+            <div className="text-[10px] uppercase font-bold text-slate-500">Perplexity (Deep Dive)</div>
+            <input 
+              value={s.perplexityApiKey} 
+              onChange={e => setS({...s, perplexityApiKey: e.target.value})} 
+              placeholder="API Key (optional)" 
+              className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm" 
+            />
           </div>
-          <div>
-            <div className="text-[10px] uppercase font-bold text-slate-500 mb-2">OpenAI</div>
-            <input value={s.openaiApiKey} onChange={e=>setS({...s, openaiApiKey: e.target.value})} placeholder="API Key" className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm mb-2" />
-            <input value={s.openaiFastModel} onChange={e=>setS({...s, openaiFastModel: e.target.value})} placeholder="Fast Model (z.B. gpt-4o-mini)" className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm mb-2" />
-            <input value={s.openaiProModel} onChange={e=>setS({...s, openaiProModel: e.target.value})} placeholder="Pro Model (z.B. gpt-4.1)" className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm" />
-          </div>
-          <div>
-            <div className="text-[10px] uppercase font-bold text-slate-500 mb-2">Anthropic</div>
-            <input value={s.anthropicApiKey} onChange={e=>setS({...s, anthropicApiKey: e.target.value})} placeholder="API Key" className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm mb-2" />
-            <input value={s.anthropicFastModel} onChange={e=>setS({...s, anthropicFastModel: e.target.value})} placeholder="Fast Model (z.B. claude-3-haiku)" className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm mb-2" />
-            <input value={s.anthropicProModel} onChange={e=>setS({...s, anthropicProModel: e.target.value})} placeholder="Pro Model (z.B. claude-3-opus)" className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm" />
-          </div>
-          <div>
-            <div className="text-[10px] uppercase font-bold text-slate-500 mb-2">Perplexity (Deep Dive)</div>
-            <input value={s.perplexityApiKey} onChange={e=>setS({...s, perplexityApiKey: e.target.value})} placeholder="API Key" className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm" />
-          </div>
-          <div>
-            <div className="text-[10px] uppercase font-bold text-slate-500 mb-2">Aktiver Anbieter</div>
+          
+          <div className="space-y-2">
+            <div className="text-[10px] uppercase font-bold text-slate-500">Aktiver Anbieter</div>
             <div className="flex gap-2">
-              {(['google','openai','anthropic'] as const).map(p=>(
-                <button key={p} onClick={()=>setS({...s, activeProvider: p})} className={`px-3 py-2 rounded border text-[10px] font-black uppercase ${s.activeProvider===p?'bg-emerald-600 border-emerald-500 text-white':'bg-white/5 border-white/10 text-slate-300'}`}>{p}</button>
+              {(['anthropic', 'google', 'openai'] as const).map(p => (
+                <button 
+                  key={p} 
+                  onClick={() => setS({...s, activeProvider: p})} 
+                  className={`flex-1 px-3 py-2 rounded border text-[10px] font-black uppercase transition-all ${
+                    s.activeProvider === p 
+                      ? 'bg-emerald-600 border-emerald-500 text-white' 
+                      : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:border-white/30'
+                  }`}
+                >
+                  {p === 'anthropic' ? 'Claude' : p === 'google' ? 'Gemini' : 'OpenAI'}
+                </button>
               ))}
             </div>
-            <div className="text-[10px] text-slate-500 mt-2">Die aktive Auswahl bestimmt, welche Modellschnellwahl im Editor verwendet wird.</div>
+            <div className="text-[10px] text-slate-500 mt-1">Bestimmt, welche API für die Generierung verwendet wird.</div>
           </div>
         </div>
+        
         <div className="p-4 border-t border-white/10 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded text-[10px] font-black uppercase">Abbrechen</button>
-          <button onClick={onSave} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded text-[10px] font-black uppercase">Speichern</button>
+          <button onClick={onClose} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded text-[10px] font-black uppercase transition-all">Abbrechen</button>
+          <button onClick={onSave} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded text-[10px] font-black uppercase transition-all">Speichern</button>
         </div>
       </div>
     </div>
