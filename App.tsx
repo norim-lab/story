@@ -1014,10 +1014,9 @@ export const App: React.FC = () => {
             return;
         }
         
-        const updatedVersions = { ...section.versions };
-        delete updatedVersions[slot];
+        const updatedVersions = { ...section.versions, [slot]: "" };
         
-        addLog(`Version nach Delete: ${updatedVersions[slot]?.length || 'gelöscht'}`, "info");
+        addLog(`Version nach Clear: "${updatedVersions[slot]}" (sollte leer sein)`, "info");
         
         const updatedResult = {
             ...activeProject.scriptResult,
