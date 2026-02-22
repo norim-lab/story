@@ -376,7 +376,7 @@ export const App: React.FC = () => {
     const [selectionMenu, setSelectionMenu] = useState<{ x: number, y: number, text: string, visible: boolean } | null>(null);
     const [mobileTab, setMobileTab] = useState<'inputs' | 'editor'>('inputs');
     const [editorMode, setEditorMode] = useState<'controls' | 'source'>('controls');
-    const [confirmClearSlot, setConfirmClearSlot] = useState<ScriptLength | null>(null);
+    const [confirmClearSlot, setConfirmClearSlot] = useState<{ slot: ScriptLength; projectId: string } | null>(null);
 
     // --- Helpers ---
     const addLog = useCallback((message: string, type: any = 'info') => {
@@ -994,40 +994,47 @@ export const App: React.FC = () => {
         commitAction("Status Änderung", { scriptResult: updatedResult });
     };
 
-    const clearSlot = (slot: ScriptLength) => {
-        addLog(`clearSlot aufgerufen für: ${slot}`, "info");
+    const clearSlot = (slot: ScriptLength, projectId: string) => {
+        addLog(`clearSlot aufgerufen für: ${slot} in Projekt: ${projectId}`, "info");
         
-        if (!activeProject?.scriptResult) {
-            addLog("FEHLER: Kein aktives Projekt", "error");
-            return;
-        }
-        
-        const section = activeProject.scriptResult.sections[0];
-        const isFinal = section.isFinal?.[slot] || false;
-        const currentContent = section.versions[slot];
-        
-        addLog(`Aktueller Inhalt: ${currentContent?.length || 0} Zeichen`, "info");
-        addLog(`Ist final: ${isFinal}`, "info");
-        
-        if (isFinal) {
-            addLog("Slot ist finalisiert und kann nicht geleert werden", "error");
-            return;
-        }
-        
-        const updatedVersions = { ...section.versions, [slot]: "" };
-        
-        addLog(`Version nach Clear: "${updatedVersions[slot]}" (sollte leer sein)`, "info");
-        
-        const updatedResult = {
-            ...activeProject.scriptResult,
-            sections: [{
-                ...section,
-                versions: updatedVersions
-            }]
-        };
-        
-        commitAction(`Slot ${slot} geleert`, { scriptResult: updatedResult });
-        addLog(`✅ Slot ${slot} erfolgreich geleert`, "success");
+        setProjects(currentProjects => {
+            const project = currentProjects.find(p => p.id === projectId);
+            if (!project?.scriptResult) {
+                addLog("FEHLER: Projekt nicht gefunden oder kein scriptResult", "error");
+                return currentProjects;
+            }
+            
+            const section = project.scriptResult.sections[0];
+            const isFinal = section.isFinal?.[slot] || false;
+            const currentContent = section.versions[slot];
+            
+            addLog(`Aktueller Inhalt: ${currentContent?.length || 0} Zeichen`, "info");
+            addLog(`Ist final: ${isFinal}`, "info");
+            
+            if (isFinal) {
+                addLog("Slot ist finalisiert und kann nicht geleert werden", "error");
+                return currentProjects;
+            }
+            
+            const updatedVersions = { ...section.versions, [slot]: "" };
+            
+            const updatedResult = {
+                ...project.scriptResult,
+                sections: [{
+                    ...section,
+                    versions: updatedVersions
+                }]
+            };
+            
+            const updatedProject = {
+                ...project,
+                scriptResult: updatedResult,
+                lastModified: Date.now()
+            };
+            
+            addLog(`✅ Slot ${slot} erfolgreich geleert`, "success");
+            return currentProjects.map(p => p.id === projectId ? updatedProject : p);
+        });
     };
 
     const handleGlobalExport = () => {
@@ -1101,13 +1108,13 @@ export const App: React.FC = () => {
                     <div className="bg-slate-900 border border-white/20 rounded-xl p-6 max-w-sm mx-4 shadow-2xl">
                         <h3 className="text-lg font-black text-white mb-2">Slot leeren?</h3>
                         <p className="text-slate-400 text-sm mb-4">
-                            Der Inhalt von <span className="text-white font-bold">{VERSION_LABELS[confirmClearSlot] || confirmClearSlot}</span> wird unwiderruflich gelöscht.
+                            Der Inhalt von <span className="text-white font-bold">{VERSION_LABELS[confirmClearSlot.slot] || confirmClearSlot.slot}</span> wird unwiderruflich gelöscht.
                         </p>
                         <div className="flex gap-3">
                             <button onClick={() => setConfirmClearSlot(null)} className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold text-white transition-all">
                                 Abbrechen
                             </button>
-                            <button onClick={() => { clearSlot(confirmClearSlot); setConfirmClearSlot(null); }} className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-sm font-bold text-white transition-all">
+                            <button onClick={() => { clearSlot(confirmClearSlot.slot, confirmClearSlot.projectId); setConfirmClearSlot(null); }} className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-sm font-bold text-white transition-all">
                                 Löschen
                             </button>
                         </div>
@@ -1276,7 +1283,7 @@ export const App: React.FC = () => {
                                                     {isFinal && activeProject.segmentVersions[MAIN_ID] !== v && <span className="text-emerald-500 ml-0.5">✓</span>}
                                                 </button>
                                                 {hasContent && !isFinal && (
-                                                    <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot(v); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none">×</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot({ slot: v, projectId: activeProject.id }); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none">×</button>
                                                 )}
                                             </div>
                                         )})}
@@ -1296,7 +1303,7 @@ export const App: React.FC = () => {
                                                     {(VERSION_LABELS[v] || v).replace('Long ', '').replace(' (Deep)', '')}
                                                 </button>
                                                 {hasContent && !isFinal && (
-                                                    <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot(v); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none">×</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot({ slot: v, projectId: activeProject.id }); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none">×</button>
                                                 )}
                                             </div>
                                         )})}
@@ -1316,7 +1323,7 @@ export const App: React.FC = () => {
                                                     {(VERSION_LABELS[v] || v).replace('Dialog ', '')}
                                                 </button>
                                                 {hasContent && !isFinal && (
-                                                    <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot(v); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none">×</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot({ slot: v, projectId: activeProject.id }); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none">×</button>
                                                 )}
                                             </div>
                                         )})}
