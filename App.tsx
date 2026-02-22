@@ -219,6 +219,12 @@ const ResearchInsights: React.FC<{ data: string }> = ({ data }) => {
     );
 };
 
+const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 const formatRichText = (text: string) => {
     if (!text) return "";
     const bodyParts = text.split(/(<blue>[\s\S]*?<\/blue>|<red>[\s\S]*?<\/red>|\*\*[\s\S]*?\*\*)/g);
@@ -1377,7 +1383,7 @@ export const App: React.FC = () => {
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between text-[10px] uppercase font-bold text-amber-400">
                                                         <span>Target Duration</span>
-                                                        <span>{controls.target_seconds || 60}s</span>
+                                                        <span className="text-lg font-bold">{formatTime(controls.target_seconds || 60)} min</span>
                                                     </div>
                                                     <input 
                                                         type="range" 
@@ -1507,6 +1513,11 @@ export const App: React.FC = () => {
                                         <HistoryMenu history={activeProject.history} currentIndex={activeProject.historyIndex} onSelect={navigateHistory} />
                                     </div>
                                     <div className="flex items-center gap-2">
+                                        {activeProject.scriptResult?.model && (
+                                            <span className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-wider">
+                                                {activeProject.scriptResult.model.replace('gemini-', '').replace('gpt-', '').replace('claude-', '')}
+                                            </span>
+                                        )}
                                         <button onClick={handleEmptyEditor} className="px-3 py-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/20" title="Editor leeren">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                         </button>
