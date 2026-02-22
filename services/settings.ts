@@ -27,7 +27,7 @@ const defaults: ZBSettings = {
   anthropicFastModel: 'claude-haiku-4-5-20250514',
   anthropicProModel: 'claude-sonnet-4-6-20250514',
   perplexityApiKey: '',
-  activeProvider: 'anthropic'
+  activeProvider: 'google'
 };
 
 export function getSettings(): ZBSettings {
