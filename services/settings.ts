@@ -61,3 +61,27 @@ export function getGoogleKey(): string {
 export function getPerplexityKey(): string {
   return getSettings().perplexityApiKey || '';
 }
+
+export function getOpenAIKey(): string {
+  return getSettings().openaiApiKey || '';
+}
+
+export function getAnthropicKey(): string {
+  return getSettings().anthropicApiKey || '';
+}
+
+export function hasValidKey(): boolean {
+  const s = getSettings();
+  if (s.activeProvider === 'google') return !!s.googleApiKey;
+  if (s.activeProvider === 'openai') return !!s.openaiApiKey;
+  if (s.activeProvider === 'anthropic') return !!s.anthropicApiKey;
+  return false;
+}
+
+export function getMissingKeyMessage(): string | null {
+  const s = getSettings();
+  if (s.activeProvider === 'google' && !s.googleApiKey) return 'Google API Key fehlt. Bitte in den Einstellungen hinterlegen.';
+  if (s.activeProvider === 'openai' && !s.openaiApiKey) return 'OpenAI API Key fehlt. Bitte in den Einstellungen hinterlegen.';
+  if (s.activeProvider === 'anthropic' && !s.anthropicApiKey) return 'Anthropic API Key fehlt. Bitte in den Einstellungen hinterlegen.';
+  return null;
+}

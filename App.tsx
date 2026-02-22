@@ -14,8 +14,9 @@ import {
     rewriteSelectionWithCustomPrompt,
     generateDialogue,
     generateScriptWithControls,
-    generateCTA
-} from './services/gemini';
+    generateCTA,
+    checkApiKey
+} from './services/provider';
 import { initStorage, listProjects, saveProject, deleteProject as deleteCloudProject, checkConnection } from './services/storage';
 import SettingsModal from './components/SettingsModal';
 import { getSettings } from './services/settings';
@@ -686,6 +687,13 @@ export const App: React.FC = () => {
     const handleWriteAndFit = async () => {
         if (!activeProject?.scriptResult) return;
         if (!checkProtection()) return;
+
+        const keyCheck = checkApiKey();
+        if (!keyCheck.valid) {
+            addLog(keyCheck.message || "API Key fehlt", "error");
+            setSettingsOpen(true);
+            return;
+        }
 
         const controls = activeProject.segmentControls[MAIN_ID];
         const seconds = controls?.target_seconds || 60;
