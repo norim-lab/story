@@ -1,5 +1,5 @@
 
-import { WorkflowStatus, TextModel, ScriptResult, ProjectState, EnrichmentMode } from '../types';
+import { WorkflowStatus, ScriptResult, ProjectState, EnrichmentMode } from '../types';
 import { getPerplexityResearch } from './perplexity';
 import { generateZeitblitzScript, enrichScriptWithDeep, mapResearchToSegments } from './gemini';
 
@@ -15,7 +15,7 @@ export class ZeitblitzOrchestrator {
     this.onLog = onLog;
   }
 
-  async generateStandardShow(rawText: string, model: TextModel): Promise<ScriptResult> {
+  async generateStandardShow(rawText: string, model: string): Promise<ScriptResult> {
     this.onLog("Importiere Rohskript...", 'workflow');
     try {
       this.onStatus(WorkflowStatus.SCRIPTING, "TEXT WIRD ÜBERNOMMEN...");
