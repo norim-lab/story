@@ -66,4 +66,14 @@ export const rewriteSelectionWithTone = async (text: string, tone: string, model
     return gemini.rewriteSelectionWithTone(text, tone, model);
 };
 
+export const improveExistingScript = async (existingText: string, controls: SegmentControls, model: string): Promise<string> => {
+    const provider = getProvider();
+    if (provider === 'openai') {
+        return openai.improveExistingScript(existingText, controls, model);
+    } else if (provider === 'anthropic') {
+        return anthropic.improveExistingScript(existingText, controls, model);
+    }
+    return gemini.improveExistingScript(existingText, controls, model);
+};
+
 export { rewriteSelectionWithCustomPrompt } from "./gemini";

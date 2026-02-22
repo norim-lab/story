@@ -15,7 +15,8 @@ import {
     generateDialogue,
     generateScriptWithControls,
     generateCTA,
-    checkApiKey
+    checkApiKey,
+    improveExistingScript
 } from './services/provider';
 import { initStorage, listProjects, saveProject, deleteProject as deleteCloudProject, checkConnection } from './services/storage';
 import SettingsModal from './components/SettingsModal';
@@ -684,7 +685,6 @@ export const App: React.FC = () => {
         } catch (e) { addLog("Fehler bei Deep Dive.", "error"); }
     };
 
-    // New Slot & Generation Logic
     const handleWriteAndFit = async () => {
         if (!activeProject?.scriptResult) return;
         if (!checkProtection()) return;
@@ -697,60 +697,63 @@ export const App: React.FC = () => {
         }
 
         const controls = activeProject.segmentControls[MAIN_ID];
-        const seconds = controls?.target_seconds || 60;
-        
-        // Logic: 3 min (180s) boundary
-        const isShort = seconds < 180;
-        const targetType = isShort ? 'short' : 'long';
-        
-        // Find suitable slot
         const versions = activeProject.scriptResult.sections[0].versions;
         const currentV = activeProject.segmentVersions[MAIN_ID];
+        const currentText = versions[currentV] || "";
+        const hasExistingText = currentText.trim().length > 0;
+        
+        setIsZapping(true);
+        try {
+            let generatedText: string;
+            
+            if (hasExistingText) {
+                generatedText = await improveExistingScript(currentText, controls, activeProject.selectedModel);
+            } else {
+                generatedText = await generateScriptWithControls(
+                    activeProject.rawInput, 
+                    activeProject.factText, 
+                    controls, 
+                    activeProject.selectedModel
+                );
+            }
 
-        let targetSlot: ScriptLength = currentV;
-        
-        // Determine if we should overwrite current or find new
-        const currentType = currentV.split('_')[0]; 
-        
-        if (currentType !== targetType) {
+            if (!generatedText || generatedText.trim().length === 0) {
+                throw new Error("Generierter Text ist leer.");
+            }
+
+            // Classify by actual word count (150 words ≈ 1 min, 450 words ≈ 3 min)
+            const wordCount = generatedText.split(/\s+/).filter(w => w.length > 0).length;
+            const isShort = wordCount < 450;
+            const targetType = isShort ? 'short' : 'long';
+            
             // Find first empty slot of target type
-            for (let i = 1; i <= 5; i++) {
+            let targetSlot: ScriptLength | null = null;
+            for (let i = 1; i <= 8; i++) {
                 const key = `${targetType}_${i}` as ScriptLength;
                 if (!versions[key] || versions[key].trim() === "") {
                     targetSlot = key;
                     break;
                 }
-                targetSlot = key; 
             }
-        }
-        
-        setIsZapping(true);
-        try {
-            const generatedText = await generateScriptWithControls(
-                activeProject.rawInput, 
-                activeProject.factText, 
-                controls, 
-                activeProject.selectedModel
-            );
-
-            // Added check to ensure we don't overwrite with empty string
-            if (!generatedText || generatedText.trim().length === 0) {
-                throw new Error("Generierter Text ist leer.");
+            
+            // If no empty slot, use last slot of target type
+            if (!targetSlot) {
+                targetSlot = `${targetType}_8` as ScriptLength;
             }
 
             const updatedResult = { 
                 ...activeProject.scriptResult, 
                 sections: [{ 
                     ...activeProject.scriptResult.sections[0], 
-                    versions: { ...activeProject.scriptResult.sections[0].versions, [targetSlot]: generatedText } 
+                    versions: { ...versions, [targetSlot]: generatedText } 
                 }] 
             };
             
-            commitAction(`Write & Fit: ${seconds}s -> ${targetSlot}`, { 
+            commitAction(`${hasExistingText ? 'Verbessert' : 'Generiert'}: ${wordCount} Wörter -> ${targetSlot}`, { 
                 scriptResult: updatedResult,
                 segmentVersions: { [MAIN_ID]: targetSlot }
             });
-            addLog("Text erfolgreich generiert.", "success");
+            addLog(`${hasExistingText ? 'Text verbessert' : 'Text generiert'}: ${wordCount} Wörter (${isShort ? 'Short' : 'Long'})`, "success");
         } catch(e: any) { 
             addLog(`Fehler: ${e.message}`, "error"); 
         } finally { setIsZapping(false); }

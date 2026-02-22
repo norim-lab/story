@@ -289,3 +289,31 @@ export const rewriteSelectionWithCustomPrompt = async (text: string, prompt: str
     return response.text || text;
   });
 };
+
+export const improveExistingScript = async (existingText: string, controls: SegmentControls, model: string): Promise<string> => {
+  return handleApiCall(async () => {
+    const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
+    
+    const systemInstruction = `Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. 
+Deine Aufgabe ist es, einen bestehenden Skriptentwurf zu verbessern und weiterzuentwickeln.
+
+RICHTLINIEN:
+- Behalte den Kerninhalt bei, aber verbessere Ausdruck und Fluss
+- Verstärke den typischen ZEITBLITZ-Stil: knackig, ironisch, pointiert
+- Optimiere den Rhythmus für gesprochene Sprache
+- Füge passende Metaphern oder Vergleiche hinzu
+- Entferne unnötige Füllwörter
+- Style-Wert: ${controls.style} (höher = formeller, niedriger = lockerer)
+- Metaphern-Wert: ${controls.metaphor} (höher = mehr Bilder/Vergleiche)
+- Info-Dichte: ${controls.info} (höher = mehr Fakten pro Satz)
+
+Antworte NUR mit dem verbesserten Skript, keine Erklärungen.`;
+
+    const response = await ai.models.generateContent({ 
+      model, 
+      contents: `Verbessere und entwickle diesen Skriptentwurf weiter:\n\n${existingText}`, 
+      config: { systemInstruction, temperature: 0.8 } 
+    });
+    return response.text || existingText;
+  });
+};

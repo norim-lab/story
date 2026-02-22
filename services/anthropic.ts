@@ -229,3 +229,49 @@ export const rewriteSelectionWithTone = async (text: string, tone: string, model
         return data.content?.[0]?.text || text;
     });
 };
+
+export const improveExistingScript = async (existingText: string, controls: SegmentControls, model: string): Promise<string> => {
+    return handleApiCall(async () => {
+        const apiKey = getAnthropicKey();
+        
+        const systemInstruction = `Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. 
+Deine Aufgabe ist es, einen bestehenden Skriptentwurf zu verbessern und weiterzuentwickeln.
+
+RICHTLINIEN:
+- Behalte den Kerninhalt bei, aber verbessere Ausdruck und Fluss
+- Verstärke den typischen ZEITBLITZ-Stil: knackig, ironisch, pointiert
+- Optimiere den Rhythmus für gesprochene Sprache
+- Füge passende Metaphern oder Vergleiche hinzu
+- Entferne unnötige Füllwörter
+- Style-Wert: ${controls.style} (höher = formeller, niedriger = lockerer)
+- Metaphern-Wert: ${controls.metaphor} (höher = mehr Bilder/Vergleiche)
+- Info-Dichte: ${controls.info} (höher = mehr Fakten pro Satz)
+
+Antworte NUR mit dem verbesserten Skript, keine Erklärungen.`;
+
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+                model: model,
+                max_tokens: 4096,
+                system: systemInstruction,
+                messages: [
+                    { role: 'user', content: `Verbessere und entwickle diesen Skriptentwurf weiter:\n\n${existingText}` }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error?.message || `Anthropic Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.content?.[0]?.text || existingText;
+    });
+};
