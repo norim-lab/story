@@ -691,10 +691,21 @@ export const App: React.FC = () => {
     };
 
     const handleWriteAndFit = async () => {
-        if (!activeProject?.scriptResult) return;
-        if (!checkProtection()) return;
+        addLog("=== WRITE & FIT GESTARTET ===", "info");
+        
+        if (!activeProject?.scriptResult) {
+            addLog("FEHLER: Kein aktives Projekt oder scriptResult", "error");
+            return;
+        }
+        
+        if (!checkProtection()) {
+            addLog("ABGEBROCHEN: Final-Schutz", "warn");
+            return;
+        }
 
         const keyCheck = checkApiKey();
+        addLog(`API Key Check: ${keyCheck.valid ? 'OK' : 'FEHLT'}`, keyCheck.valid ? "info" : "error");
+        
         if (!keyCheck.valid) {
             addLog(keyCheck.message || "API Key fehlt", "error");
             setSettingsOpen(true);
@@ -706,21 +717,33 @@ export const App: React.FC = () => {
         const currentV = activeProject.segmentVersions[MAIN_ID];
         const currentText = versions[currentV] || "";
         const hasExistingText = currentText.trim().length > 0;
+        const model = getCurrentModel();
+        
+        addLog(`Modell: ${model}`, "info");
+        addLog(`Aktueller Slot: ${currentV}`, "info");
+        addLog(`Hat bestehenden Text: ${hasExistingText}`, "info");
+        addLog(`Source Text Länge: ${activeProject.rawInput?.length || 0} Zeichen`, "info");
+        addLog(`Facts Text Länge: ${activeProject.factText?.length || 0} Zeichen`, "info");
+        addLog(`Controls: style=${controls?.style}, metaphor=${controls?.metaphor}, info=${controls?.info}`, "info");
         
         setIsZapping(true);
         try {
             let generatedText: string;
             
             if (hasExistingText) {
-                generatedText = await improveExistingScript(currentText, controls, getCurrentModel());
+                addLog("Rufe improveExistingScript auf...", "info");
+                generatedText = await improveExistingScript(currentText, controls, model);
             } else {
+                addLog("Rufe generateScriptWithControls auf...", "info");
                 generatedText = await generateScriptWithControls(
                     activeProject.rawInput, 
                     activeProject.factText, 
                     controls, 
-                    getCurrentModel()
+                    model
                 );
             }
+
+            addLog(`Antwort erhalten: ${generatedText?.length || 0} Zeichen`, "info");
 
             if (!generatedText || generatedText.trim().length === 0) {
                 throw new Error("Generierter Text ist leer.");
@@ -731,12 +754,15 @@ export const App: React.FC = () => {
             const isShort = wordCount < 450;
             const targetType = isShort ? 'short' : 'long';
             
+            addLog(`Wörter: ${wordCount} → Klassifizierung: ${isShort ? 'SHORT' : 'LONG'}`, "info");
+            
             // Find first empty slot of target type
             let targetSlot: ScriptLength | null = null;
             for (let i = 1; i <= 8; i++) {
                 const key = `${targetType}_${i}` as ScriptLength;
                 if (!versions[key] || versions[key].trim() === "") {
                     targetSlot = key;
+                    addLog(`Leeren Slot gefunden: ${key}`, "info");
                     break;
                 }
             }
@@ -744,6 +770,7 @@ export const App: React.FC = () => {
             // If no empty slot, use last slot of target type
             if (!targetSlot) {
                 targetSlot = `${targetType}_8` as ScriptLength;
+                addLog(`Kein leerer Slot, überschreibe: ${targetSlot}`, "warn");
             }
 
             const updatedResult = { 
@@ -758,10 +785,14 @@ export const App: React.FC = () => {
                 scriptResult: updatedResult,
                 segmentVersions: { [MAIN_ID]: targetSlot }
             });
-            addLog(`${hasExistingText ? 'Text verbessert' : 'Text generiert'}: ${wordCount} Wörter (${isShort ? 'Short' : 'Long'})`, "success");
+            addLog(`✅ ERFOLG: ${wordCount} Wörter in ${targetSlot}`, "success");
         } catch(e: any) { 
-            addLog(`Fehler: ${e.message}`, "error"); 
-        } finally { setIsZapping(false); }
+            addLog(`❌ FEHLER: ${e.message}`, "error"); 
+            console.error("Write & Fit Error:", e);
+        } finally { 
+            setIsZapping(false); 
+            addLog("=== WRITE & FIT BEENDET ===", "info");
+        }
     };
 
     const handleDialogueGenerate = async () => {
@@ -964,9 +995,19 @@ export const App: React.FC = () => {
     };
 
     const clearSlot = (slot: ScriptLength) => {
-        if (!activeProject?.scriptResult) return;
+        addLog(`clearSlot aufgerufen für: ${slot}`, "info");
+        
+        if (!activeProject?.scriptResult) {
+            addLog("FEHLER: Kein aktives Projekt", "error");
+            return;
+        }
+        
         const section = activeProject.scriptResult.sections[0];
         const isFinal = section.isFinal?.[slot] || false;
+        const currentContent = section.versions[slot];
+        
+        addLog(`Aktueller Inhalt: ${currentContent?.length || 0} Zeichen`, "info");
+        addLog(`Ist final: ${isFinal}`, "info");
         
         if (isFinal) {
             addLog("Slot ist finalisiert und kann nicht geleert werden", "error");
@@ -976,6 +1017,8 @@ export const App: React.FC = () => {
         const updatedVersions = { ...section.versions };
         delete updatedVersions[slot];
         
+        addLog(`Version nach Delete: ${updatedVersions[slot]?.length || 'gelöscht'}`, "info");
+        
         const updatedResult = {
             ...activeProject.scriptResult,
             sections: [{
@@ -983,7 +1026,9 @@ export const App: React.FC = () => {
                 versions: updatedVersions
             }]
         };
+        
         commitAction(`Slot ${slot} geleert`, { scriptResult: updatedResult });
+        addLog(`✅ Slot ${slot} erfolgreich geleert`, "success");
     };
 
     const handleGlobalExport = () => {

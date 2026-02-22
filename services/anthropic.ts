@@ -8,11 +8,15 @@ function safeReplace(template: string, key: string, value: string): string {
 
 async function handleApiCall<T>(call: () => Promise<T>): Promise<T> {
     const key = getAnthropicKey();
+    console.log("[Anthropic] API Call starting, Key present:", !!key);
     if (!key) {
+        console.error("[Anthropic] API Key missing!");
         throw new Error("Anthropic API Key fehlt. Bitte in den Einstellungen hinterlegen.");
     }
     try { 
-        return await call(); 
+        const result = await call();
+        console.log("[Anthropic] API Call success");
+        return result; 
     } catch (err: any) { 
         console.error("Anthropic API Error:", err); 
         throw err; 

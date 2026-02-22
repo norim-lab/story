@@ -5,9 +5,15 @@ import { getGoogleKey } from "./settings";
 import { loadPrompt } from "./prompts";
 
 async function handleApiCall<T>(call: () => Promise<T>): Promise<T> {
-  try { return await call(); } 
+  console.log("[Gemini] API Call starting...");
+  try { 
+    const result = await call(); 
+    console.log("[Gemini] API Call success");
+    return result;
+  } 
   catch (err: any) { 
-    console.error("Gemini API Error details:", err); 
+    console.error("[Gemini] API Error:", err?.message || err);
+    console.error("[Gemini] Full error:", err);
     throw err; 
   }
 }
