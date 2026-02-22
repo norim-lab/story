@@ -1267,7 +1267,7 @@ export const App: React.FC = () => {
                                     <div className="flex flex-wrap gap-2">
                                         {allSlotGroups.shorts.map(v => {
                                             const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
-                                            const hasContent = activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0 > 0;
+                                            const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
                                             return (
                                             <div key={v} className="relative flex items-center">
                                                 <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-emerald-600 border-emerald-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
@@ -1288,7 +1288,7 @@ export const App: React.FC = () => {
                                     <div className="flex flex-wrap gap-2">
                                         {allSlotGroups.longs.map(v => {
                                             const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
-                                            const hasContent = activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0 > 0;
+                                            const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
                                             return (
                                             <div key={v} className="relative flex items-center">
                                                 <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-indigo-600 border-indigo-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
@@ -1308,7 +1308,7 @@ export const App: React.FC = () => {
                                     <div className="flex flex-wrap gap-2">
                                         {allSlotGroups.dialogues.map(v => {
                                             const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
-                                            const hasContent = activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0 > 0;
+                                            const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
                                             return (
                                             <div key={v} className="relative flex items-center">
                                                 <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-purple-600 border-purple-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
