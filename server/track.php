@@ -1,22 +1,22 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
+$allowedOrigins = [
+    'http://localhost',
+    'http://localhost:5173',
+    'http://127.0.0.1',
+    'http://127.0.0.1:5173',
+    'https://story.zeitblytz.media'
+];
+
+if (in_array($origin, $allowedOrigins) || strpos($origin, 'localhost') !== false || strpos($origin, '127.0.0.1') !== false) {
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Accept');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    $origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
-    $allowedOrigins = [
-        'http://localhost',
-        'http://localhost:5173',
-        'http://127.0.0.1',
-        'http://127.0.0.1:5173',
-        'https://story.zeitblytz.media'
-    ];
-    
-    if (in_array($origin, $allowedOrigins) || strpos($origin, 'localhost') !== false || strpos($origin, '127.0.0.1') !== false) {
-        header('Access-Control-Allow-Origin: ' . $origin);
-        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Accept');
-        header('Access-Control-Max-Age: 86400');
-    }
     http_response_code(200);
     exit;
 }
@@ -156,27 +156,22 @@ try {
             break;
             
         case 'save':
-            $input = $_POST['project'] ?? file_get_contents('php://input');
+            $input = file_get_contents('php://input');
             
             if (empty($input)) {
                 sendError("Keine Projektdaten empfangen", 400);
             }
             
-            if (is_string($input)) {
-                $project = json_decode($input, true);
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    sendError("Ungültiges JSON: " . json_last_error_msg(), 400);
-                }
-            } else {
-                $project = $input;
+            $data = json_decode($input, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                sendError("Ungültiges JSON: " . json_last_error_msg(), 400);
             }
+            
+            // Projektdaten extrahieren (aus {action: "save", project: {...}})
+            $project = isset($data['project']) ? $data['project'] : $data;
             
             if (!is_array($project)) {
                 sendError("Ungültige Projektdaten", 400);
-            }
-            
-            if (isset($_POST['project']) && is_string($_POST['project'])) {
-                $project = json_decode($_POST['project'], true);
             }
             
             saveProject($project);
