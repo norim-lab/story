@@ -169,7 +169,9 @@ function deleteProject(string $id): void {
     }
 }
 
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
+$input = file_get_contents('php://input');
+$data = $input ? json_decode($input, true) : [];
+$action = $_GET['action'] ?? $_POST['action'] ?? ($data['action'] ?? '');
 
 try {
     switch ($action) {
