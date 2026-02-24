@@ -616,12 +616,15 @@ export const App: React.FC = () => {
             setLastSavedTime(new Date());
             addLog("✅ Neues Projekt erstellt und gespeichert", "success");
             setActiveProjectId(newProject.id);
+            
+            alert("✅ Neues Projekt erstellt!");
         } catch(e: any) { 
             console.error("Initial save failed", e);
             setCloudStatus(CloudStatus.ERROR);
             addLog(`❌ Fehler beim Speichern: ${e.message}`, "error");
             
-            // Projekt wieder entfernen, da es nicht gespeichert wurde
+            alert(`❌ FEHLER: ${e.message}\n\nProjekt konnte nicht gespeichert werden.`);
+            
             setProjects(prev => prev.filter(p => p.id !== newProject.id));
         }
 
