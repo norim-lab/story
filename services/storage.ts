@@ -52,7 +52,14 @@ export const listProjects = async (): Promise<ProjectSession[]> => {
 };
 
 export const saveProject = async (project: ProjectSession): Promise<void> => {
+    console.log("=== SAVE PROJECT AUFGERUFEN ===");
+    console.log("API_URL:", API_URL);
+    console.log("isLocalhost:", isLocalhost);
+    console.log("Project ID:", project.id);
+    console.log("================================");
+    
     try {
+        console.log("Sende POST Request...");
         const response = await fetch(API_URL, fetchOptions({
             method: 'POST',
             headers: {
@@ -65,8 +72,12 @@ export const saveProject = async (project: ProjectSession): Promise<void> => {
             })
         }));
         
+        console.log("Response Status:", response.status);
+        console.log("Response OK:", response.ok);
+        
         if (!response.ok) throw new Error("Speichern fehlgeschlagen");
         const result = await response.json();
+        console.log("Response JSON:", result);
         if (result.error) throw new Error(result.error);
     } catch (e) {
         console.error("Fehler beim Speichern:", e);

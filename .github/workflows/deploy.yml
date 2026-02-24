@@ -28,6 +28,7 @@ jobs:
       - name: Include PHP backend in build output
         run: |
           cp server/track.php dist/track.php
+          cp server/debug.php dist/debug.php
 
       - name: Deploy over SCP to server
         uses: appleboy/scp-action@v0.1.7
