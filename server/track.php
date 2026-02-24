@@ -95,6 +95,12 @@ function loadProjects(): array {
 function saveProject(array $project): void {
     global $projectDir;
     
+    error_log("=== SAVE PROJECT START ===");
+    error_log("Project ID: " . ($project['id'] ?? 'null'));
+    error_log("Project Dir: " . $projectDir);
+    error_log("Is Dir: " . (is_dir($projectDir) ? 'yes' : 'no'));
+    error_log("Current Dir: " . getcwd());
+    
     if (!isset($project['id']) || empty($project['id'])) {
         throw new Exception("Projekt hat keine ID");
     }
@@ -102,11 +108,18 @@ function saveProject(array $project): void {
     $project['id'] = sanitizeId($project['id']);
     
     if (!is_dir($projectDir)) {
+        error_log("Creating directory...");
         if (!mkdir($projectDir, 0777, true)) {
+            $error = error_get_last();
+            error_log("Mkdir failed: " . ($error['message'] ?? 'unknown'));
             throw new Exception("Verzeichnis konnte nicht erstellt werden");
         }
         chmod($projectDir, 0777);
+        error_log("Directory created and chmodded");
     }
+    
+    error_log("Directory writable: " . (is_writable($projectDir) ? 'yes' : 'no'));
+    error_log("Directory permissions: " . substr(sprintf('%o', fileperms($projectDir)), -4));
     
     if (!is_writable($projectDir)) {
         throw new Exception("Verzeichnis ist nicht beschreibbar");
@@ -115,11 +128,21 @@ function saveProject(array $project): void {
     $filepath = $projectDir . '/' . $project['id'] . '.json';
     $json = json_encode($project, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     
-    if (file_put_contents($filepath, $json) === false) {
-        throw new Exception("Fehler beim Speichern der Datei");
+    error_log("Target filepath: " . $filepath);
+    error_log("JSON length: " . strlen($json));
+    
+    $result = file_put_contents($filepath, $json);
+    error_log("File put contents result: " . ($result === false ? 'false' : $result . ' bytes'));
+    
+    if ($result === false) {
+        $error = error_get_last();
+        error_log("File write error: " . ($error['message'] ?? 'unknown'));
+        throw new Exception("Fehler beim Speichern der Datei: " . ($error['message'] ?? 'unknown'));
     }
     
     chmod($filepath, 0666);
+    error_log("File saved successfully");
+    error_log("=== SAVE PROJECT END ===");
 }
 
 function deleteProject(string $id): void {
