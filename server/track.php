@@ -101,15 +101,22 @@ function saveProject(array $project): void {
     
     $project['id'] = sanitizeId($project['id']);
     
-    if (!is_dir($projectDir) && !mkdir($projectDir, 0755, true)) {
-        throw new Exception("Verzeichnis konnte nicht erstellt werden");
+    if (!is_dir($projectDir)) {
+        if (!mkdir($projectDir, 0777, true)) {
+            throw new Exception("Verzeichnis konnte nicht erstellt werden");
+        }
+        chmod($projectDir, 0777);
+    }
+    
+    if (!is_writable($projectDir)) {
+        throw new Exception("Verzeichnis ist nicht beschreibbar");
     }
     
     $filepath = $projectDir . '/' . $project['id'] . '.json';
     $json = json_encode($project, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     
     if (file_put_contents($filepath, $json) === false) {
-        throw new Exception("Fehler beim Speichern");
+        throw new Exception("Fehler beim Speichern der Datei");
     }
     
     chmod($filepath, 0666);
