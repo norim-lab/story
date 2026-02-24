@@ -625,14 +625,10 @@ export const App: React.FC = () => {
             console.log("ID:", newId);
             console.log("Projekt:", newProject);
             console.log("===========================");
-            
-            alert(`✅ Projekt erstellt!\n\nID: ${newId}\n\nBitte Browser neu laden (F5) und prüfen!`);
         } catch(e: any) { 
             console.error("Initial save failed", e);
             setCloudStatus(CloudStatus.ERROR);
             addLog(`❌ Fehler beim Speichern: ${e.message}`, "error");
-            
-            alert(`❌ FEHLER: ${e.message}\n\nProjekt konnte nicht gespeichert werden.`);
             
             setProjects(prev => prev.filter(p => p.id !== newProject.id));
         }
