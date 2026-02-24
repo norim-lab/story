@@ -512,7 +512,10 @@ export const App: React.FC = () => {
                         } as ProjectSession;
                     });
                     setProjects(migratedProjects);
-                    console.log("Loaded projects:", migratedProjects.length);
+                    console.log("=== PROJEKTE GELADEN ===");
+                    console.log("Anzahl:", migratedProjects.length);
+                    console.log("IDs:", migratedProjects.map((p: any) => p.id));
+                    console.log("========================");
                     addLog("Verbindung zum Web-Speicher hergestellt", "success");
                 } catch (e) {
                     setCloudStatus(CloudStatus.ERROR);
@@ -590,8 +593,9 @@ export const App: React.FC = () => {
     // --- Core Logic ---
 
     const createNewProject = useCallback(async () => {
+        const newId = crypto.randomUUID();
         const newProject: ProjectSession = {
-            id: crypto.randomUUID(),
+            id: newId,
             name: "Untitled Project",
             lastModified: Date.now(),
             rawInput: "",
@@ -617,7 +621,12 @@ export const App: React.FC = () => {
             addLog("✅ Neues Projekt erstellt und gespeichert", "success");
             setActiveProjectId(newProject.id);
             
-            alert("✅ Neues Projekt erstellt!");
+            console.log("=== PROJEKT GESPEICHERT ===");
+            console.log("ID:", newId);
+            console.log("Projekt:", newProject);
+            console.log("===========================");
+            
+            alert(`✅ Projekt erstellt!\n\nID: ${newId}\n\nBitte Browser neu laden (F5) und prüfen!`);
         } catch(e: any) { 
             console.error("Initial save failed", e);
             setCloudStatus(CloudStatus.ERROR);
