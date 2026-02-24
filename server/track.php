@@ -3,7 +3,13 @@ header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
-    $allowedOrigins = ['http://localhost', 'http://localhost:5173', 'http://127.0.0.1', 'http://127.0.0.1:5173'];
+    $allowedOrigins = [
+        'http://localhost',
+        'http://localhost:5173',
+        'http://127.0.0.1',
+        'http://127.0.0.1:5173',
+        'https://story.zeitblytz.media'
+    ];
     
     if (in_array($origin, $allowedOrigins) || strpos($origin, 'localhost') !== false || strpos($origin, '127.0.0.1') !== false) {
         header('Access-Control-Allow-Origin: ' . $origin);
