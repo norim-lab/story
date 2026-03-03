@@ -744,8 +744,9 @@ export const App: React.FC = () => {
         addLog(`Modell: ${model}`, "info");
         addLog(`Aktueller Slot: ${currentV}`, "info");
         addLog(`Hat bestehenden Text: ${hasExistingText}`, "info");
-        addLog(`Source Text Länge: ${activeProject.rawInput?.length || 0} Zeichen`, "info");
-        addLog(`Facts Text Länge: ${activeProject.factText?.length || 0} Zeichen`, "info");
+        addLog(`📋 Grok Dossier: ${activeProject.rawInput?.length || 0} Zeichen`, "info");
+        addLog(`📝 Additional Facts: ${activeProject.factText?.length || 0} Zeichen`, "info");
+        addLog(`🎯 Kombinierte Basis: Grok + Facts`, "info");
         addLog(`Controls: style=${controls?.style}, metaphor=${controls?.metaphor}, info=${controls?.info}`, "info");
         
         setIsZapping(true);
