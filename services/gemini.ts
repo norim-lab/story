@@ -322,9 +322,9 @@ HUMAN-VOICE (WICHTIG FÜR SPRECHTEXTE):
 - Vermeide KI-Floskeln: „Zusammenfassend“, „Darüber hinaus“, „Nicht zuletzt“.
 
 ZEITBLITZ-STIL:
-- Punch: ${controls.style}/10
+- Punch (Rhetoric Punch): ${controls.style}/10 (Late-Night: gewitzt, sarkastisch, intelligent, aber leicht verständlich; wenige Fremdwörter)
 - Metaphern: ${controls.metaphor}/10
-- Info Density: ${controls.info}/10
+- Info Density: ${controls.info}/10 (mehr konkrete Fakten/Zahlen/Beispiele pro Absatz; nichts erfinden)
 
 LÄNGENVORGABE (STRIKT):
 - Zielzeit: ${seconds} Sekunden

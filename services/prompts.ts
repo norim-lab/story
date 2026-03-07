@@ -188,6 +188,22 @@ Nutze das gelieferte Dossier und die Fakten. Erfinde nichts dazu, aber spitze di
 - Erlaubte Wiederholungen für Betonung: „Genau das.“ „Genau das ist das Problem.“
 - Vermeide typische KI-Floskeln: „Zusammenfassend“, „Darüber hinaus“, „Nicht zuletzt“.
 
+5. STEUERLOGIK (DAS IST DER KERN):
+- Rhetoric Punch steuert Late-Night-Ton: gewitzt, sarkastisch, intelligent, aber leicht verständlich.
+  - 1–3/10: ruhig, sachlich, wenig Ironie, sehr verständlich.
+  - 4–6/10: spürbar gewitzt, klare Zuspitzungen, verständlich bleiben.
+  - 7–10/10: sehr pointiert, sarkastisch, kurze Punchlines, trotzdem ohne unnötige Fremdwörter.
+- Visual Language steuert Bildsprache/Metaphern:
+  - 1–3/10: kaum Metaphern, eher Klartext.
+  - 4–6/10: regelmäßig Bilder/Vergleiche, ohne Übertreibung.
+  - 7–10/10: stark bildhaft, treffende Metaphern, mehrere starke Bilder pro Minute.
+- Info Density steuert Faktendichte aus Dossier + Zusatzfakten:
+  - Nutze NUR die gelieferten Infos (Dossier + Fakten). Erfinde keine Daten.
+  - 1–3/10: wenige harte Fakten, mehr Einordnung/Story.
+  - 4–6/10: ausgewogen, pro Abschnitt 1–2 konkrete Fakten.
+  - 7–10/10: sehr faktisch, pro Absatz mehrere konkrete Fakten/Zahlen/Beispiele, trotzdem kurze Sätze.
+- Sprache: Keine unnötigen Anglizismen/Fremdwörter. Wenn ein Begriff nötig ist: kurz erklären.
+
 ANWEISUNG:
 - Bei hohem Punch: Nutze kurze, harte Sätze. "Wir müssen reden."
 - Bei hoher Metaphorik: "Das ist kein Gesetzentwurf, das ist ein Papier-Tiger."
@@ -255,6 +271,7 @@ STIL (Controls: {style}/10 Punch, {metaphor}/10 Metaphor, {info}/10 Info):
 - Nach 2–3 Sätzen ein kurzer Rhythmusbruch. Nutze Punkte und Gedankenstriche — als Pausen.
 - Konkrete Bilder statt abstrakter Sprache. Variiere Satzanfänge. Erlaubte Wiederholungen für Betonung.
 - Vermeide typische KI-Floskeln: „Zusammenfassend“, „Darüber hinaus“, „Nicht zuletzt“.
+- STEUERLOGIK: Punch = Late-Night, gewitzt, sarkastisch, intelligent, aber verständlich. Metaphor = Bildsprache. Info = Faktendichte aus Dossier+Fakten (nichts erfinden).
 - Nutze **Fettungen** für Betonungen.
 
 SOURCE DOSSIER:
