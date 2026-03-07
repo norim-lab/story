@@ -746,25 +746,24 @@ export const App: React.FC = () => {
         addLog(`Hat bestehenden Text: ${hasExistingText}`, "info");
         addLog(`📋 Grok Dossier: ${activeProject.rawInput?.length || 0} Zeichen`, "info");
         addLog(`📝 Additional Facts: ${activeProject.factText?.length || 0} Zeichen`, "info");
-        addLog(`🎯 Kombinierte Basis: Grok + Facts`, "info");
+        addLog(`🎯 Basis für Write & Fit: Grok + Facts (Slot-Inhalt wird nicht als Quelle genutzt)`, "info");
         addLog(`Controls: style=${controls?.style}, metaphor=${controls?.metaphor}, info=${controls?.info}`, "info");
         
         setIsZapping(true);
         try {
-            let generatedText: string;
-            
-            if (hasExistingText) {
-                addLog("Rufe improveExistingScript auf...", "info");
-                generatedText = await improveExistingScript(currentText, controls, model);
-            } else {
-                addLog("Rufe generateScriptWithControls auf...", "info");
-                generatedText = await generateScriptWithControls(
-                    activeProject.rawInput, 
-                    activeProject.factText, 
-                    controls, 
-                    model
-                );
+            const sourceRaw = (activeProject.rawInput || "").trim();
+            const sourceFacts = (activeProject.factText || "").trim();
+            if (!sourceRaw && !sourceFacts) {
+                throw new Error("Bitte Grok Dossier oder Additional Facts füllen (Source Data ist leer).");
             }
+
+            addLog("Rufe generateScriptWithControls auf...", "info");
+            const generatedText = await generateScriptWithControls(
+                sourceRaw,
+                sourceFacts,
+                controls,
+                model
+            );
 
             addLog(`Antwort erhalten: ${generatedText?.length || 0} Zeichen`, "info");
 
@@ -805,7 +804,7 @@ export const App: React.FC = () => {
                 }] 
             };
             
-            commitAction(`${hasExistingText ? 'Verbessert' : 'Generiert'}: ${wordCount} Wörter -> ${targetSlot}`, { 
+            commitAction(`Generiert: ${wordCount} Wörter -> ${targetSlot}`, { 
                 scriptResult: updatedResult,
                 segmentVersions: { [MAIN_ID]: targetSlot }
             });

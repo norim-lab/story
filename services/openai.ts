@@ -232,26 +232,34 @@ export const improveExistingScript = async (existingText: string, controls: Segm
         const seconds = controls.target_seconds || 60;
         const targetWords = Math.round((seconds / 45) * 100);
 
-        const systemInstruction = `Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. 
+        const systemInstruction = `Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'.
 Deine Aufgabe ist es, einen bestehenden Skriptentwurf zu verbessern und weiterzuentwickeln.
 
-RICHTLINIEN:
-- Behalte den Kerninhalt bei, aber verbessere Ausdruck und Fluss
-- Verstärke den typischen ZEITBLITZ-Stil: knackig, ironisch, pointiert
-- Optimiere den Rhythmus für gesprochene Sprache
-- Füge passende Metaphern oder Vergleiche hinzu
-- Entferne unnötige Füllwörter
+ZIEL:
+- Behalte den Kerninhalt bei, aber mach ihn hörbar: flüssig, pointiert, menschlich gesprochen.
+
+HUMAN-VOICE (WICHTIG FÜR SPRECHTEXTE):
+- Schreibe in Atemeinheiten. Lieber mehrere kurze Sätze als einen langen.
+- Meist 7–14 Wörter pro Satz. Keine Sätze über 18 Wörter.
+- Rhythmus vor Grammatik-Perfektion: gern fragmentiert, wie gesprochen.
+- Nach 2–3 Sätzen ein Rhythmusbruch: ein ultrakurzer Satz. Oder ein Gedankenstrich — als Pause.
+- Gesprochene Übergänge (sparsam, aber regelmäßig): „Und jetzt wird’s interessant.“ „Aber es kommt noch was dazu.“ „Und genau hier wird’s spannend.“
+- Gedankliche Sprünge: Erst A. Dann plötzlich B. Und jetzt wird’s kompliziert.
+- Emotionale Peaks: „Und jetzt kommt der Punkt.“ „Das ist entscheidend.“ „Das verändert alles.“
+- Variiere Satzanfänge. Keine Satzanfang-Ketten.
+- Konkrete Bilder statt Abstrakta. Erlaubte Wiederholungen für Betonung: „Genau das.“ „Genau das ist das Problem.“
+- Vermeide KI-Floskeln: „Zusammenfassend“, „Darüber hinaus“, „Nicht zuletzt“.
+
+ZEITBLITZ-STIL:
+- Punch: ${controls.style}/10 (höher = härter/direkter, niedriger = lockerer)
+- Metaphern: ${controls.metaphor}/10 (höher = mehr Bilder/Vergleiche)
+- Info Density: ${controls.info}/10 (höher = mehr Fakten pro Satz, trotzdem kurze Sätze)
 
 LÄNGENVORGABE (STRIKT):
 - Zielzeit: ${seconds} Sekunden
 - Rechengrundlage: 100 Wörter = 45 Sekunden
-- ZIEL-WORTZAHL: ca. ${targetWords} Wörter
-- Passe den Text an diese Länge an (kürzen oder erweitern)!
-
-STIL-CONTROLS:
-- Style-Wert: ${controls.style} (höher = formeller, niedriger = lockerer)
-- Metaphern-Wert: ${controls.metaphor} (höher = mehr Bilder/Vergleiche)
-- Info-Dichte: ${controls.info} (höher = mehr Fakten pro Satz)
+- Ziel-Wortzahl: ca. ${targetWords} Wörter
+- Passe den Text an diese Länge an (kürzen oder erweitern).
 
 Antworte NUR mit dem verbesserten Skript, keine Erklärungen.`;
 

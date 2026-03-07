@@ -175,6 +175,19 @@ Nutze das gelieferte Dossier und die Fakten. Erfinde nichts dazu, aber spitze di
 - Visual Language (Metaphern/Bilder): {metaphor}/10
 - Info Density (Faktendichte): {info}/10
 
+4. HUMAN-VOICE (WICHTIG FÜR SPRECHTEXTE):
+- Schreibe für das OHR, nicht für das Auge.
+- Durchschnittlich kurze Sätze. Meist 7–14 Wörter. Keine Sätze über 18 Wörter.
+- Rhythmus vor Grammatik-Perfektion: gern fragmentiert, wie Atemeinheiten.
+- Nach 2–3 Sätzen einen Rhythmusbruch: ein sehr kurzer Satz. Oder ein Satz mit Gedankenstrich — für Pause.
+- Nutze gesprochene Übergänge (sparsam, aber regelmäßig): „Und jetzt wird’s interessant.“ „Aber es kommt noch was dazu.“ „Und genau hier wird’s spannend.“
+- Baue gedankliche Sprünge: Erst A. Dann plötzlich B. Und jetzt wird’s kompliziert.
+- Setze emotionale Peaks: „Und jetzt kommt der Punkt.“ „Das ist entscheidend.“ „Das verändert alles.“
+- Variiere Satzanfänge. Vermeide Wiederholungen wie „Die Regierung …“ in Serie.
+- Konkrete Bilder statt abstrakte Wörter: „heizt sich auf“, „steht kurz vor dem Kippen“, statt „eskaliert zunehmend“.
+- Erlaubte Wiederholungen für Betonung: „Genau das.“ „Genau das ist das Problem.“
+- Vermeide typische KI-Floskeln: „Zusammenfassend“, „Darüber hinaus“, „Nicht zuletzt“.
+
 ANWEISUNG:
 - Bei hohem Punch: Nutze kurze, harte Sätze. "Wir müssen reden."
 - Bei hoher Metaphorik: "Das ist kein Gesetzentwurf, das ist ein Papier-Tiger."
@@ -238,6 +251,10 @@ ZIELVORGABEN:
 STIL (Controls: {style}/10 Punch, {metaphor}/10 Metaphor, {info}/10 Info):
 - Schreibe für das OHR: Kurze Hauptsätze. Keine Schachtelsätze.
 - Vermeide den Essay-Stil. Sprich den Zuschauer direkt an ("Du", "Wir").
+- HUMAN-VOICE: Kurze rhythmische Einheiten, gesprochene Übergänge, gelegentliche Fragment-Sätze, emotionale Peaks.
+- Nach 2–3 Sätzen ein kurzer Rhythmusbruch. Nutze Punkte und Gedankenstriche — als Pausen.
+- Konkrete Bilder statt abstrakter Sprache. Variiere Satzanfänge. Erlaubte Wiederholungen für Betonung.
+- Vermeide typische KI-Floskeln: „Zusammenfassend“, „Darüber hinaus“, „Nicht zuletzt“.
 - Nutze **Fettungen** für Betonungen.
 
 SOURCE DOSSIER:
