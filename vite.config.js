@@ -8,6 +8,16 @@ export default defineConfig(function (_a) {
         plugins: [react()],
         define: {
             'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+        },
+        server: {
+            proxy: {
+                '/anthropic': {
+                    target: 'https://api.anthropic.com',
+                    changeOrigin: true,
+                    secure: true,
+                    rewrite: function (path) { return path.replace(/^\/anthropic/, '/v1/messages'); }
+                }
+            }
         }
     };
 });

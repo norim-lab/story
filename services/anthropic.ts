@@ -2,6 +2,8 @@ import { SegmentControls } from "../types";
 import { getAnthropicKey } from "./settings";
 import { loadPrompt } from "./prompts";
 
+const anthropicMessagesUrl = import.meta.env.DEV ? '/anthropic' : './anthropic.php';
+
 function safeReplace(template: string, key: string, value: string): string {
     return template.split(key).join(value);
 }
@@ -43,7 +45,7 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
         promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
         promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
 
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+        const response = await fetch(anthropicMessagesUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -92,7 +94,7 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
         promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
         promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
 
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+        const response = await fetch(anthropicMessagesUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -136,7 +138,7 @@ export const generateDialogue = async (rawText: string, factText: string, contro
 
         const fullContext = `DOSSIER:\n${rawText}\n\nZUSÄTZLICHE FAKTEN:\n${factText}`;
 
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+        const response = await fetch(anthropicMessagesUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -173,7 +175,7 @@ export const regenerateHook = async (text: string, controls: SegmentControls, mo
         systemInstruction = safeReplace(systemInstruction, '{metaphor}', controls.metaphor.toString());
         systemInstruction = safeReplace(systemInstruction, '{context}', context);
 
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+        const response = await fetch(anthropicMessagesUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -219,7 +221,7 @@ export const generateCTA = async (text: string, controls: SegmentControls, model
         systemInstruction = safeReplace(systemInstruction, '{scriptType}', scriptType);
         systemInstruction = safeReplace(systemInstruction, '{targetWords}', targetWords);
 
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+        const response = await fetch(anthropicMessagesUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -253,7 +255,7 @@ export const rewriteSelectionWithTone = async (text: string, tone: string, model
         let systemInstruction = loadPrompt('script_generation', 'tone_transformation');
         systemInstruction = safeReplace(systemInstruction, '{toneKey}', tone);
 
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+        const response = await fetch(anthropicMessagesUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -318,7 +320,7 @@ LÄNGENVORGABE (STRIKT):
 
 Antworte NUR mit dem verbesserten Skript, keine Erklärungen.`;
 
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+        const response = await fetch(anthropicMessagesUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
