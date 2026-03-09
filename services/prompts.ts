@@ -267,6 +267,12 @@ REGELN:
 - Reine Fakten: Nutze NUR Dossier + Zusatzfakten. Erfinde keine Zahlen, Namen, Orte.
 - Human-Voice: kurze Sätze, Rhythmuswechsel, gelegentlich ein Gedankenstrich — als Pause.
 - Höchstes Tempo: Jeder Satz muss Info liefern. Füllwörter sind tabu.
+- MITTELTEIL (Fakten/Beweise → Konklusion vorbereiten):
+  - Faktendichte-Explosion: eine rasante Abfolge von harten Fakten/Zitaten/Schlagzeilen/Beispielen, die die These direkt stützen.
+  - Gezielte Auswahl: Jeder Fakt muss zur Hauptbotschaft beitragen. Kein Namedropping ohne Nutzen.
+  - Show, don’t tell: Formuliere so, dass Text-Overlays/B‑Roll/Grafiken direkt möglich sind (Zahl, Name, Ort, Datum klar benennen).
+  - Konsequenzen-Hammer: 1–2 Sätze „Und das bedeutet…“ – direkte Auswirkung auf Alltag/Zuschauer/Gesellschaft.
+  - Perspektive (optional, kurz): „Was viele nicht sehen…“ – eine übersehene Facette, die die Analyse schärft, ohne abzuschweifen.
 - Keine typischen KI-Floskeln („Zusammenfassend“, „Darüber hinaus“, „Nicht zuletzt“).
 - Nutze **Fettungen** für Betonung (sparsam).
 
