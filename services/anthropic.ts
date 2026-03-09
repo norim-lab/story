@@ -2,7 +2,7 @@ import { SegmentControls } from "../types";
 import { getAnthropicKey } from "./settings";
 import { loadPrompt } from "./prompts";
 
-const anthropicMessagesUrl = import.meta.env.DEV ? '/anthropic' : './anthropic.php';
+const anthropicMessagesUrl = import.meta.env.DEV ? '/anthropic' : '/anthropic.php';
 
 function safeReplace(template: string, key: string, value: string): string {
     return template.split(key).join(value);
