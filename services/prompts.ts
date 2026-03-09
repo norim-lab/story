@@ -267,6 +267,8 @@ FORMAT / AUFBAU (exakt so denken):
 
 REGELN:
 - Reine Fakten: Nutze NUR Dossier + Zusatzfakten. Erfinde keine Zahlen, Namen, Orte.
+- Einordnung ohne Spekulation: Jede These muss sich klar aus den gelieferten Fakten ableiten.
+- Wenn etwas unklar ist: als „laut Dossier“ / „laut Zusatzfakten“ formulieren, nicht als Gewissheit.
 - Human-Voice: kurze Sätze, Rhythmuswechsel, gelegentlich ein Gedankenstrich — als Pause.
 - Höchstes Tempo: Jeder Satz muss Info liefern. Füllwörter sind tabu.
 - MITTELTEIL (Fakten/Beweise → Konklusion vorbereiten):
