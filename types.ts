@@ -71,6 +71,7 @@ export interface SegmentControls {
   fact_intensity: number;
   dialogue_seconds: number;
   target_seconds: number;
+  news_seconds: number;
 }
 
 export interface HistoryStateSnapshot {

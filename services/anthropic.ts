@@ -39,6 +39,7 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
         promptTemplate = safeReplace(promptTemplate, '{style}', controls.style.toString());
         promptTemplate = safeReplace(promptTemplate, '{metaphor}', controls.metaphor.toString());
         promptTemplate = safeReplace(promptTemplate, '{info}', controls.info.toString());
+        promptTemplate = safeReplace(promptTemplate, '{factIntensity}', controls.fact_intensity.toString());
         promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "Kein Dossier verfügbar.");
         promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "Keine Zusatzfakten.");
 
@@ -71,6 +72,51 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
             throw new Error("Kein Text generiert. Die API hat eine leere Antwort zurückgegeben.");
         }
 
+        return result;
+    });
+};
+
+export const generateNewsFlash = async (dossier: string, facts: string, controls: SegmentControls, model: string): Promise<string> => {
+    return handleApiCall(async () => {
+        const apiKey = getAnthropicKey();
+        const seconds = Math.max(20, Math.min(60, controls.news_seconds || 30));
+        const targetWords = Math.round((seconds / 45) * 100);
+
+        let promptTemplate = loadPrompt('script_generation', 'news_flash');
+        promptTemplate = safeReplace(promptTemplate, '{seconds}', seconds.toString());
+        promptTemplate = safeReplace(promptTemplate, '{targetWords}', targetWords.toString());
+        promptTemplate = safeReplace(promptTemplate, '{style}', controls.style.toString());
+        promptTemplate = safeReplace(promptTemplate, '{metaphor}', controls.metaphor.toString());
+        promptTemplate = safeReplace(promptTemplate, '{info}', controls.info.toString());
+        promptTemplate = safeReplace(promptTemplate, '{factIntensity}', controls.fact_intensity.toString());
+        promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "Kein Dossier verfügbar.");
+        promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "Keine Zusatzfakten.");
+
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+                model: model,
+                max_tokens: 2048,
+                system: "Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Text.",
+                messages: [
+                    { role: 'user', content: promptTemplate }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error?.message || `Anthropic Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const result = data.content?.[0]?.text || "";
+        if (!result) throw new Error("Kein Text generiert. Die API hat eine leere Antwort zurückgegeben.");
         return result;
     });
 };

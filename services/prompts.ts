@@ -174,6 +174,7 @@ Nutze das gelieferte Dossier und die Fakten. Erfinde nichts dazu, aber spitze di
 - Rhetoric Punch (Härte/Direktheit): {style}/10
 - Visual Language (Metaphern/Bilder): {metaphor}/10
 - Info Density (Faktendichte): {info}/10
+- Fakten Intensität (Zusatzfakten-Gewichtung): {factIntensity}/10
 
 4. HUMAN-VOICE (WICHTIG FÜR SPRECHTEXTE):
 - Schreibe für das OHR, nicht für das Auge.
@@ -202,6 +203,10 @@ Nutze das gelieferte Dossier und die Fakten. Erfinde nichts dazu, aber spitze di
   - 1–3/10: wenige harte Fakten, mehr Einordnung/Story.
   - 4–6/10: ausgewogen, pro Abschnitt 1–2 konkrete Fakten.
   - 7–10/10: sehr faktisch, pro Absatz mehrere konkrete Fakten/Zahlen/Beispiele, trotzdem kurze Sätze.
+- Fakten Intensität steuert, wie stark du die Zusatzfakten als Fakten-Backbone nutzt:
+  - 1–3/10: Zusatzfakten nur punktuell.
+  - 4–6/10: Zusatzfakten regelmäßig einbauen.
+  - 7–10/10: Zusatzfakten dominieren; Dossier nur als Kontext/Einordnung.
 - Sprache: Keine unnötigen Anglizismen/Fremdwörter. Wenn ein Begriff nötig ist: kurz erklären.
 
 ANWEISUNG:
@@ -217,6 +222,49 @@ ZUSATZFAKTEN:
 {facts}
 
 Gib NUR den neuen Skript-Text zurück.`,
+
+    news_flash: `Du bist ein erfahrener Redakteur für ZEITBLITZ-KURZNACHRICHTEN.
+AUFGABE:
+Schreibe eine reine Fakten-Kurznachricht (20–60 Sekunden) im ZEITBLITZ Late-Night-Ton: gewitzt, sarkastisch, intelligent – aber leicht verständlich (keine unnötigen Fremdwörter).
+
+ZIELZEIT (STRIKT):
+- Zielzeit: {seconds} Sekunden.
+- Rechengrundlage: 100 Wörter = 45 Sekunden.
+- Ziel-Wortzahl: ca. {targetWords} Wörter.
+- Toleranz: +/- 4 Sekunden.
+
+CONTROLS (KERN):
+- Rhetoric Punch: {style}/10 (Late-Night: Zuspitzung, sarkastische Punchlines, trotzdem verständlich)
+- Visual Language: {metaphor}/10 (bildhaft, treffende Metaphern/Vergleiche)
+- Info Density: {info}/10 (mehr konkrete Fakten pro Absatz, aber kurze Sätze)
+- Fakten Intensität: {factIntensity}/10 (Zusatzfakten als Backbone; nichts erfinden)
+
+FORMAT / AUFBAU (exakt so denken):
+1) SOUND-BITE HOOK (1–3 Sekunden):
+   - Erster Satz ist ein Paukenschlag. Keine Begrüßung. Keine Einleitung.
+   - Eine harte Behauptung, eine scharfe Frage oder ein kurzes Zitat (wenn im Material vorhanden).
+2) FAKTEN-BURST:
+   - 2–4 kurze Sätze mit den wichtigsten Fakten (Wer? Was? Wann? Wo?).
+   - Konkrete Details statt Floskeln.
+3) THESE / EINORDNUNG:
+   - 1–2 Sätze: Was ist der Knackpunkt? Warum ist das relevant?
+   - Late-Night-Stil über Punch + Bilder, nicht über komplizierte Wörter.
+4) CTA (kurz, konsequenz-basiert):
+   - 1 sehr kurzer Satz, der Diskussion triggert oder zum Folgen motiviert.
+
+REGELN:
+- Reine Fakten: Nutze NUR Dossier + Zusatzfakten. Erfinde keine Zahlen, Namen, Orte.
+- Human-Voice: kurze Sätze, Rhythmuswechsel, gelegentlich ein Gedankenstrich — als Pause.
+- Keine typischen KI-Floskeln („Zusammenfassend“, „Darüber hinaus“, „Nicht zuletzt“).
+- Nutze **Fettungen** für Betonung (sparsam).
+
+SOURCE DOSSIER:
+{dossier}
+
+ZUSATZFAKTEN:
+{facts}
+
+Gib NUR den finalen Kurznachrichten-Text zurück.`,
 
     write_and_fit_long: `Du bist der Chef-Analyst für das Format "ZEITBLITZ".
 AUFGABE:

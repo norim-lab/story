@@ -14,6 +14,7 @@ import {
     rewriteSelectionWithCustomPrompt,
     generateDialogue,
     generateScriptWithControls,
+    generateNewsFlash,
     generateCTA,
     checkApiKey,
     improveExistingScript
@@ -56,10 +57,11 @@ const CONTROL_LABELS: Record<keyof SegmentControls, string> = {
     fact_intensity: "Fakten Intensität",
     dialogue_seconds: "Dialogue Duration",
     target_seconds: "Target Duration",
+    news_seconds: "News Duration",
     length: "Target Length" // Will be hidden
 };
 
-const DEFAULT_CONTROLS: SegmentControls = { info: 5, style: 5, metaphor: 5, length: 5, x_source: 1, fact_intensity: 5, dialogue_seconds: 60, target_seconds: 60 };
+const DEFAULT_CONTROLS: SegmentControls = { info: 5, style: 5, metaphor: 5, length: 5, x_source: 1, fact_intensity: 5, dialogue_seconds: 60, target_seconds: 60, news_seconds: 30 };
 
 const mapSelectionToRaw = (raw: string, selectedText: string): { start: number, end: number } | null => {
     if (!selectedText || !selectedText.trim()) return null;
@@ -818,6 +820,65 @@ export const App: React.FC = () => {
         }
     };
 
+    const handleNewsFlashGenerate = async () => {
+        if (!activeProject?.scriptResult) return;
+        if (!checkProtection()) return;
+
+        const keyCheck = checkApiKey();
+        if (!keyCheck.valid) {
+            addLog(keyCheck.message || "API Key fehlt", "error");
+            setSettingsOpen(true);
+            return;
+        }
+
+        const controls = activeProject.segmentControls[MAIN_ID] || DEFAULT_CONTROLS;
+        const seconds = Math.max(20, Math.min(60, controls.news_seconds || 30));
+        const model = getCurrentModel();
+
+        const sourceRaw = (activeProject.rawInput || "").trim();
+        const sourceFacts = (activeProject.factText || "").trim();
+        if (!sourceRaw && !sourceFacts) {
+            addLog("Bitte Grok Dossier oder Additional Facts füllen (Source Data ist leer).", "error");
+            return;
+        }
+
+        setIsZapping(true);
+        try {
+            const newsText = await generateNewsFlash(sourceRaw, sourceFacts, { ...controls, news_seconds: seconds }, model);
+            if (!newsText || newsText.trim().length === 0) throw new Error("Generierter Text ist leer.");
+
+            const versions = activeProject.scriptResult.sections[0].versions;
+            let targetSlot: ScriptLength | null = null;
+            for (let i = 1; i <= 8; i++) {
+                const key = `short_${i}` as ScriptLength;
+                if (!versions[key] || versions[key].trim() === "") {
+                    targetSlot = key;
+                    break;
+                }
+            }
+            if (!targetSlot) targetSlot = 'short_8';
+
+            const updatedResult = {
+                ...activeProject.scriptResult,
+                model,
+                sections: [{
+                    ...activeProject.scriptResult.sections[0],
+                    versions: { ...versions, [targetSlot]: newsText }
+                }]
+            };
+
+            const wordCount = newsText.split(/\s+/).filter(w => w.length > 0).length;
+            commitAction(`News Flash: ${seconds}s (${wordCount} Wörter) -> ${targetSlot}`, {
+                scriptResult: updatedResult,
+                segmentVersions: { [MAIN_ID]: targetSlot }
+            });
+        } catch (e: any) {
+            addLog(`Fehler: ${e.message}`, "error");
+        } finally {
+            setIsZapping(false);
+        }
+    };
+
     const handleDialogueGenerate = async () => {
         if (!activeProject?.scriptResult) return;
         if (!checkProtection()) return;
@@ -1392,7 +1453,7 @@ export const App: React.FC = () => {
                                         <div className="space-y-6 p-4 bg-black/20 rounded-2xl border border-white/5">
                                             <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Refinement Controls</h3>
                                             {Object.entries(controls).map(([key, val]) => {
-                                                if (key === 'dialogue_seconds' || key === 'target_seconds' || key === 'length') return null; 
+                                                if (key === 'dialogue_seconds' || key === 'target_seconds' || key === 'news_seconds' || key === 'length') return null; 
                                                 return (
                                                 <div key={key} className="space-y-2">
                                                     <div className="flex justify-between text-[10px] uppercase font-bold text-slate-400">
@@ -1422,6 +1483,27 @@ export const App: React.FC = () => {
                                                 </div>
                                                 <button onClick={handleWriteAndFit} disabled={isZapping} className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/30 rounded-xl text-[10px] font-black uppercase transition-all shadow-lg text-white">
                                                     Write & Fit by Style & Time
+                                                </button>
+                                            </div>
+
+                                            <div className="pt-4 border-t border-white/5 space-y-4">
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between text-[10px] uppercase font-bold text-slate-400">
+                                                        <span>News Duration</span>
+                                                        <span>{controls.news_seconds || 30}s</span>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min="20"
+                                                        max="60"
+                                                        step="5"
+                                                        value={controls.news_seconds || 30}
+                                                        onChange={(e) => updateActiveProject({ segmentControls: { ...activeProject.segmentControls, [MAIN_ID]: { ...controls, news_seconds: parseInt(e.target.value) } } })}
+                                                        className="w-full h-1 bg-white/10 rounded-full appearance-none accent-slate-400"
+                                                    />
+                                                </div>
+                                                <button onClick={handleNewsFlashGenerate} disabled={isZapping} className="w-full py-3 bg-slate-700/50 hover:bg-slate-600 border border-white/10 rounded-xl text-[10px] font-black uppercase transition-all">
+                                                    News Flash (20–60s)
                                                 </button>
                                             </div>
                                         </div>
