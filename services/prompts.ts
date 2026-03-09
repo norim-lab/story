@@ -261,7 +261,9 @@ FORMAT / AUFBAU (exakt so denken):
    - 1–2 Sätze: kurze Ursache, Konsequenz oder nächste Eskalationsstufe.
    - „So what?“: Warum ist das für den Zuschauer relevant?
 5) CTA (kurz, konsequenz-basiert):
-   - 1 sehr kurzer Satz, der Diskussion triggert oder zum Folgen motiviert.
+   - 1 Satz finale Verdichtung/Appell: Warum ist das relevant für DICH? (dringlich, direkt, zugespitzt).
+   - Danach 1 Satz CTA: Fokus auf Kommentare („Deine Meinung?“ / „Wer hat recht?“ / „Was würdest du tun?“).
+   - Optional subtil: „Für mehr Einordnungen: folg ZEITBLYTZ.“ (nur wenn noch Platz in der Zeit ist).
 
 REGELN:
 - Reine Fakten: Nutze NUR Dossier + Zusatzfakten. Erfinde keine Zahlen, Namen, Orte.
@@ -273,6 +275,12 @@ REGELN:
   - Show, don’t tell: Formuliere so, dass Text-Overlays/B‑Roll/Grafiken direkt möglich sind (Zahl, Name, Ort, Datum klar benennen).
   - Konsequenzen-Hammer: 1–2 Sätze „Und das bedeutet…“ – direkte Auswirkung auf Alltag/Zuschauer/Gesellschaft.
   - Perspektive (optional, kurz): „Was viele nicht sehen…“ – eine übersehene Facette, die die Analyse schärft, ohne abzuschweifen.
+- ABSCHLUSS:
+  - Finale Verdichtung statt Zusammenfassung: ein Satz, der die Konsequenz zuspitzt und Betroffenheit auslöst.
+  - Direkte Adressierung: „du“, „wir“, „am Ende zahlst du…“, „und genau hier wird’s teuer…“.
+- CTA:
+  - Kommentar-CTA hat Priorität. Stelle eine offene Frage, die Reibung erzeugt, ohne zu beleidigen.
+  - Schreib so, dass ein Overlay dazu passt: „DEINE MEINUNG?“ / „WER HAT RECHT?“ / „KOMMENTIERE!“
 - Keine typischen KI-Floskeln („Zusammenfassend“, „Darüber hinaus“, „Nicht zuletzt“).
 - Nutze **Fettungen** für Betonung (sparsam).
 
