@@ -249,18 +249,24 @@ FORMAT / AUFBAU (exakt so denken):
      C) Konflikt/Konfrontation: „X gegen Y – und jetzt knallt’s.“ / „Hier prallt Realität auf Politik.“
      D) „Geheimnis lüften“: „Was sie dir dazu nicht sagen …“ / „Der Punkt, den alle übersehen …“
    - Erster Satz kurz. Im Idealfall unter 10 Wörtern. Danach sofort Fakten.
-2) FAKTEN-BURST:
-   - 2–4 kurze Sätze mit den wichtigsten Fakten (Wer? Was? Wann? Wo?).
-   - Konkrete Details statt Floskeln.
-3) THESE / EINORDNUNG:
-   - 1–2 Sätze: Was ist der Knackpunkt? Warum ist das relevant?
-   - Late-Night-Stil über Punch + Bilder, nicht über komplizierte Wörter.
-4) CTA (kurz, konsequenz-basiert):
+2) BRÜCKE NACH DEM HOOK (Sekunde 3–5):
+   - Sofortige Elaboration/Kontext: 1–3 kurze Fakten-Sätze, die die Hook-Frage implizit beantworten (Wer/Was/Wann/Wo?).
+   - Keine Umschweife. Kein Warm-up. Tempo halten.
+   - Schreib so, dass schnelle Texteinblendungen möglich sind (Namen/Ort/Zahl klar benennen).
+3) PROBLEM / THESE (Sekunde 5–10):
+   - Ein glasklarer Satz: Was ist das Problem oder die Kernbotschaft?
+   - Einfache Sprache, keine Fachwörter ohne Kurz-Erklärung.
+   - Emotionaler Anker: „Und das trifft am Ende …“ / „Die Zeche zahlen …“
+4) WARUM / WAS JETZT? (Sekunde 10–15):
+   - 1–2 Sätze: kurze Ursache, Konsequenz oder nächste Eskalationsstufe.
+   - „So what?“: Warum ist das für den Zuschauer relevant?
+5) CTA (kurz, konsequenz-basiert):
    - 1 sehr kurzer Satz, der Diskussion triggert oder zum Folgen motiviert.
 
 REGELN:
 - Reine Fakten: Nutze NUR Dossier + Zusatzfakten. Erfinde keine Zahlen, Namen, Orte.
 - Human-Voice: kurze Sätze, Rhythmuswechsel, gelegentlich ein Gedankenstrich — als Pause.
+- Höchstes Tempo: Jeder Satz muss Info liefern. Füllwörter sind tabu.
 - Keine typischen KI-Floskeln („Zusammenfassend“, „Darüber hinaus“, „Nicht zuletzt“).
 - Nutze **Fettungen** für Betonung (sparsam).
 
