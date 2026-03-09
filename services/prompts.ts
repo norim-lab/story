@@ -212,6 +212,7 @@ Nutze das gelieferte Dossier und die Fakten. Erfinde nichts dazu, aber spitze di
 ANWEISUNG:
 - Bei hohem Punch: Nutze kurze, harte Sätze. "Wir müssen reden."
 - Bei hoher Metaphorik: "Das ist kein Gesetzentwurf, das ist ein Papier-Tiger."
+- Hook-Idee (kreativ, nicht starr): provokante Frage ODER schockierender Fakt/Statement ODER Konflikt/Schlagabtausch ODER „Geheimnis lüften“-Andeutung.
 - Struktur: Hook -> These -> Beweis/Story -> Analyse -> Fazit/CTA.
 - Nutze **Fettungen** für Betonungen.
 
@@ -242,7 +243,12 @@ CONTROLS (KERN):
 FORMAT / AUFBAU (exakt so denken):
 1) SOUND-BITE HOOK (1–3 Sekunden):
    - Erster Satz ist ein Paukenschlag. Keine Begrüßung. Keine Einleitung.
-   - Eine harte Behauptung, eine scharfe Frage oder ein kurzes Zitat (wenn im Material vorhanden).
+   - Wähle kreativ EINEN Hook-Typ (ohne Clickbait-Blabla, aber maximal aufmerksamkeitsstark):
+     A) Provokante Frage: „Warum …?“, „Wie kann das sein …?“, „Glaubst du wirklich …?“, „Was, wenn …?“
+     B) Schock-Statement/Fakt: „Das ist der Wahnsinn.“ „Diese eine Zahl verändert alles.“ (nur wenn im Material gedeckt)
+     C) Konflikt/Konfrontation: „X gegen Y – und jetzt knallt’s.“ / „Hier prallt Realität auf Politik.“
+     D) „Geheimnis lüften“: „Was sie dir dazu nicht sagen …“ / „Der Punkt, den alle übersehen …“
+   - Erster Satz kurz. Im Idealfall unter 10 Wörtern. Danach sofort Fakten.
 2) FAKTEN-BURST:
    - 2–4 kurze Sätze mit den wichtigsten Fakten (Wer? Was? Wann? Wo?).
    - Konkrete Details statt Floskeln.
