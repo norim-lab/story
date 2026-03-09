@@ -215,8 +215,8 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
     promptTemplate = safeReplace(promptTemplate, '{metaphor}', controls.metaphor.toString());
     promptTemplate = safeReplace(promptTemplate, '{info}', controls.info.toString());
     promptTemplate = safeReplace(promptTemplate, '{factIntensity}', controls.fact_intensity.toString());
-    promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "Kein Dossier verfügbar.");
-    promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "Keine Zusatzfakten.");
+    promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
+    promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
 
     console.log(`Sending Prompt to Gemini (${isLongFormat ? 'LONG' : 'STANDARD'}):`, promptTemplate.substring(0, 200) + "...");
 
@@ -252,8 +252,8 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
     promptTemplate = safeReplace(promptTemplate, '{metaphor}', controls.metaphor.toString());
     promptTemplate = safeReplace(promptTemplate, '{info}', controls.info.toString());
     promptTemplate = safeReplace(promptTemplate, '{factIntensity}', controls.fact_intensity.toString());
-    promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "Kein Dossier verfügbar.");
-    promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "Keine Zusatzfakten.");
+    promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
+    promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
 
     const response = await ai.models.generateContent({
       model,

@@ -714,6 +714,23 @@ export const App: React.FC = () => {
         } catch (e) { addLog("Fehler bei Deep Dive.", "error"); }
     };
 
+    const getSourceContext = (): string => {
+        const raw = (activeProject?.rawInput || "").trim();
+        const facts = (activeProject?.factText || "").trim();
+        if (!raw && !facts) return "";
+        if (raw && facts) return `DOSSIER:\n${raw}\n\nZUSÄTZLICHE FAKTEN:\n${facts}`;
+        if (raw) return `DOSSIER:\n${raw}`;
+        return `ZUSÄTZLICHE FAKTEN:\n${facts}`;
+    };
+
+    const getSlotTextOrSourceContext = (slot: ScriptLength): { slotText: string; context: string } => {
+        const versions = activeProject?.scriptResult?.sections?.[0]?.versions || {};
+        const raw = (versions as any)[slot];
+        const slotText = typeof raw === "string" ? raw : "";
+        if (slotText.trim()) return { slotText, context: slotText };
+        return { slotText: "", context: getSourceContext() };
+    };
+
     const handleWriteAndFit = async () => {
         addLog("=== WRITE & FIT GESTARTET ===", "info");
         
@@ -883,6 +900,13 @@ export const App: React.FC = () => {
         if (!activeProject?.scriptResult) return;
         if (!checkProtection()) return;
 
+        const keyCheck = checkApiKey();
+        if (!keyCheck.valid) {
+            addLog(keyCheck.message || "API Key fehlt", "error");
+            setSettingsOpen(true);
+            return;
+        }
+
         const versions = activeProject.scriptResult.sections[0].versions;
         const currentV = activeProject.segmentVersions[MAIN_ID];
         let targetSlot: ScriptLength = currentV;
@@ -935,14 +959,25 @@ export const App: React.FC = () => {
         if (!checkProtection()) return;
 
         const currentV = activeProject.segmentVersions[MAIN_ID] || 'short_1';
-        const text = activeProject.scriptResult.sections[0].versions[currentV];
+        const { slotText, context } = getSlotTextOrSourceContext(currentV);
         const controls = activeProject.segmentControls[MAIN_ID];
         const model = getCurrentModel();
 
+        const keyCheck = checkApiKey();
+        if (!keyCheck.valid) {
+            addLog(keyCheck.message || "API Key fehlt", "error");
+            setSettingsOpen(true);
+            return;
+        }
+        if (!context.trim()) {
+            addLog("Bitte Grok Dossier oder Additional Facts füllen (Source Data ist leer).", "error");
+            return;
+        }
+
         setIsZapping(true);
         try {
-            const ctaText = await generateCTA(text, controls, model);
-            const updatedText = text + "\n\n" + ctaText;
+            const ctaText = await generateCTA(context, controls, model);
+            const updatedText = slotText.trim() ? (slotText + "\n\n" + ctaText) : ctaText;
             const updatedResult = { 
                 ...activeProject.scriptResult, 
                 model,
@@ -952,7 +987,7 @@ export const App: React.FC = () => {
                 }] 
             };
             commitAction("New CTA Added", { scriptResult: updatedResult });
-        } catch(e) { addLog("CTA Generation Error", "error"); } finally { setIsZapping(false); }
+        } catch(e: any) { addLog(`CTA Fehler: ${e?.message || e}`, "error"); } finally { setIsZapping(false); }
     };
 
     const handleHookZapp = async () => {
@@ -960,17 +995,30 @@ export const App: React.FC = () => {
         if (!checkProtection()) return;
 
         const currentV = activeProject.segmentVersions[MAIN_ID] || 'short_1';
-        const text = activeProject.scriptResult.sections[0].versions[currentV];
+        const { slotText: text, context } = getSlotTextOrSourceContext(currentV);
         const controls = activeProject.segmentControls[MAIN_ID];
         const isDialogue = currentV.includes('dialogue');
         const model = getCurrentModel();
 
+        const keyCheck = checkApiKey();
+        if (!keyCheck.valid) {
+            addLog(keyCheck.message || "API Key fehlt", "error");
+            setSettingsOpen(true);
+            return;
+        }
+        if (!context.trim()) {
+            addLog("Bitte Grok Dossier oder Additional Facts füllen (Source Data ist leer).", "error");
+            return;
+        }
+
         setIsZapping(true);
         try {
-            const newHook = await regenerateHook(text, controls, model);
+            const newHook = await regenerateHook(context, controls, model);
             let updatedText = text;
 
-            if (isDialogue) {
+            if (!text.trim()) {
+                updatedText = newHook;
+            } else if (isDialogue) {
                 const speakerRegex = /^(.*?:)(.*?)(\n|$)/m;
                 const match = text.match(speakerRegex);
                 
@@ -1001,7 +1049,7 @@ export const App: React.FC = () => {
                 }] 
             };
             commitAction("Hook Zapp", { scriptResult: updatedResult });
-        } catch (e) { addLog("Hook Error", "error"); } finally { setIsZapping(false); }
+        } catch (e: any) { addLog(`Hook Fehler: ${e?.message || e}`, "error"); } finally { setIsZapping(false); }
     };
 
     const handleEmptyEditor = () => {

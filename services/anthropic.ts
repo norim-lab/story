@@ -40,8 +40,8 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
         promptTemplate = safeReplace(promptTemplate, '{metaphor}', controls.metaphor.toString());
         promptTemplate = safeReplace(promptTemplate, '{info}', controls.info.toString());
         promptTemplate = safeReplace(promptTemplate, '{factIntensity}', controls.fact_intensity.toString());
-        promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "Kein Dossier verfügbar.");
-        promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "Keine Zusatzfakten.");
+        promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
+        promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
 
         const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
@@ -89,8 +89,8 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
         promptTemplate = safeReplace(promptTemplate, '{metaphor}', controls.metaphor.toString());
         promptTemplate = safeReplace(promptTemplate, '{info}', controls.info.toString());
         promptTemplate = safeReplace(promptTemplate, '{factIntensity}', controls.fact_intensity.toString());
-        promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "Kein Dossier verfügbar.");
-        promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "Keine Zusatzfakten.");
+        promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
+        promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
 
         const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
