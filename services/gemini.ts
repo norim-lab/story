@@ -77,16 +77,33 @@ export const generateZeitblitzScript = async (rawText: string, model: string): P
             short_3: "",
             short_4: "",
             short_5: "",
+            short_6: "",
+            short_7: "",
+            short_8: "",
             long_1: "",
             long_2: "",
             long_3: "",
             long_4: "",
             long_5: "",
+            long_6: "",
+            long_7: "",
+            long_8: "",
             dialogue_1: "",
             dialogue_2: "",
             dialogue_3: "",
             dialogue_4: "",
-            dialogue_5: ""
+            dialogue_5: "",
+            dialogue_6: "",
+            dialogue_7: "",
+            dialogue_8: "",
+            insta_1: "",
+            insta_2: "",
+            insta_3: "",
+            insta_4: "",
+            insta_5: "",
+            insta_6: "",
+            insta_7: "",
+            insta_8: ""
         },
         sources: []
     };
@@ -261,6 +278,35 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
       config: {
         systemInstruction: "Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Text.",
         temperature: 0.75
+      }
+    });
+
+    const result = response.text || "";
+    if (!result) throw new Error("Kein Text generiert. Die API hat eine leere Antwort zurückgegeben.");
+    return result;
+  });
+};
+
+export const generateInstagramWisdom = async (quote: string, author: string, deathYear: number, sourceUrl: string, controls: SegmentControls, model: string): Promise<string> => {
+  return handleApiCall(async () => {
+    const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
+    const seconds = Math.max(20, Math.min(70, controls.insta_seconds || 45));
+    const targetWords = Math.round((seconds / 45) * 100);
+
+    let promptTemplate = loadPrompt('script_generation', 'instagram_wisdom');
+    promptTemplate = safeReplace(promptTemplate, '{seconds}', seconds.toString());
+    promptTemplate = safeReplace(promptTemplate, '{targetWords}', targetWords.toString());
+    promptTemplate = safeReplace(promptTemplate, '{quote}', quote || "");
+    promptTemplate = safeReplace(promptTemplate, '{author}', author || "");
+    promptTemplate = safeReplace(promptTemplate, '{deathYear}', deathYear ? String(deathYear) : "");
+    promptTemplate = safeReplace(promptTemplate, '{sourceUrl}', sourceUrl || "");
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: promptTemplate,
+      config: {
+        systemInstruction: "Du bist ein Scriptwriter. Antworte exakt im gewünschten Format.",
+        temperature: 0.8
       }
     });
 

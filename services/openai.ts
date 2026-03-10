@@ -115,6 +115,48 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
     });
 };
 
+export const generateInstagramWisdom = async (quote: string, author: string, deathYear: number, sourceUrl: string, controls: SegmentControls, model: string): Promise<string> => {
+    return handleApiCall(async () => {
+        const apiKey = getOpenAIKey();
+        const seconds = Math.max(20, Math.min(70, controls.insta_seconds || 45));
+        const targetWords = Math.round((seconds / 45) * 100);
+
+        let promptTemplate = loadPrompt('script_generation', 'instagram_wisdom');
+        promptTemplate = safeReplace(promptTemplate, '{seconds}', seconds.toString());
+        promptTemplate = safeReplace(promptTemplate, '{targetWords}', targetWords.toString());
+        promptTemplate = safeReplace(promptTemplate, '{quote}', quote || "");
+        promptTemplate = safeReplace(promptTemplate, '{author}', author || "");
+        promptTemplate = safeReplace(promptTemplate, '{deathYear}', deathYear ? String(deathYear) : "");
+        promptTemplate = safeReplace(promptTemplate, '{sourceUrl}', sourceUrl || "");
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: model,
+                max_tokens: 2048,
+                messages: [
+                    { role: 'system', content: "Du bist ein Scriptwriter. Antworte exakt im gewünschten Format." },
+                    { role: 'user', content: promptTemplate }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error?.message || `OpenAI Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const result = data.choices?.[0]?.message?.content || "";
+        if (!result) throw new Error("Kein Text generiert. Die API hat eine leere Antwort zurückgegeben.");
+        return result;
+    });
+};
+
 export const generateDialogue = async (rawText: string, factText: string, controls: SegmentControls, model: string): Promise<string> => {
     return handleApiCall(async () => {
         const apiKey = getOpenAIKey();

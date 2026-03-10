@@ -145,6 +145,38 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
     });
 };
 
+export const generateInstagramWisdom = async (quote: string, author: string, deathYear: number, sourceUrl: string, controls: SegmentControls, model: string): Promise<string> => {
+    return handleApiCall(async () => {
+        const apiKey = getAnthropicKey();
+        const seconds = Math.max(20, Math.min(70, controls.insta_seconds || 45));
+        const targetWords = Math.round((seconds / 45) * 100);
+
+        let promptTemplate = loadPrompt('script_generation', 'instagram_wisdom');
+        promptTemplate = safeReplace(promptTemplate, '{seconds}', seconds.toString());
+        promptTemplate = safeReplace(promptTemplate, '{targetWords}', targetWords.toString());
+        promptTemplate = safeReplace(promptTemplate, '{quote}', quote || "");
+        promptTemplate = safeReplace(promptTemplate, '{author}', author || "");
+        promptTemplate = safeReplace(promptTemplate, '{deathYear}', deathYear ? String(deathYear) : "");
+        promptTemplate = safeReplace(promptTemplate, '{sourceUrl}', sourceUrl || "");
+
+        const response = await postAnthropic(apiKey, '2023-06-01', {
+            model: model,
+            max_tokens: 2048,
+            system: "Du bist ein Scriptwriter. Antworte exakt im gewünschten Format.",
+            messages: [
+                { role: 'user', content: promptTemplate }
+            ]
+        });
+
+        if (!response.ok) throw new Error(await getErrorMessage(response));
+
+        const data = await response.json();
+        const result = data.content?.[0]?.text || "";
+        if (!result) throw new Error("Kein Text generiert. Die API hat eine leere Antwort zurückgegeben.");
+        return result;
+    });
+};
+
 export const generateDialogue = async (rawText: string, factText: string, controls: SegmentControls, model: string): Promise<string> => {
     return handleApiCall(async () => {
         const apiKey = getAnthropicKey();

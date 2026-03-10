@@ -36,6 +36,16 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
     return gemini.generateNewsFlash(dossier, facts, controls, model);
 };
 
+export const generateInstagramWisdom = async (quote: string, author: string, deathYear: number, sourceUrl: string, controls: SegmentControls, model: string): Promise<string> => {
+    const provider = getProvider();
+    if (provider === 'openai') {
+        return openai.generateInstagramWisdom(quote, author, deathYear, sourceUrl, controls, model);
+    } else if (provider === 'anthropic') {
+        return anthropic.generateInstagramWisdom(quote, author, deathYear, sourceUrl, controls, model);
+    }
+    return gemini.generateInstagramWisdom(quote, author, deathYear, sourceUrl, controls, model);
+};
+
 export const generateDialogue = async (rawText: string, factText: string, controls: SegmentControls, model: string): Promise<string> => {
     const provider = getProvider();
     if (provider === 'openai') {

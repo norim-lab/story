@@ -294,6 +294,44 @@ ZUSATZFAKTEN:
 
 Gib NUR den finalen Kurznachrichten-Text zurück.`,
 
+    instagram_wisdom: `Du bist ein Scriptwriter für Instagram Reels.
+ZIELGRUPPE: 15–25 Jahre. Jugendgerechte Sprache, aber nicht cringe. Keine Emojis, keine Hashtags.
+
+INPUT:
+Du bekommst ein echtes Zitat aus Wikiquote von einer Person, die seit mindestens 80 Jahren tot ist.
+
+ORIGINALZITAT (Quelle):
+"{quote}"
+— {author} (†{deathYear})
+{sourceUrl}
+
+AUFGABE:
+1) Erkläre die Weisheit/Message des Zitats in moderner Jugendsprache.
+2) Schreibe daraus einen sprechbaren Reel-Text.
+3) Gib eine deutsche UND eine englische Version aus.
+
+LÄNGENVORGABE (STRIKT):
+- Zielzeit: {seconds} Sekunden.
+- Rechengrundlage: 100 Wörter = 45 Sekunden.
+- Ziel-Wortzahl: ca. {targetWords} Wörter.
+- Toleranz: +/- 4 Sekunden.
+
+REGELN:
+- Keine neuen Fakten erfinden. Nur Bedeutung/Interpretation.
+- Keine Beleidigungen, keine Hate-Speech, keine NSFW-Inhalte.
+- Kurzsatz-Rhythmus, gesprochen, direkte Ansprache ("du").
+- 1 klarer Hook am Anfang, 1 sauberer Abschluss am Ende.
+
+OUTPUT-FORMAT (exakt so):
+DE:
+[Text]
+
+EN:
+[Text]
+
+SOURCE:
+"{quote}" — {author} (†{deathYear}) · {sourceUrl}`,
+
     write_and_fit_long: `Du bist der Chef-Analyst für das Format "ZEITBLITZ".
 AUFGABE:
 Erstelle basierend auf dem Source-Dossier und den Zusatzfakten ein TIEFGEHENDES, POLITISCHES Skript (Long Format, 8-15 Min).

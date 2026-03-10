@@ -15,6 +15,7 @@ import {
     generateDialogue,
     generateScriptWithControls,
     generateNewsFlash,
+    generateInstagramWisdom,
     generateCTA,
     checkApiKey,
     improveExistingScript
@@ -22,6 +23,7 @@ import {
 import { initStorage, listProjects, saveProject, deleteProject as deleteCloudProject, checkConnection } from './services/storage';
 import SettingsModal from './components/SettingsModal';
 import { getSettings, getFastModel, getProModel } from './services/settings';
+import { getRandomHistoricalWikiquote } from './services/wikiquote';
 
 const MAX_HISTORY_STEPS = 50;
 const MAIN_ID = "main-script";
@@ -32,13 +34,15 @@ const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 const VERSION_ORDER: ScriptLength[] = [
     'short_1', 'short_2', 'short_3', 'short_4', 'short_5', 'short_6', 'short_7', 'short_8',
     'long_1', 'long_2', 'long_3', 'long_4', 'long_5', 'long_6', 'long_7', 'long_8',
-    'dialogue_1', 'dialogue_2', 'dialogue_3', 'dialogue_4', 'dialogue_5', 'dialogue_6', 'dialogue_7', 'dialogue_8'
+    'dialogue_1', 'dialogue_2', 'dialogue_3', 'dialogue_4', 'dialogue_5', 'dialogue_6', 'dialogue_7', 'dialogue_8',
+    'insta_1', 'insta_2', 'insta_3', 'insta_4', 'insta_5', 'insta_6', 'insta_7', 'insta_8'
 ];
 
 const VERSION_LABELS: Record<string, string> = {
     short_1: 'Short 1', short_2: 'Short 2', short_3: 'Short 3', short_4: 'Short 4', short_5: 'Short 5', short_6: 'Short 6', short_7: 'Short 7', short_8: 'Short 8',
     long_1: 'Long 1', long_2: 'Long 2', long_3: 'Long 3', long_4: 'Long 4', long_5: 'Long 5', long_6: 'Long 6', long_7: 'Long 7', long_8: 'Long 8',
-    dialogue_1: 'Dialog 1', dialogue_2: 'Dialog 2', dialogue_3: 'Dialog 3', dialogue_4: 'Dialog 4', dialogue_5: 'Dialog 5', dialogue_6: 'Dialog 6', dialogue_7: 'Dialog 7', dialogue_8: 'Dialog 8'
+    dialogue_1: 'Dialog 1', dialogue_2: 'Dialog 2', dialogue_3: 'Dialog 3', dialogue_4: 'Dialog 4', dialogue_5: 'Dialog 5', dialogue_6: 'Dialog 6', dialogue_7: 'Dialog 7', dialogue_8: 'Dialog 8',
+    insta_1: 'IG 1', insta_2: 'IG 2', insta_3: 'IG 3', insta_4: 'IG 4', insta_5: 'IG 5', insta_6: 'IG 6', insta_7: 'IG 7', insta_8: 'IG 8'
 };
 
 const TONE_OPTIONS = [
@@ -58,10 +62,11 @@ const CONTROL_LABELS: Record<keyof SegmentControls, string> = {
     dialogue_seconds: "Dialogue Duration",
     target_seconds: "Target Duration",
     news_seconds: "News Duration",
+    insta_seconds: "IG Wisdom Duration",
     length: "Target Length" // Will be hidden
 };
 
-const DEFAULT_CONTROLS: SegmentControls = { info: 5, style: 5, metaphor: 5, length: 5, x_source: 1, fact_intensity: 5, dialogue_seconds: 60, target_seconds: 60, news_seconds: 30 };
+const DEFAULT_CONTROLS: SegmentControls = { info: 5, style: 5, metaphor: 5, length: 5, x_source: 1, fact_intensity: 5, dialogue_seconds: 60, target_seconds: 60, news_seconds: 30, insta_seconds: 45 };
 
 const mapSelectionToRaw = (raw: string, selectedText: string): { start: number, end: number } | null => {
     if (!selectedText || !selectedText.trim()) return null;
@@ -896,6 +901,71 @@ export const App: React.FC = () => {
         }
     };
 
+    const handleInstagramWisdomGenerate = async () => {
+        if (!activeProject?.scriptResult) return;
+        if (!checkProtection()) return;
+
+        const keyCheck = checkApiKey();
+        if (!keyCheck.valid) {
+            addLog(keyCheck.message || "API Key fehlt", "error");
+            setSettingsOpen(true);
+            return;
+        }
+
+        const controls = activeProject.segmentControls[MAIN_ID] || DEFAULT_CONTROLS;
+        const seconds = Math.max(20, Math.min(70, controls.insta_seconds || 45));
+        const model = getCurrentModel();
+
+        setIsZapping(true);
+        try {
+            const picked = await getRandomHistoricalWikiquote(80);
+            const igText = await generateInstagramWisdom(
+                picked.quote,
+                picked.author,
+                picked.deathYear,
+                picked.url,
+                { ...controls, insta_seconds: seconds },
+                model
+            );
+            if (!igText || igText.trim().length === 0) throw new Error("Generierter Text ist leer.");
+
+            const section0 = activeProject.scriptResult.sections[0];
+            const versions = section0.versions;
+            let targetSlot: ScriptLength | null = null;
+            for (let i = 1; i <= 8; i++) {
+                const key = `insta_${i}` as ScriptLength;
+                if (!versions[key] || versions[key].trim() === "") {
+                    targetSlot = key;
+                    break;
+                }
+            }
+            if (!targetSlot) targetSlot = 'insta_8';
+
+            const prevSources = Array.isArray(section0.sources) ? section0.sources : [];
+            const hasSource = prevSources.some(s => s?.url === picked.url);
+            const nextSources = hasSource ? prevSources : [...prevSources, { title: `Wikiquote: ${picked.author}`, url: picked.url, type: 'wikiquote' }];
+
+            const updatedResult = {
+                ...activeProject.scriptResult,
+                model,
+                sections: [{
+                    ...section0,
+                    sources: nextSources,
+                    versions: { ...versions, [targetSlot]: igText }
+                }]
+            };
+
+            commitAction(`IG Wisdom: ${seconds}s -> ${targetSlot}`, {
+                scriptResult: updatedResult,
+                segmentVersions: { [MAIN_ID]: targetSlot }
+            });
+        } catch (e: any) {
+            addLog(`Fehler: ${e?.message || e}`, "error");
+        } finally {
+            setIsZapping(false);
+        }
+    };
+
     const handleDialogueGenerate = async () => {
         if (!activeProject?.scriptResult) return;
         if (!checkProtection()) return;
@@ -912,7 +982,7 @@ export const App: React.FC = () => {
         let targetSlot: ScriptLength = currentV;
 
         if (!currentV.startsWith('dialogue')) {
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 1; i <= 8; i++) {
                 const key = `dialogue_${i}` as ScriptLength;
                 if (!versions[key] || versions[key].trim() === "") {
                     targetSlot = key;
@@ -1289,7 +1359,8 @@ export const App: React.FC = () => {
     const allSlotGroups = {
         shorts: ['short_1', 'short_2', 'short_3', 'short_4', 'short_5', 'short_6', 'short_7', 'short_8'] as ScriptLength[],
         longs: ['long_1', 'long_2', 'long_3', 'long_4', 'long_5', 'long_6', 'long_7', 'long_8'] as ScriptLength[],
-        dialogues: ['dialogue_1', 'dialogue_2', 'dialogue_3', 'dialogue_4', 'dialogue_5', 'dialogue_6', 'dialogue_7', 'dialogue_8'] as ScriptLength[]
+        dialogues: ['dialogue_1', 'dialogue_2', 'dialogue_3', 'dialogue_4', 'dialogue_5', 'dialogue_6', 'dialogue_7', 'dialogue_8'] as ScriptLength[],
+        instas: ['insta_1', 'insta_2', 'insta_3', 'insta_4', 'insta_5', 'insta_6', 'insta_7', 'insta_8'] as ScriptLength[]
     };
 
     return (
@@ -1478,6 +1549,26 @@ export const App: React.FC = () => {
                                     </div>
                                 </div>
 
+                                <div className="space-y-2">
+                                    <div className="text-[9px] font-bold text-slate-600 uppercase">Instagram Wisdom</div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {allSlotGroups.instas.map(v => {
+                                            const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
+                                            const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
+                                            return (
+                                            <div key={v} className="relative flex items-center">
+                                                <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-fuchsia-600 border-fuchsia-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
+                                                    {isFinal && <span className="text-[10px]">🔒</span>}
+                                                    {(VERSION_LABELS[v] || v).replace('IG ', '')}
+                                                </button>
+                                                {hasContent && !isFinal && (
+                                                    <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot({ slot: v, projectId: activeProject.id }); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none">×</button>
+                                                )}
+                                            </div>
+                                        )})}
+                                    </div>
+                                </div>
+
                             </div>
 
                             <div className="flex p-1 bg-black/40 rounded-lg border border-white/5 flex-shrink-0">
@@ -1501,7 +1592,7 @@ export const App: React.FC = () => {
                                         <div className="space-y-6 p-4 bg-black/20 rounded-2xl border border-white/5">
                                             <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Refinement Controls</h3>
                                             {Object.entries(controls).map(([key, val]) => {
-                                                if (key === 'dialogue_seconds' || key === 'target_seconds' || key === 'news_seconds' || key === 'length') return null; 
+                                                if (key === 'dialogue_seconds' || key === 'target_seconds' || key === 'news_seconds' || key === 'insta_seconds' || key === 'length') return null; 
                                                 return (
                                                 <div key={key} className="space-y-2">
                                                     <div className="flex justify-between text-[10px] uppercase font-bold text-slate-400">
@@ -1552,6 +1643,27 @@ export const App: React.FC = () => {
                                                 </div>
                                                 <button onClick={handleNewsFlashGenerate} disabled={isZapping} className="w-full py-3 bg-slate-700/50 hover:bg-slate-600 border border-white/10 rounded-xl text-[10px] font-black uppercase transition-all">
                                                     News Flash (20–60s)
+                                                </button>
+                                            </div>
+
+                                            <div className="pt-4 border-t border-white/5 space-y-4">
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between text-[10px] uppercase font-bold text-slate-400">
+                                                        <span>IG Wisdom Duration</span>
+                                                        <span>{controls.insta_seconds || 45}s</span>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min="20"
+                                                        max="70"
+                                                        step="5"
+                                                        value={controls.insta_seconds || 45}
+                                                        onChange={(e) => updateActiveProject({ segmentControls: { ...activeProject.segmentControls, [MAIN_ID]: { ...controls, insta_seconds: parseInt(e.target.value) } } })}
+                                                        className="w-full h-1 bg-white/10 rounded-full appearance-none accent-fuchsia-500"
+                                                    />
+                                                </div>
+                                                <button onClick={handleInstagramWisdomGenerate} disabled={isZapping} className="w-full py-3 bg-fuchsia-600/20 text-fuchsia-300 border border-fuchsia-500/30 hover:bg-fuchsia-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all">
+                                                    IG Wisdom (Wikiquote)
                                                 </button>
                                             </div>
                                         </div>
