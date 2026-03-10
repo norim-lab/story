@@ -3,9 +3,36 @@ import { getAnthropicKey } from "./settings";
 import { loadPrompt } from "./prompts";
 
 const anthropicMessagesUrl = import.meta.env.DEV ? '/anthropic' : '/anthropic.php';
+const anthropicProxyMode = import.meta.env.DEV ? 'direct' : 'wrapped';
 
 function safeReplace(template: string, key: string, value: string): string {
     return template.split(key).join(value);
+}
+
+async function postAnthropic(apiKey: string, anthropicVersion: string, payload: any): Promise<Response> {
+    if (anthropicProxyMode === 'direct') {
+        return fetch(anthropicMessagesUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': anthropicVersion
+            },
+            body: JSON.stringify(payload)
+        });
+    }
+
+    return fetch(anthropicMessagesUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            apiKey,
+            anthropicVersion,
+            payload
+        })
+    });
 }
 
 async function handleApiCall<T>(call: () => Promise<T>): Promise<T> {
@@ -45,21 +72,13 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
         promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
         promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
 
-        const response = await fetch(anthropicMessagesUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: model,
-                max_tokens: 4096,
-                system: "Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Skript.",
-                messages: [
-                    { role: 'user', content: promptTemplate }
-                ]
-            })
+        const response = await postAnthropic(apiKey, '2023-06-01', {
+            model: model,
+            max_tokens: 4096,
+            system: "Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Skript.",
+            messages: [
+                { role: 'user', content: promptTemplate }
+            ]
         });
 
         if (!response.ok) {
@@ -94,21 +113,13 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
         promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
         promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
 
-        const response = await fetch(anthropicMessagesUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: model,
-                max_tokens: 2048,
-                system: "Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Text.",
-                messages: [
-                    { role: 'user', content: promptTemplate }
-                ]
-            })
+        const response = await postAnthropic(apiKey, '2023-06-01', {
+            model: model,
+            max_tokens: 2048,
+            system: "Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Text.",
+            messages: [
+                { role: 'user', content: promptTemplate }
+            ]
         });
 
         if (!response.ok) {
@@ -138,21 +149,13 @@ export const generateDialogue = async (rawText: string, factText: string, contro
 
         const fullContext = `DOSSIER:\n${rawText}\n\nZUSÄTZLICHE FAKTEN:\n${factText}`;
 
-        const response = await fetch(anthropicMessagesUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: model,
-                max_tokens: 4096,
-                system: systemInstruction,
-                messages: [
-                    { role: 'user', content: fullContext }
-                ]
-            })
+        const response = await postAnthropic(apiKey, '2023-06-01', {
+            model: model,
+            max_tokens: 4096,
+            system: systemInstruction,
+            messages: [
+                { role: 'user', content: fullContext }
+            ]
         });
 
         if (!response.ok) {
@@ -175,21 +178,13 @@ export const regenerateHook = async (text: string, controls: SegmentControls, mo
         systemInstruction = safeReplace(systemInstruction, '{metaphor}', controls.metaphor.toString());
         systemInstruction = safeReplace(systemInstruction, '{context}', context);
 
-        const response = await fetch(anthropicMessagesUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: model,
-                max_tokens: 1024,
-                system: systemInstruction,
-                messages: [
-                    { role: 'user', content: "Generiere den Hook jetzt." }
-                ]
-            })
+        const response = await postAnthropic(apiKey, '2023-06-01', {
+            model: model,
+            max_tokens: 1024,
+            system: systemInstruction,
+            messages: [
+                { role: 'user', content: "Generiere den Hook jetzt." }
+            ]
         });
 
         if (!response.ok) {
@@ -221,21 +216,13 @@ export const generateCTA = async (text: string, controls: SegmentControls, model
         systemInstruction = safeReplace(systemInstruction, '{scriptType}', scriptType);
         systemInstruction = safeReplace(systemInstruction, '{targetWords}', targetWords);
 
-        const response = await fetch(anthropicMessagesUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: model,
-                max_tokens: 512,
-                system: systemInstruction,
-                messages: [
-                    { role: 'user', content: "Generiere jetzt den Abschluss." }
-                ]
-            })
+        const response = await postAnthropic(apiKey, '2023-06-01', {
+            model: model,
+            max_tokens: 512,
+            system: systemInstruction,
+            messages: [
+                { role: 'user', content: "Generiere jetzt den Abschluss." }
+            ]
         });
 
         if (!response.ok) {
@@ -255,21 +242,13 @@ export const rewriteSelectionWithTone = async (text: string, tone: string, model
         let systemInstruction = loadPrompt('script_generation', 'tone_transformation');
         systemInstruction = safeReplace(systemInstruction, '{toneKey}', tone);
 
-        const response = await fetch(anthropicMessagesUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: model,
-                max_tokens: 2048,
-                system: systemInstruction,
-                messages: [
-                    { role: 'user', content: text }
-                ]
-            })
+        const response = await postAnthropic(apiKey, '2023-06-01', {
+            model: model,
+            max_tokens: 2048,
+            system: systemInstruction,
+            messages: [
+                { role: 'user', content: text }
+            ]
         });
 
         if (!response.ok) {
@@ -320,21 +299,13 @@ LÄNGENVORGABE (STRIKT):
 
 Antworte NUR mit dem verbesserten Skript, keine Erklärungen.`;
 
-        const response = await fetch(anthropicMessagesUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: model,
-                max_tokens: 4096,
-                system: systemInstruction,
-                messages: [
-                    { role: 'user', content: `Verbessere und entwickle diesen Skriptentwurf weiter:\n\n${existingText}` }
-                ]
-            })
+        const response = await postAnthropic(apiKey, '2023-06-01', {
+            model: model,
+            max_tokens: 4096,
+            system: systemInstruction,
+            messages: [
+                { role: 'user', content: `Verbessere und entwickle diesen Skriptentwurf weiter:\n\n${existingText}` }
+            ]
         });
 
         if (!response.ok) {

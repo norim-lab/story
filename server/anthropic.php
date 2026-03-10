@@ -34,9 +34,19 @@ if ($rawBody === false || trim($rawBody) === '') {
     exit;
 }
 
+$decoded = json_decode($rawBody, true);
+$wrapped = is_array($decoded) && isset($decoded['payload']) && is_array($decoded['payload']);
+$payloadBody = $wrapped ? json_encode($decoded['payload']) : $rawBody;
+if ($payloadBody === false || trim($payloadBody) === '') {
+    http_response_code(400);
+    echo json_encode(['error' => 'Invalid payload'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 $clientKey = $_SERVER['HTTP_X_API_KEY'] ?? '';
+$bodyKey = $wrapped && isset($decoded['apiKey']) && is_string($decoded['apiKey']) ? $decoded['apiKey'] : '';
 $serverKey = getenv('ANTHROPIC_API_KEY') ?: (getenv('ANTHROPIC_KEY') ?: '');
-$apiKey = $serverKey !== '' ? $serverKey : $clientKey;
+$apiKey = $serverKey !== '' ? $serverKey : ($clientKey !== '' ? $clientKey : $bodyKey);
 
 if ($apiKey === '') {
     http_response_code(400);
@@ -44,12 +54,12 @@ if ($apiKey === '') {
     exit;
 }
 
-$anthropicVersion = $_SERVER['HTTP_ANTHROPIC_VERSION'] ?? '2023-06-01';
+$anthropicVersion = $_SERVER['HTTP_ANTHROPIC_VERSION'] ?? ($wrapped && isset($decoded['anthropicVersion']) && is_string($decoded['anthropicVersion']) ? $decoded['anthropicVersion'] : '2023-06-01');
 
 $ch = curl_init('https://api.anthropic.com/v1/messages');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, $rawBody);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $payloadBody);
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
     'Content-Type: application/json',
     'x-api-key: ' . $apiKey,
