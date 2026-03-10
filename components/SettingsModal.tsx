@@ -9,9 +9,9 @@ const MODEL_OPTIONS = {
     { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Leistungsstark)' },
   ],
   anthropic: [
-    { value: 'claude-haiku-4-5-20250514', label: 'Claude Haiku 4.5 (Schnell)' },
-    { value: 'claude-sonnet-4-6-20250514', label: 'Claude Sonnet 4.6 (Ausgewogen)' },
-    { value: 'claude-opus-4-6-20250514', label: 'Claude Opus 4.6 (Leistungsstark)' },
+    { value: 'claude-haiku-4-5', label: 'Claude Haiku 4.5 (Schnell)' },
+    { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6 (Ausgewogen)' },
+    { value: 'claude-opus-4-6', label: 'Claude Opus 4.6 (Leistungsstark)' },
   ],
   openai: [
     { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Schnell)' },

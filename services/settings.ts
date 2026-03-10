@@ -24,8 +24,8 @@ const defaults: ZBSettings = {
   openaiFastModel: 'gpt-4o-mini',
   openaiProModel: 'gpt-4o',
   anthropicApiKey: '',
-  anthropicFastModel: 'claude-haiku-4-5-20250514',
-  anthropicProModel: 'claude-sonnet-4-6-20250514',
+  anthropicFastModel: 'claude-haiku-4-5',
+  anthropicProModel: 'claude-sonnet-4-6',
   perplexityApiKey: '',
   activeProvider: 'google'
 };

@@ -35,6 +35,23 @@ async function postAnthropic(apiKey: string, anthropicVersion: string, payload: 
     });
 }
 
+async function getErrorMessage(response: Response): Promise<string> {
+    const base = `Anthropic Error: ${response.status}`;
+    try {
+        const data: any = await response.json();
+        const msg = data?.error?.message || data?.message || data?.error || data?.details;
+        return typeof msg === 'string' && msg.trim() ? msg : base;
+    } catch {
+        try {
+            const txt = await response.text();
+            const clean = txt.replace(/\s+/g, ' ').trim();
+            return clean ? `${base} · ${clean.slice(0, 300)}` : base;
+        } catch {
+            return base;
+        }
+    }
+}
+
 async function handleApiCall<T>(call: () => Promise<T>): Promise<T> {
     const key = getAnthropicKey();
     console.log("[Anthropic] API Call starting, Key present:", !!key);
@@ -81,10 +98,7 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
             ]
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || `Anthropic Error: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(await getErrorMessage(response));
 
         const data = await response.json();
         const result = data.content?.[0]?.text || "";
@@ -122,10 +136,7 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
             ]
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || `Anthropic Error: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(await getErrorMessage(response));
 
         const data = await response.json();
         const result = data.content?.[0]?.text || "";
@@ -158,10 +169,7 @@ export const generateDialogue = async (rawText: string, factText: string, contro
             ]
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || `Anthropic Error: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(await getErrorMessage(response));
 
         const data = await response.json();
         return data.content?.[0]?.text || "";
@@ -187,10 +195,7 @@ export const regenerateHook = async (text: string, controls: SegmentControls, mo
             ]
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || `Anthropic Error: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(await getErrorMessage(response));
 
         const data = await response.json();
         return data.content?.[0]?.text?.trim() || text;
@@ -225,10 +230,7 @@ export const generateCTA = async (text: string, controls: SegmentControls, model
             ]
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || `Anthropic Error: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(await getErrorMessage(response));
 
         const data = await response.json();
         return data.content?.[0]?.text || "";
@@ -251,10 +253,7 @@ export const rewriteSelectionWithTone = async (text: string, tone: string, model
             ]
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || `Anthropic Error: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(await getErrorMessage(response));
 
         const data = await response.json();
         return data.content?.[0]?.text || text;
@@ -308,10 +307,7 @@ Antworte NUR mit dem verbesserten Skript, keine Erklärungen.`;
             ]
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || `Anthropic Error: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(await getErrorMessage(response));
 
         const data = await response.json();
         return data.content?.[0]?.text || existingText;
