@@ -9,29 +9,52 @@ function safeReplace(template: string, key: string, value: string): string {
     return template.split(key).join(value);
 }
 
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function postAnthropic(apiKey: string, anthropicVersion: string, payload: any): Promise<Response> {
-    if (anthropicProxyMode === 'direct') {
-        return fetch(anthropicMessagesUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': anthropicVersion
-            },
-            body: JSON.stringify(payload)
-        });
+    const maxAttempts = 4;
+    const retryableStatuses = new Set([429, 503, 529]);
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+            const response = await fetch(anthropicMessagesUrl, anthropicProxyMode === 'direct' ? {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': anthropicVersion
+                },
+                body: JSON.stringify(payload)
+            } : {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    apiKey,
+                    anthropicVersion,
+                    payload
+                })
+            });
+
+            if (!retryableStatuses.has(response.status) || attempt === maxAttempts - 1) {
+                return response;
+            }
+        } catch (e) {
+            if (attempt === maxAttempts - 1) throw e;
+        }
+
+        const base = 600 * Math.pow(2, attempt);
+        const jitter = Math.floor(Math.random() * 250);
+        await sleep(base + jitter);
     }
 
     return fetch(anthropicMessagesUrl, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            apiKey,
-            anthropicVersion,
-            payload
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey, anthropicVersion, payload })
     });
 }
 
