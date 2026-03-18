@@ -19,9 +19,6 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Install sshpass
-        run: sudo apt-get update && sudo apt-get install -y sshpass
-
       - name: Install dependencies
         run: npm ci
 
@@ -34,47 +31,52 @@ jobs:
           cp server/debug.php dist/debug.php
           cp server/anthropic.php dist/anthropic.php
 
-      - name: Prepare deployment package
+      - name: Ensure deploy directories in dist
         run: |
-          tar -czf deploy.tar.gz -C dist .
-          echo "Created deployment package: $(ls -lh deploy.tar.gz)"
+          mkdir -p dist/data/images
+          mkdir -p dist/data/projects
 
-      - name: Upload deployment package via SSH (without SCP)
-        env:
-          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
-          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-        run: |
-          echo "Transferring deploy.tar.gz to server..."
-          sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$SSH_USERNAME@$SSH_HOST" "mkdir -p ~/deploy_temp"
-          sshpass -p "$SSH_PASSWORD" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null deploy.tar.gz "$SSH_USERNAME@$SSH_HOST:~/deploy_temp/deploy.tar.gz"
-
-      - name: Test write permissions and prepare server
-        uses: appleboy/ssh-action@master
+      - name: Preflight target path and permissions
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
-            echo "Checking deployment package..."
-            ls -lh ~/deploy_temp/deploy.tar.gz
-            
-            echo "Checking target directory..."
-            ls -la /home/miron777/web/story.zeitblytz.media/public_html
-            
-            echo "Testing write permissions..."
-            touch /home/miron777/web/story.zeitblytz.media/public_html/.write_test && rm /home/miron777/web/story.zeitblytz.media/public_html/.write_test && echo "Write test successful!"
-            
-            echo "Backup current deployment..."
-            cd /home/miron777/web/story.zeitblytz.media/public_html && rm -rf backup && mkdir backup && cp -r * backup/ 2>/dev/null || echo "Backup failed, continuing..."
-            
-            echo "Deploying to server..."
-            cd /home/miron777/web/story.zeitblytz.media/public_html
-            tar -xzf ~/deploy_temp/deploy.tar.gz
-            echo "Deployment successful!"
-            
-            echo "Cleanup..."
-            rm -rf backup
-            rm -rf ~/deploy_temp
+            TARGET="/home/miron777/web/story.zeitblytz.media/public_html"
+            mkdir -p "$TARGET"
+            mkdir -p "$TARGET/data"
+            mkdir -p "$TARGET/data/images"
+            mkdir -p "$TARGET/data/projects"
+            chmod 0777 "$TARGET" "$TARGET/data" "$TARGET/data/images" "$TARGET/data/projects" || true
+            touch "$TARGET/.write_test"
+            rm -f "$TARGET/.write_test"
+            ls -la "$TARGET"
           script_stop: true
-          request_pty: false
+
+      - name: Deploy over SCP to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: "dist/**"
+          target: "/home/miron777/web/story.zeitblytz.media/public_html/"
+          overwrite: true
+          strip_components: 1
+          timeout: 120s
+          command_timeout: 10m
+          debug: true
+
+      - name: Verify deployed files
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            TARGET="/home/miron777/web/story.zeitblytz.media/public_html"
+            ls -la "$TARGET"
+            test -f "$TARGET/index.html"
+            test -f "$TARGET/track.php"
+          script_stop: true
