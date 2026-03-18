@@ -19,6 +19,9 @@ jobs:
           node-version: "20"
           cache: "npm"
 
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
       - name: Install dependencies
         run: npm ci
 
@@ -54,45 +57,22 @@ jobs:
             ls -la "$TARGET"
           script_stop: true
 
-      - name: Deploy over SCP to server (primary)
-        id: deploy_primary
-        continue-on-error: true
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          source: "dist/**"
-          target: "/home/miron777/web/story.zeitblytz.media/public_html"
-          overwrite: true
-          strip_components: 1
-          timeout: 30s
-          command_timeout: 10m
-          debug: false
-
-      - name: Deploy over SCP to server (fallback)
-        id: deploy_fallback
-        if: steps.deploy_primary.outcome == 'failure'
-        continue-on-error: true
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          source: "dist/**"
-          target: "/home/miron777/web/story.zeitblytz.media/public_html"
-          overwrite: true
-          strip_components: 1
-          timeout: 90s
-          command_timeout: 10m
-          debug: true
-
-      - name: Ensure deploy step succeeded
-        if: steps.deploy_primary.outcome == 'failure' && steps.deploy_fallback.outcome == 'failure'
-        run: exit 1
+      - name: Deploy via native SCP with retry
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          TARGET="/home/miron777/web/story.zeitblytz.media/public_html/"
+          SUCCESS=0
+          for ATTEMPT in 1 2 3; do
+            echo "Deploy attempt ${ATTEMPT}..."
+            sshpass -p "$SSH_PASSWORD" scp -P 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r dist/* "$SSH_USERNAME@$SSH_HOST:$TARGET" && SUCCESS=1 && break
+            sleep 5
+          done
+          test "$SUCCESS" -eq 1
 
       - name: Verify deployed files
-        if: steps.deploy_primary.outcome == 'success' || steps.deploy_fallback.outcome == 'success'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
