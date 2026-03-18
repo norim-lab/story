@@ -31,7 +31,22 @@ jobs:
           cp server/debug.php dist/debug.php
           cp server/anthropic.php dist/anthropic.php
 
-      - name: Test write permissions on server
+      - name: Prepare deployment package
+        run: |
+          tar -czf deploy.tar.gz -C dist .
+
+      - name: Upload deployment package
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: "deploy.tar.gz"
+          target: "/tmp/deploy.tar.gz"
+          overwrite: true
+          debug: true
+
+      - name: Test write permissions and prepare server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -42,15 +57,21 @@ jobs:
             ls -la /home/miron777/web/story.zeitblytz.media/public_html
             echo "Testing write permissions..."
             touch /home/miron777/web/story.zeitblytz.media/public_html/.write_test && rm /home/miron777/web/story.zeitblytz.media/public_html/.write_test && echo "Write test successful!"
+            echo "Backup current deployment..."
+            cd /home/miron777/web/story.zeitblytz.media/public_html && rm -rf backup && mkdir backup && cp -r * backup/ 2>/dev/null || echo "Backup failed, continuing..."
 
-      - name: Deploy over SCP to server
-        uses: appleboy/scp-action@v0.1.7
+      - name: Deploy via SSH with retry
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
-          source: "dist/**"
-          target: "/home/miron777/web/story.zeitblytz.media/public_html"
-          overwrite: true
-          strip_components: 1
-          debug: true
+          script: |
+            echo "Deploying to server..."
+            cd /home/miron777/web/story.zeitblytz.media/public_html
+            tar -xzf /tmp/deploy.tar.gz
+            echo "Deployment successful!"
+            rm -rf backup
+            rm -f /tmp/deploy.tar.gz
+          script_stop: true
+          request_pty: false
