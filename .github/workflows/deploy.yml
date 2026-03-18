@@ -19,6 +19,9 @@ jobs:
           node-version: "20"
           cache: "npm"
 
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
       - name: Install dependencies
         run: npm ci
 
@@ -34,17 +37,13 @@ jobs:
       - name: Prepare deployment package
         run: |
           tar -czf deploy.tar.gz -C dist .
+          echo "Created deployment package: $(ls -lh deploy.tar.gz)"
 
-      - name: Upload deployment package
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          source: "deploy.tar.gz"
-          target: "/tmp/deploy.tar.gz"
-          overwrite: true
-          debug: true
+      - name: Upload deployment package via SSH (without SCP)
+        run: |
+          echo "Transferring deploy.tar.gz to server..."
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "mkdir -p ~/deploy_temp"
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null deploy.tar.gz ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:~/deploy_temp/deploy.tar.gz
 
       - name: Test write permissions and prepare server
         uses: appleboy/ssh-action@master
@@ -53,25 +52,25 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
+            echo "Checking deployment package..."
+            ls -lh ~/deploy_temp/deploy.tar.gz
+            
             echo "Checking target directory..."
             ls -la /home/miron777/web/story.zeitblytz.media/public_html
+            
             echo "Testing write permissions..."
             touch /home/miron777/web/story.zeitblytz.media/public_html/.write_test && rm /home/miron777/web/story.zeitblytz.media/public_html/.write_test && echo "Write test successful!"
+            
             echo "Backup current deployment..."
             cd /home/miron777/web/story.zeitblytz.media/public_html && rm -rf backup && mkdir backup && cp -r * backup/ 2>/dev/null || echo "Backup failed, continuing..."
-
-      - name: Deploy via SSH with retry
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          script: |
+            
             echo "Deploying to server..."
             cd /home/miron777/web/story.zeitblytz.media/public_html
-            tar -xzf /tmp/deploy.tar.gz
+            tar -xzf ~/deploy_temp/deploy.tar.gz
             echo "Deployment successful!"
+            
+            echo "Cleanup..."
             rm -rf backup
-            rm -f /tmp/deploy.tar.gz
+            rm -rf ~/deploy_temp
           script_stop: true
           request_pty: false
