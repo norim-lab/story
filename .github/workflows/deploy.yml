@@ -40,10 +40,14 @@ jobs:
           echo "Created deployment package: $(ls -lh deploy.tar.gz)"
 
       - name: Upload deployment package via SSH (without SCP)
+        env:
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           echo "Transferring deploy.tar.gz to server..."
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "mkdir -p ~/deploy_temp"
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null deploy.tar.gz ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:~/deploy_temp/deploy.tar.gz
+          sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$SSH_USERNAME@$SSH_HOST" "mkdir -p ~/deploy_temp"
+          sshpass -p "$SSH_PASSWORD" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null deploy.tar.gz "$SSH_USERNAME@$SSH_HOST:~/deploy_temp/deploy.tar.gz"
 
       - name: Test write permissions and prepare server
         uses: appleboy/ssh-action@master
