@@ -74,6 +74,7 @@ export interface SegmentControls {
   target_seconds: number;
   news_seconds: number;
   insta_seconds: number;
+  news_tiktok: boolean;
 }
 
 export interface HistoryStateSnapshot {

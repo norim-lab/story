@@ -63,10 +63,11 @@ const CONTROL_LABELS: Record<keyof SegmentControls, string> = {
     target_seconds: "Target Duration",
     news_seconds: "News Duration",
     insta_seconds: "IG Wisdom Duration",
+    news_tiktok: "TikTok Optimization",
     length: "Target Length" // Will be hidden
 };
 
-const DEFAULT_CONTROLS: SegmentControls = { info: 5, style: 5, metaphor: 5, length: 5, x_source: 1, fact_intensity: 5, dialogue_seconds: 60, target_seconds: 60, news_seconds: 30, insta_seconds: 45 };
+const DEFAULT_CONTROLS: SegmentControls = { info: 5, style: 5, metaphor: 5, length: 5, x_source: 1, fact_intensity: 5, dialogue_seconds: 60, target_seconds: 60, news_seconds: 30, insta_seconds: 45, news_tiktok: false };
 
 const mapSelectionToRaw = (raw: string, selectedText: string): { start: number, end: number } | null => {
     if (!selectedText || !selectedText.trim()) return null;
@@ -854,7 +855,7 @@ export const App: React.FC = () => {
         }
 
         const controls = activeProject.segmentControls[MAIN_ID] || DEFAULT_CONTROLS;
-        const seconds = Math.max(20, Math.min(60, controls.news_seconds || 30));
+        const seconds = Math.max(15, Math.min(50, controls.news_seconds || 30));
         const model = getCurrentModel();
 
         const sourceRaw = (activeProject.rawInput || "").trim();
@@ -1592,7 +1593,7 @@ export const App: React.FC = () => {
                                         <div className="space-y-6 p-4 bg-black/20 rounded-2xl border border-white/5">
                                             <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Refinement Controls</h3>
                                             {Object.entries(controls).map(([key, val]) => {
-                                                if (key === 'dialogue_seconds' || key === 'target_seconds' || key === 'news_seconds' || key === 'insta_seconds' || key === 'length') return null; 
+                                                if (key === 'dialogue_seconds' || key === 'target_seconds' || key === 'news_seconds' || key === 'insta_seconds' || key === 'news_tiktok' || key === 'length') return null; 
                                                 return (
                                                 <div key={key} className="space-y-2">
                                                     <div className="flex justify-between text-[10px] uppercase font-bold text-slate-400">
@@ -1608,7 +1609,7 @@ export const App: React.FC = () => {
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between text-[10px] uppercase font-bold text-amber-400">
                                                         <span>Target Duration</span>
-                                                        <span className="text-lg font-bold">{formatTime(controls.target_seconds || 60)} min</span>
+                                                        <span className="text-lg font-bold">{formatTime(controls.target_seconds || 60)} Min</span>
                                                     </div>
                                                     <input 
                                                         type="range" 
@@ -1629,20 +1630,29 @@ export const App: React.FC = () => {
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between text-[10px] uppercase font-bold text-slate-400">
                                                         <span>News Duration</span>
-                                                        <span>{controls.news_seconds || 30}s</span>
+                                                        <span className="text-lg font-bold">{formatTime(controls.news_seconds || 30)} Min</span>
                                                     </div>
                                                     <input
                                                         type="range"
-                                                        min="20"
-                                                        max="60"
+                                                        min="15"
+                                                        max="50"
                                                         step="5"
                                                         value={controls.news_seconds || 30}
                                                         onChange={(e) => updateActiveProject({ segmentControls: { ...activeProject.segmentControls, [MAIN_ID]: { ...controls, news_seconds: parseInt(e.target.value) } } })}
                                                         className="w-full h-1 bg-white/10 rounded-full appearance-none accent-slate-400"
                                                     />
+                                                    <label className="flex items-center gap-2 text-[10px] font-bold uppercase text-slate-500 select-none">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={!!controls.news_tiktok}
+                                                            onChange={(e) => updateActiveProject({ segmentControls: { ...activeProject.segmentControls, [MAIN_ID]: { ...controls, news_tiktok: e.target.checked } } })}
+                                                            className="accent-fuchsia-500"
+                                                        />
+                                                        TikTok Optimization
+                                                    </label>
                                                 </div>
                                                 <button onClick={handleNewsFlashGenerate} disabled={isZapping} className="w-full py-3 bg-slate-700/50 hover:bg-slate-600 border border-white/10 rounded-xl text-[10px] font-black uppercase transition-all">
-                                                    News Flash (20–60s)
+                                                    News Flash (15–50s)
                                                 </button>
                                             </div>
 

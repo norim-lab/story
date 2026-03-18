@@ -226,7 +226,7 @@ Gib NUR den neuen Skript-Text zurück.`,
 
     news_flash: `Du bist ein erfahrener Redakteur für ZEITBLITZ-KURZNACHRICHTEN.
 AUFGABE:
-Schreibe eine reine Fakten-Kurznachricht (20–60 Sekunden) im ZEITBLITZ Late-Night-Ton: gewitzt, sarkastisch, intelligent – aber leicht verständlich (keine unnötigen Fremdwörter).
+Schreibe eine reine Fakten-Kurznachricht (15–50 Sekunden) im ZEITBLITZ Late-Night-Ton: gewitzt, sarkastisch, intelligent – aber leicht verständlich (keine unnötigen Fremdwörter).
 
 ZIELZEIT (STRIKT):
 - Zielzeit: {seconds} Sekunden.
@@ -293,6 +293,45 @@ ZUSATZFAKTEN:
 {facts}
 
 Gib NUR den finalen Kurznachrichten-Text zurück.`,
+
+    news_flash_tiktok: `Du bist ein Scriptwriter für TikTok-News (ZEITBLITZ-Style).
+AUFGABE:
+Schreibe eine reine Fakten-Kurznachricht (15–50 Sekunden), optimiert für TikTok Retention (15–25 Jahre): maximaler Hook, hoher Spannungsbogen, kurze Atemeinheiten.
+
+ZIELZEIT (STRIKT):
+- Zielzeit: {seconds} Sekunden.
+- Rechengrundlage: 100 Wörter = 45 Sekunden.
+- Ziel-Wortzahl: ca. {targetWords} Wörter.
+- Toleranz: +/- 4 Sekunden.
+
+DER TIKTOK-ARC (MUSS):
+1) Der K.O.-Punch – die ersten 3 Sekunden (Hook)
+   - Starte mit Schock-Aussage ODER direkter Frage ODER Skandal-Frame.
+   - Keine Begrüßung. Kein Warm-up. Direkt rein.
+   - Sprachliche Trigger erlaubt, aber keine leeren Versprechen.
+2) Der Spannungsbogen – die nächsten 7–10 Sekunden (Intrigue & Problem)
+   - Umreiße das Problem und die Konsequenz, aber verrate die „Auflösung“ erst später.
+   - Bleib konkret genug für Klarheit, vage genug für Neugier.
+3) Der Fakten-Drive – der Rest
+   - Liefere 2–5 harte Fakten/Details aus dem Material, die die These tragen.
+   - Kurze Sätze. Schnelle Cuts. Jede Zeile liefert Info.
+4) Abschluss
+   - 1 Satz Verdichtung („Und genau deshalb betrifft dich das.“).
+   - 1 Satz Kommentar-CTA („Was meinst du?“ / „Würdest du das akzeptieren?“).
+
+REGELN:
+- Reine Fakten: Nutze NUR Dossier + Zusatzfakten. Erfinde keine Zahlen, Namen, Orte.
+- Einordnung ohne Spekulation: Jede Zuspitzung muss aus Fakten ableitbar sein.
+- Jugendgerechte Sprache, aber nicht cringe. Keine Emojis, keine Hashtags.
+- Nutze **Fettungen** sparsam.
+
+SOURCE DOSSIER:
+{dossier}
+
+ZUSATZFAKTEN:
+{facts}
+
+Gib NUR den finalen TikTok-News-Text zurück.`,
 
     instagram_wisdom: `Du bist ein Scriptwriter für Instagram Reels.
 ZIELGRUPPE: 15–25 Jahre. Jugendgerechte Sprache, aber nicht cringe. Keine Emojis, keine Hashtags.

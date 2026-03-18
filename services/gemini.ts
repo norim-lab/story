@@ -259,10 +259,11 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
 export const generateNewsFlash = async (dossier: string, facts: string, controls: SegmentControls, model: string): Promise<string> => {
   return handleApiCall(async () => {
     const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
-    const seconds = Math.max(20, Math.min(60, controls.news_seconds || 30));
+    const seconds = Math.max(15, Math.min(50, controls.news_seconds || 30));
     const targetWords = Math.round((seconds / 45) * 100);
 
-    let promptTemplate = loadPrompt('script_generation', 'news_flash');
+    const promptKey = controls.news_tiktok ? 'news_flash_tiktok' : 'news_flash';
+    let promptTemplate = loadPrompt('script_generation', promptKey);
     promptTemplate = safeReplace(promptTemplate, '{seconds}', seconds.toString());
     promptTemplate = safeReplace(promptTemplate, '{targetWords}', targetWords.toString());
     promptTemplate = safeReplace(promptTemplate, '{style}', controls.style.toString());
