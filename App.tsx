@@ -729,11 +729,18 @@ export const App: React.FC = () => {
         return `ZUSÄTZLICHE FAKTEN:\n${facts}`;
     };
 
+    const isSlotUnedited = (slot: ScriptLength): boolean => {
+        const versions = activeProject?.scriptResult?.sections?.[0]?.versions || {};
+        const raw = (versions as any)[slot];
+        const slotText = typeof raw === "string" ? raw : "";
+        return slotText.trim().length === 0;
+    };
+
     const getSlotTextOrSourceContext = (slot: ScriptLength): { slotText: string; context: string } => {
         const versions = activeProject?.scriptResult?.sections?.[0]?.versions || {};
         const raw = (versions as any)[slot];
         const slotText = typeof raw === "string" ? raw : "";
-        if (slotText.trim()) return { slotText, context: slotText };
+        if (slotText.trim() && !isSlotUnedited(slot)) return { slotText, context: slotText };
         return { slotText: "", context: getSourceContext() };
     };
 
@@ -803,18 +810,21 @@ export const App: React.FC = () => {
             
             addLog(`Wörter: ${wordCount} → Klassifizierung: ${isShort ? 'SHORT' : 'LONG'}`, "info");
             
-            // Find first empty slot of target type
             let targetSlot: ScriptLength | null = null;
-            for (let i = 1; i <= 8; i++) {
-                const key = `${targetType}_${i}` as ScriptLength;
-                if (!versions[key] || versions[key].trim() === "") {
-                    targetSlot = key;
-                    addLog(`Leeren Slot gefunden: ${key}`, "info");
-                    break;
+            if (isSlotUnedited(currentV)) {
+                targetSlot = currentV;
+                addLog(`Aktueller Slot ist leer, generiere direkt in: ${currentV}`, "info");
+            } else {
+                for (let i = 1; i <= 8; i++) {
+                    const key = `${targetType}_${i}` as ScriptLength;
+                    if (!versions[key] || versions[key].trim() === "") {
+                        targetSlot = key;
+                        addLog(`Leeren Slot gefunden: ${key}`, "info");
+                        break;
+                    }
                 }
             }
             
-            // If no empty slot, use last slot of target type
             if (!targetSlot) {
                 targetSlot = `${targetType}_8` as ScriptLength;
                 addLog(`Kein leerer Slot, überschreibe: ${targetSlot}`, "warn");
