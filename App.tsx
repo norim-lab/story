@@ -774,7 +774,8 @@ export const App: React.FC = () => {
             "Jeder Teil muss für sich funktionieren (eigener Einstieg, eigener Abschluss).",
             "Alle Teile zusammen ergeben eine zusammenhängende Geschichte mit fortschreitendem Ablauf.",
             "Nutze DOSSIER + ZUSÄTZLICHE FAKTEN als Hauptquelle. Keine neuen Fakten erfinden.",
-            "Vermeide Wiederholungen; keine langen Recaps."
+            "Vermeide Wiederholungen; keine langen Recaps.",
+            "WICHTIG: Schreibe in diesem Schritt weder Hook noch CTA. Hook und CTA werden separat erzeugt und eingefügt."
         ].join("\n");
         if (!prevExcerpt) return `${header}\n${rules}`;
         return `${header}\n${rules}\n\nBISHERIGER TEIL (nur zur Kontinuität, keine neuen Fakten):\n${prevExcerpt}`;
@@ -790,6 +791,50 @@ export const App: React.FC = () => {
         for (const s of empties) if (!ordered.includes(s)) ordered.push(s);
         for (const s of filled) if (!ordered.includes(s)) ordered.push(s);
         return ordered.slice(0, parts);
+    };
+
+    const normalizeHookForDialogue = (hook: string): string => {
+        return (hook || "").replace(/^\*\*+/, "").replace(/\*\*+$/, "").trim();
+    };
+
+    const injectHookIntoText = (text: string, hook: string, isDialogue: boolean): string => {
+        const t = (text || "");
+        const h = (hook || "").trim();
+        if (!t.trim()) return h;
+        if (!h) return t;
+
+        if (isDialogue) {
+            const speakerRegex = /^(.*?:)(.*?)(\n|$)/m;
+            const match = t.match(speakerRegex);
+            if (match) {
+                const fullMatch = match[0];
+                const prefix = match[1];
+                const suffix = match[3];
+                const newLine = `${prefix} ${normalizeHookForDialogue(h)}${suffix}`;
+                return t.replace(fullMatch, newLine);
+            }
+            return normalizeHookForDialogue(h) + "\n\n" + t;
+        }
+
+        const oldHookMatch = t.match(/^\*\*[\s\S]*?\*\*/);
+        if (oldHookMatch) return t.replace(/^\*\*[\s\S]*?\*\*/, h);
+        return h + "\n\n" + t;
+    };
+
+    const appendCTA = (text: string, cta: string): string => {
+        const t = (text || "").trim();
+        const c = (cta || "").trim();
+        if (!t) return c;
+        if (!c) return t;
+        return t + "\n\n" + c;
+    };
+
+    const enforceSeriesHookAndCTA = async (mode: 'writefit' | 'news' | 'dialogue', baseText: string, controls: SegmentControls, model: string): Promise<string> => {
+        const isDialogue = mode === 'dialogue';
+        const hook = await regenerateHook(baseText, controls, model);
+        const withHook = injectHookIntoText(baseText, hook, isDialogue);
+        const cta = await generateCTA(withHook, controls, model);
+        return appendCTA(withHook, cta);
     };
 
     const handleWriteAndFitSeries = async (requestedParts?: number) => {
@@ -831,10 +876,11 @@ export const App: React.FC = () => {
                 const factsAug = [sourceFacts, seriesMeta].filter(Boolean).join("\n\n");
                 const generatedText = await generateScriptWithControls(sourceRaw, factsAug, controls, model);
                 if (!generatedText || generatedText.trim().length === 0) throw new Error("Generierter Text ist leer.");
+                const finalText = await enforceSeriesHookAndCTA('writefit', generatedText, controls, model);
                 const slot = targetSlots[idx];
-                updatedVersions[slot] = generatedText;
+                updatedVersions[slot] = finalText;
                 prevText = generatedText;
-                addLog(`Teil ${partNo}/${parts} -> ${slot} (${generatedText.length} Zeichen)`, "success");
+                addLog(`Teil ${partNo}/${parts} -> ${slot} (${finalText.length} Zeichen)`, "success");
             }
 
             const updatedResult = {
@@ -889,8 +935,9 @@ export const App: React.FC = () => {
                 const factsAug = [sourceFacts, seriesMeta].filter(Boolean).join("\n\n");
                 const newsText = await generateNewsFlash(sourceRaw, factsAug, controls, model);
                 if (!newsText || newsText.trim().length === 0) throw new Error("Generierter Text ist leer.");
+                const finalText = await enforceSeriesHookAndCTA('news', newsText, controls, model);
                 const slot = targetSlots[idx];
-                updatedVersions[slot] = newsText;
+                updatedVersions[slot] = finalText;
                 prevText = newsText;
                 addLog(`News Teil ${partNo}/${parts} -> ${slot}`, "success");
             }
@@ -946,8 +993,9 @@ export const App: React.FC = () => {
                 const factsAug = [sourceFacts, seriesMeta].filter(Boolean).join("\n\n");
                 const dialogueText = await generateDialogue(sourceRaw, factsAug, controls, model);
                 if (!dialogueText || dialogueText.trim().length === 0) throw new Error("Generierter Dialog ist leer.");
+                const finalText = await enforceSeriesHookAndCTA('dialogue', dialogueText, controls, model);
                 const slot = targetSlots[idx];
-                updatedVersions[slot] = dialogueText;
+                updatedVersions[slot] = finalText;
                 prevText = dialogueText;
                 addLog(`Dialogue Teil ${partNo}/${parts} -> ${slot}`, "success");
             }
