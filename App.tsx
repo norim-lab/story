@@ -64,10 +64,11 @@ const CONTROL_LABELS: Record<keyof SegmentControls, string> = {
     news_seconds: "News Duration",
     insta_seconds: "IG Wisdom Duration",
     news_tiktok: "TikTok Optimization",
+    series_parts: "Serie Teile",
     length: "Target Length" // Will be hidden
 };
 
-const DEFAULT_CONTROLS: SegmentControls = { info: 5, style: 5, metaphor: 5, length: 5, x_source: 1, fact_intensity: 5, dialogue_seconds: 60, target_seconds: 60, news_seconds: 30, insta_seconds: 45, news_tiktok: false };
+const DEFAULT_CONTROLS: SegmentControls = { info: 5, style: 5, metaphor: 5, length: 5, x_source: 1, fact_intensity: 5, dialogue_seconds: 60, target_seconds: 60, news_seconds: 30, insta_seconds: 45, news_tiktok: false, series_parts: 3 };
 
 const mapSelectionToRaw = (raw: string, selectedText: string): { start: number, end: number } | null => {
     if (!selectedText || !selectedText.trim()) return null;
@@ -742,6 +743,227 @@ export const App: React.FC = () => {
         const slotText = typeof raw === "string" ? raw : "";
         if (slotText.trim() && !isSlotUnedited(slot)) return { slotText, context: slotText };
         return { slotText: "", context: getSourceContext() };
+    };
+
+    const clampSeriesParts = (value?: number): number => {
+        const v = Number.isFinite(value as number) ? Math.round(value as number) : 3;
+        return Math.max(2, Math.min(5, v));
+    };
+
+    const getSeriesFocus = (mode: 'writefit' | 'news' | 'dialogue', part: number, total: number): string => {
+        const isLast = part === total;
+        if (mode === 'news') {
+            const focuses = ["Breaking / Kernereignis", "Hintergrund / Ursachen", "Auswirkungen / Betroffene", "Reaktionen / Konflikt", "Ausblick / Was als Nächstes passiert"];
+            return focuses[Math.min(focuses.length - 1, part - 1)] + (isLast ? " + kurzer Ausblick" : "");
+        }
+        if (mode === 'dialogue') {
+            const focuses = ["Setup / Konflikt", "Eskalation / Gegenargumente", "Wende / neue Information", "Auflösung / Entscheidung", "Ausblick / Konsequenzen"];
+            return focuses[Math.min(focuses.length - 1, part - 1)] + (isLast ? " + Abschluss" : "");
+        }
+        const focuses = ["Setup / Hook + Szene", "Konflikt / Problemkern", "Wende / neue Perspektive", "Lösung / Konsequenzen", "Abschluss / Takeaway"];
+        return focuses[Math.min(focuses.length - 1, part - 1)] + (isLast ? " + Abschluss" : "");
+    };
+
+    const buildSeriesMeta = (mode: 'writefit' | 'news' | 'dialogue', part: number, total: number, previousText?: string): string => {
+        const focus = getSeriesFocus(mode, part, total);
+        const prev = (previousText || "").trim();
+        const prevExcerpt = prev ? prev.slice(-1200) : "";
+        const header = `SERIE-MODUS: Erstelle Teil ${part}/${total}.`;
+        const rules = [
+            `Schwerpunkt dieses Teils: ${focus}.`,
+            "Jeder Teil muss für sich funktionieren (eigener Einstieg, eigener Abschluss).",
+            "Alle Teile zusammen ergeben eine zusammenhängende Geschichte mit fortschreitendem Ablauf.",
+            "Nutze DOSSIER + ZUSÄTZLICHE FAKTEN als Hauptquelle. Keine neuen Fakten erfinden.",
+            "Vermeide Wiederholungen; keine langen Recaps."
+        ].join("\n");
+        if (!prevExcerpt) return `${header}\n${rules}`;
+        return `${header}\n${rules}\n\nBISHERIGER TEIL (nur zur Kontinuität, keine neuen Fakten):\n${prevExcerpt}`;
+    };
+
+    const buildSeriesSlots = (prefix: 'short' | 'long' | 'dialogue', parts: number, preferredSlot?: ScriptLength): ScriptLength[] => {
+        const all = Array.from({ length: 8 }, (_, i) => `${prefix}_${i + 1}` as ScriptLength);
+        const empties = all.filter(s => isSlotUnedited(s));
+        const filled = all.filter(s => !isSlotUnedited(s));
+        const ordered: ScriptLength[] = [];
+        const preferredOk = preferredSlot && preferredSlot.startsWith(prefix) && isSlotUnedited(preferredSlot);
+        if (preferredOk) ordered.push(preferredSlot as ScriptLength);
+        for (const s of empties) if (!ordered.includes(s)) ordered.push(s);
+        for (const s of filled) if (!ordered.includes(s)) ordered.push(s);
+        return ordered.slice(0, parts);
+    };
+
+    const handleWriteAndFitSeries = async (requestedParts?: number) => {
+        addLog("=== WRITE & FIT SERIE GESTARTET ===", "info");
+        if (!activeProject?.scriptResult) return;
+        if (!checkProtection()) return;
+
+        const keyCheck = checkApiKey();
+        if (!keyCheck.valid) {
+            addLog(keyCheck.message || "API Key fehlt", "error");
+            setSettingsOpen(true);
+            return;
+        }
+
+        const sourceRaw = (activeProject.rawInput || "").trim();
+        const sourceFacts = (activeProject.factText || "").trim();
+        if (!sourceRaw && !sourceFacts) {
+            addLog("Bitte Grok Dossier oder Additional Facts füllen (Source Data ist leer).", "error");
+            return;
+        }
+
+        const controls = activeProject.segmentControls[MAIN_ID] || DEFAULT_CONTROLS;
+        const parts = clampSeriesParts(requestedParts ?? controls.series_parts);
+        const model = getCurrentModel();
+        const seconds = controls.target_seconds || 60;
+        const prefix: 'short' | 'long' = seconds < 180 ? 'short' : 'long';
+        const currentV = activeProject.segmentVersions[MAIN_ID] || 'short_1';
+        const targetSlots = buildSeriesSlots(prefix, parts, currentV);
+        const section0 = activeProject.scriptResult.sections[0];
+        const versions = section0.versions;
+
+        setIsZapping(true);
+        try {
+            const updatedVersions = { ...versions };
+            let prevText = "";
+            for (let idx = 0; idx < parts; idx++) {
+                const partNo = idx + 1;
+                const seriesMeta = buildSeriesMeta('writefit', partNo, parts, prevText);
+                const factsAug = [sourceFacts, seriesMeta].filter(Boolean).join("\n\n");
+                const generatedText = await generateScriptWithControls(sourceRaw, factsAug, controls, model);
+                if (!generatedText || generatedText.trim().length === 0) throw new Error("Generierter Text ist leer.");
+                const slot = targetSlots[idx];
+                updatedVersions[slot] = generatedText;
+                prevText = generatedText;
+                addLog(`Teil ${partNo}/${parts} -> ${slot} (${generatedText.length} Zeichen)`, "success");
+            }
+
+            const updatedResult = {
+                ...activeProject.scriptResult,
+                model,
+                sections: [{ ...section0, versions: updatedVersions }]
+            };
+            const lastSlot = targetSlots[targetSlots.length - 1] || currentV;
+            commitAction(`Write & Fit Serie (${parts} Teile) -> ${prefix}`, { scriptResult: updatedResult, segmentVersions: { [MAIN_ID]: lastSlot } });
+        } catch (e: any) {
+            addLog(`❌ FEHLER: ${e?.message || e}`, "error");
+        } finally {
+            setIsZapping(false);
+            addLog("=== WRITE & FIT SERIE BEENDET ===", "info");
+        }
+    };
+
+    const handleNewsFlashSeries = async (requestedParts?: number) => {
+        if (!activeProject?.scriptResult) return;
+        if (!checkProtection()) return;
+
+        const keyCheck = checkApiKey();
+        if (!keyCheck.valid) {
+            addLog(keyCheck.message || "API Key fehlt", "error");
+            setSettingsOpen(true);
+            return;
+        }
+
+        const sourceRaw = (activeProject.rawInput || "").trim();
+        const sourceFacts = (activeProject.factText || "").trim();
+        if (!sourceRaw && !sourceFacts) {
+            addLog("Bitte Grok Dossier oder Additional Facts füllen (Source Data ist leer).", "error");
+            return;
+        }
+
+        const controls = activeProject.segmentControls[MAIN_ID] || DEFAULT_CONTROLS;
+        const parts = clampSeriesParts(requestedParts ?? controls.series_parts);
+        const model = getCurrentModel();
+
+        const section0 = activeProject.scriptResult.sections[0];
+        const versions = section0.versions;
+        const currentV = activeProject.segmentVersions[MAIN_ID] || 'short_1';
+        const targetSlots = buildSeriesSlots('short', parts, currentV);
+
+        setIsZapping(true);
+        try {
+            const updatedVersions = { ...versions };
+            let prevText = "";
+            for (let idx = 0; idx < parts; idx++) {
+                const partNo = idx + 1;
+                const seriesMeta = buildSeriesMeta('news', partNo, parts, prevText);
+                const factsAug = [sourceFacts, seriesMeta].filter(Boolean).join("\n\n");
+                const newsText = await generateNewsFlash(sourceRaw, factsAug, controls, model);
+                if (!newsText || newsText.trim().length === 0) throw new Error("Generierter Text ist leer.");
+                const slot = targetSlots[idx];
+                updatedVersions[slot] = newsText;
+                prevText = newsText;
+                addLog(`News Teil ${partNo}/${parts} -> ${slot}`, "success");
+            }
+
+            const updatedResult = {
+                ...activeProject.scriptResult,
+                model,
+                sections: [{ ...section0, versions: updatedVersions }]
+            };
+            const lastSlot = targetSlots[targetSlots.length - 1] || currentV;
+            commitAction(`News Flash Serie (${parts} Teile)`, { scriptResult: updatedResult, segmentVersions: { [MAIN_ID]: lastSlot } });
+        } catch (e: any) {
+            addLog(`Fehler: ${e?.message || e}`, "error");
+        } finally {
+            setIsZapping(false);
+        }
+    };
+
+    const handleDialogueSeries = async (requestedParts?: number) => {
+        if (!activeProject?.scriptResult) return;
+        if (!checkProtection()) return;
+
+        const keyCheck = checkApiKey();
+        if (!keyCheck.valid) {
+            addLog(keyCheck.message || "API Key fehlt", "error");
+            setSettingsOpen(true);
+            return;
+        }
+
+        const sourceRaw = (activeProject.rawInput || "").trim();
+        const sourceFacts = (activeProject.factText || "").trim();
+        if (!sourceRaw && !sourceFacts) {
+            addLog("Bitte Grok Dossier oder Additional Facts füllen (Source Data ist leer).", "error");
+            return;
+        }
+
+        const controls = activeProject.segmentControls[MAIN_ID] || DEFAULT_CONTROLS;
+        const parts = clampSeriesParts(requestedParts ?? controls.series_parts);
+        const model = getCurrentModel();
+
+        const section0 = activeProject.scriptResult.sections[0];
+        const versions = section0.versions;
+        const currentV = activeProject.segmentVersions[MAIN_ID] || 'dialogue_1';
+        const targetSlots = buildSeriesSlots('dialogue', parts, currentV);
+
+        setIsZapping(true);
+        try {
+            const updatedVersions = { ...versions };
+            let prevText = "";
+            for (let idx = 0; idx < parts; idx++) {
+                const partNo = idx + 1;
+                const seriesMeta = buildSeriesMeta('dialogue', partNo, parts, prevText);
+                const factsAug = [sourceFacts, seriesMeta].filter(Boolean).join("\n\n");
+                const dialogueText = await generateDialogue(sourceRaw, factsAug, controls, model);
+                if (!dialogueText || dialogueText.trim().length === 0) throw new Error("Generierter Dialog ist leer.");
+                const slot = targetSlots[idx];
+                updatedVersions[slot] = dialogueText;
+                prevText = dialogueText;
+                addLog(`Dialogue Teil ${partNo}/${parts} -> ${slot}`, "success");
+            }
+
+            const updatedResult = {
+                ...activeProject.scriptResult,
+                model,
+                sections: [{ ...section0, versions: updatedVersions }]
+            };
+            const lastSlot = targetSlots[targetSlots.length - 1] || currentV;
+            commitAction(`Dialogue Serie (${parts} Teile)`, { scriptResult: updatedResult, segmentVersions: { [MAIN_ID]: lastSlot } });
+        } catch (e: any) {
+            addLog(`Fehler: ${e?.message || e}`, "error");
+        } finally {
+            setIsZapping(false);
+        }
     };
 
     const handleWriteAndFit = async () => {
@@ -1603,7 +1825,7 @@ export const App: React.FC = () => {
                                         <div className="space-y-6 p-4 bg-black/20 rounded-2xl border border-white/5">
                                             <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Refinement Controls</h3>
                                             {Object.entries(controls).map(([key, val]) => {
-                                                if (key === 'dialogue_seconds' || key === 'target_seconds' || key === 'news_seconds' || key === 'insta_seconds' || key === 'news_tiktok' || key === 'length') return null; 
+                                                if (key === 'dialogue_seconds' || key === 'target_seconds' || key === 'news_seconds' || key === 'insta_seconds' || key === 'news_tiktok' || key === 'series_parts' || key === 'length') return null; 
                                                 return (
                                                 <div key={key} className="space-y-2">
                                                     <div className="flex justify-between text-[10px] uppercase font-bold text-slate-400">
@@ -1634,6 +1856,25 @@ export const App: React.FC = () => {
                                                 <button onClick={handleWriteAndFit} disabled={isZapping} className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/30 rounded-xl text-[10px] font-black uppercase transition-all shadow-lg text-white">
                                                     Write & Fit by Style & Time
                                                 </button>
+                                                <div className="flex items-center gap-2">
+                                                    <select
+                                                        value={controls.series_parts || 3}
+                                                        onChange={(e) => updateActiveProject({ segmentControls: { ...activeProject.segmentControls, [MAIN_ID]: { ...controls, series_parts: parseInt(e.target.value) } } })}
+                                                        className="flex-1 py-2 px-3 bg-black/40 border border-white/10 rounded-xl text-[10px] font-black uppercase text-slate-300 outline-none"
+                                                    >
+                                                        <option value={2}>Serie: 2</option>
+                                                        <option value={3}>Serie: 3</option>
+                                                        <option value={4}>Serie: 4</option>
+                                                        <option value={5}>Serie: 5</option>
+                                                    </select>
+                                                    <button
+                                                        onClick={() => handleWriteAndFitSeries(controls.series_parts)}
+                                                        disabled={isZapping}
+                                                        className="flex-1 py-2 bg-emerald-700/40 hover:bg-emerald-600 border border-emerald-500/30 rounded-xl text-[10px] font-black uppercase transition-all text-white"
+                                                    >
+                                                        Write & Fit Serie
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             <div className="pt-4 border-t border-white/5 space-y-4">
@@ -1664,6 +1905,25 @@ export const App: React.FC = () => {
                                                 <button onClick={handleNewsFlashGenerate} disabled={isZapping} className="w-full py-3 bg-slate-700/50 hover:bg-slate-600 border border-white/10 rounded-xl text-[10px] font-black uppercase transition-all">
                                                     News Flash (15–50s)
                                                 </button>
+                                                <div className="flex items-center gap-2">
+                                                    <select
+                                                        value={controls.series_parts || 3}
+                                                        onChange={(e) => updateActiveProject({ segmentControls: { ...activeProject.segmentControls, [MAIN_ID]: { ...controls, series_parts: parseInt(e.target.value) } } })}
+                                                        className="flex-1 py-2 px-3 bg-black/40 border border-white/10 rounded-xl text-[10px] font-black uppercase text-slate-300 outline-none"
+                                                    >
+                                                        <option value={2}>Serie: 2</option>
+                                                        <option value={3}>Serie: 3</option>
+                                                        <option value={4}>Serie: 4</option>
+                                                        <option value={5}>Serie: 5</option>
+                                                    </select>
+                                                    <button
+                                                        onClick={() => handleNewsFlashSeries(controls.series_parts)}
+                                                        disabled={isZapping}
+                                                        className="flex-1 py-2 bg-slate-700/70 hover:bg-slate-600 border border-white/10 rounded-xl text-[10px] font-black uppercase transition-all"
+                                                    >
+                                                        News Serie
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             <div className="pt-4 border-t border-white/5 space-y-4">
@@ -1708,6 +1968,25 @@ export const App: React.FC = () => {
                                             <button onClick={handleDialogueGenerate} disabled={isZapping} className="w-full py-3 bg-purple-600/20 text-purple-400 border border-purple-500/30 hover:bg-purple-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all">
                                                 Generate Dialogue
                                             </button>
+                                            <div className="flex items-center gap-2">
+                                                <select
+                                                    value={controls.series_parts || 3}
+                                                    onChange={(e) => updateActiveProject({ segmentControls: { ...activeProject.segmentControls, [MAIN_ID]: { ...controls, series_parts: parseInt(e.target.value) } } })}
+                                                    className="flex-1 py-2 px-3 bg-black/40 border border-white/10 rounded-xl text-[10px] font-black uppercase text-slate-300 outline-none"
+                                                >
+                                                    <option value={2}>Serie: 2</option>
+                                                    <option value={3}>Serie: 3</option>
+                                                    <option value={4}>Serie: 4</option>
+                                                    <option value={5}>Serie: 5</option>
+                                                </select>
+                                                <button
+                                                    onClick={() => handleDialogueSeries(controls.series_parts)}
+                                                    disabled={isZapping}
+                                                    className="flex-1 py-2 bg-purple-600/30 text-purple-300 border border-purple-500/30 hover:bg-purple-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all"
+                                                >
+                                                    Dialogue Serie
+                                                </button>
+                                            </div>
                                         </div>
 
                                         <div className="space-y-4 p-4 bg-black/20 rounded-2xl border border-white/5">
