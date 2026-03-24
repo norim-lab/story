@@ -24,6 +24,7 @@ import { initStorage, listProjects, saveProject, deleteProject as deleteCloudPro
 import SettingsModal from './components/SettingsModal';
 import { getSettings, getFastModel, getProModel } from './services/settings';
 import { getRandomHistoricalWikiquote } from './services/wikiquote';
+import { getPerplexityLegalCheck } from './services/perplexity';
 
 const MAX_HISTORY_STEPS = 50;
 const MAIN_ID = "main-script";
@@ -69,6 +70,14 @@ const CONTROL_LABELS: Record<keyof SegmentControls, string> = {
 };
 
 const DEFAULT_CONTROLS: SegmentControls = { info: 5, style: 5, metaphor: 5, length: 5, x_source: 1, fact_intensity: 5, dialogue_seconds: 60, target_seconds: 60, news_seconds: 30, insta_seconds: 45, news_tiktok: false, series_parts: 3 };
+
+type LegalVerdict = 'green' | 'yellow' | 'red';
+type LegalIssue = { problematicQuote: string; whyRisky: string; saferRewrite: string };
+type LegalCheckResult = { verdict: LegalVerdict; summary: string; issues: LegalIssue[]; citations: string[] };
+type LegalCheckState =
+    | { open: false }
+    | { open: true; loading: true; slot: ScriptLength }
+    | { open: true; loading: false; slot: ScriptLength; result?: LegalCheckResult; error?: string };
 
 const mapSelectionToRaw = (raw: string, selectedText: string): { start: number, end: number } | null => {
     if (!selectedText || !selectedText.trim()) return null;
@@ -392,6 +401,7 @@ export const App: React.FC = () => {
     const [mobileTab, setMobileTab] = useState<'inputs' | 'editor'>('inputs');
     const [editorMode, setEditorMode] = useState<'controls' | 'source'>('controls');
     const [confirmClearSlot, setConfirmClearSlot] = useState<{ slot: ScriptLength; projectId: string } | null>(null);
+    const [legalCheck, setLegalCheck] = useState<LegalCheckState>({ open: false });
 
     // --- Helpers ---
     const addLog = useCallback((message: string, type: any = 'info') => {
@@ -1479,6 +1489,8 @@ export const App: React.FC = () => {
         const currentV = activeProject.segmentVersions[MAIN_ID] || 'short_1';
         const section = activeProject.scriptResult.sections[0];
         const isFinal = section.isFinal?.[currentV] || false;
+        const versions = section.versions || {};
+        const currentText = typeof (versions as any)[currentV] === 'string' ? (versions as any)[currentV] : "";
         
         const updatedResult = {
             ...activeProject.scriptResult,
@@ -1491,6 +1503,45 @@ export const App: React.FC = () => {
             }]
         };
         commitAction("Status Änderung", { scriptResult: updatedResult });
+
+        const willBeFinal = !isFinal;
+        if (!willBeFinal) return;
+        if (!currentText.trim()) return;
+
+        const safeParse = (input: string): any => {
+            const s = (input || "").trim();
+            const start = s.indexOf('{');
+            const end = s.lastIndexOf('}');
+            if (start === -1 || end === -1 || end <= start) throw new Error("Unerwartetes Antwortformat (kein JSON).");
+            return JSON.parse(s.slice(start, end + 1));
+        };
+
+        setLegalCheck({ open: true, loading: true, slot: currentV });
+        (async () => {
+            try {
+                const { content, citations } = await getPerplexityLegalCheck(currentText);
+                const parsed = safeParse(content) as Partial<LegalCheckResult>;
+                const verdict: LegalVerdict = (parsed.verdict === 'green' || parsed.verdict === 'yellow' || parsed.verdict === 'red') ? parsed.verdict : 'yellow';
+                const issues = Array.isArray((parsed as any).issues) ? (parsed as any).issues.map((x: any) => ({
+                    problematicQuote: String(x?.problematicQuote || ""),
+                    whyRisky: String(x?.whyRisky || ""),
+                    saferRewrite: String(x?.saferRewrite || "")
+                })).filter((i: LegalIssue) => i.problematicQuote || i.whyRisky || i.saferRewrite) : [];
+                setLegalCheck({
+                    open: true,
+                    loading: false,
+                    slot: currentV,
+                    result: {
+                        verdict,
+                        summary: String((parsed as any).summary || ""),
+                        issues,
+                        citations: Array.isArray(citations) ? citations : []
+                    }
+                });
+            } catch (e: any) {
+                setLegalCheck({ open: true, loading: false, slot: currentV, error: e?.message || String(e) });
+            }
+        })();
     };
 
     const clearSlot = (slot: ScriptLength, projectId: string) => {
@@ -2184,6 +2235,107 @@ export const App: React.FC = () => {
                     setSettingsVersion(v => v + 1); 
                 }} 
             />
+            {legalCheck.open && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+                    <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                        <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <div className="text-white font-black uppercase text-xs tracking-widest">Rechtssicherheits-Check</div>
+                                <div className="text-slate-500 text-[11px]">Automatische Prüfung via Perplexity Web Search (keine Rechtsberatung)</div>
+                            </div>
+                            <button onClick={() => setLegalCheck({ open: false })} className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-lg leading-none">
+                                ×
+                            </button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            {legalCheck.loading ? (
+                                <div className="flex items-center gap-3 text-slate-300">
+                                    <div className="animate-spin w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full"/>
+                                    <div className="text-sm font-bold">Prüfe Text auf rechtliche Risiken…</div>
+                                </div>
+                            ) : (
+                                <>
+                                    {legalCheck.error ? (
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-3.5 h-3.5 rounded-full bg-amber-400 shadow-[0_0_18px_rgba(251,191,36,0.35)]" />
+                                                <div className="text-sm font-black text-amber-300 uppercase tracking-widest">Bitte prüfen</div>
+                                            </div>
+                                            <div className="text-slate-300 text-sm whitespace-pre-wrap">{legalCheck.error}</div>
+                                            <div className="flex justify-end">
+                                                <button onClick={() => setSettingsOpen(true)} className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-[10px] font-black uppercase text-white">
+                                                    Einstellungen öffnen
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="flex items-center gap-3">
+                                                <div
+                                                    className={`w-3.5 h-3.5 rounded-full ${
+                                                        legalCheck.result?.verdict === 'green'
+                                                            ? 'bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.35)]'
+                                                            : legalCheck.result?.verdict === 'red'
+                                                            ? 'bg-red-500 shadow-[0_0_18px_rgba(239,68,68,0.35)]'
+                                                            : 'bg-amber-400 shadow-[0_0_18px_rgba(251,191,36,0.35)]'
+                                                    }`}
+                                                />
+                                                <div className={`text-sm font-black uppercase tracking-widest ${
+                                                    legalCheck.result?.verdict === 'green'
+                                                        ? 'text-emerald-300'
+                                                        : legalCheck.result?.verdict === 'red'
+                                                        ? 'text-red-300'
+                                                        : 'text-amber-300'
+                                                }`}>
+                                                    {legalCheck.result?.verdict === 'green' ? 'Grün' : legalCheck.result?.verdict === 'red' ? 'Rot' : 'Gelb'}
+                                                </div>
+                                                <div className="text-slate-500 text-[11px]">
+                                                    Slot: {VERSION_LABELS[legalCheck.slot] || legalCheck.slot}
+                                                </div>
+                                            </div>
+
+                                            {legalCheck.result?.summary && (
+                                                <div className="text-slate-200 text-sm whitespace-pre-wrap">{legalCheck.result.summary}</div>
+                                            )}
+
+                                            {(legalCheck.result?.issues?.length || 0) > 0 && (
+                                                <div className="space-y-3">
+                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Problemstellen & sichere Vorschläge</div>
+                                                    <div className="space-y-3">
+                                                        {legalCheck.result!.issues.map((it, idx) => (
+                                                            <div key={idx} className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-2">
+                                                                <div className="text-slate-400 text-[10px] font-black uppercase">Riskant</div>
+                                                                <div className="text-slate-200 text-sm whitespace-pre-wrap">{it.problematicQuote}</div>
+                                                                <div className="text-slate-400 text-[10px] font-black uppercase pt-2">Warum</div>
+                                                                <div className="text-slate-300 text-sm whitespace-pre-wrap">{it.whyRisky}</div>
+                                                                <div className="text-slate-400 text-[10px] font-black uppercase pt-2">Vorschlag (rechtssicherer)</div>
+                                                                <div className="text-slate-200 text-sm whitespace-pre-wrap">{it.saferRewrite}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {(legalCheck.result?.citations?.length || 0) > 0 && (
+                                                <div className="space-y-2">
+                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Quellen</div>
+                                                    <div className="space-y-1">
+                                                        {legalCheck.result!.citations.map((u, i) => (
+                                                            <a key={u + i} href={u} target="_blank" rel="noreferrer" className="block text-[11px] text-slate-400 hover:text-slate-200 break-all">
+                                                                [{i + 1}] {u}
+                                                            </a>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
