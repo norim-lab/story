@@ -1595,6 +1595,36 @@ export const App: React.FC = () => {
         }
     };
 
+    const handleApplySafetyVariant = (variantKey: 'variantA' | 'variantB') => {
+        if (!activeProject?.scriptResult) return;
+        const currentV = activeProject.segmentVersions[MAIN_ID] || 'short_1';
+        const section = activeProject.scriptResult.sections[0];
+        const safetyCheck = section.platformSafetyChecks?.[currentV];
+        const replacement = safetyCheck?.[variantKey] || "";
+        if (!replacement.trim()) {
+            addLog("Keine entschärfte Variante verfügbar.", "error");
+            return;
+        }
+
+        const nextSafetyChecks = { ...(section.platformSafetyChecks || {}) };
+        delete nextSafetyChecks[currentV];
+
+        const updatedResult = {
+            ...activeProject.scriptResult,
+            sections: [{
+                ...section,
+                versions: {
+                    ...section.versions,
+                    [currentV]: replacement
+                },
+                platformSafetyChecks: nextSafetyChecks
+            }]
+        };
+
+        commitAction(`Entschärfte Variante ${variantKey === 'variantA' ? 'A' : 'B'} übernommen`, { scriptResult: updatedResult });
+        addLog(`Entschärfte Variante ${variantKey === 'variantA' ? 'A' : 'B'} in ${getSlotLabel(currentV)} übernommen`, "success");
+    };
+
     const clearSlot = (slot: ScriptLength, projectId: string) => {
         addLog(`clearSlot aufgerufen für: ${slot} in Projekt: ${projectId}`, "info");
         
@@ -2292,10 +2322,16 @@ export const App: React.FC = () => {
                                             <div className="bg-black/20 border border-white/5 rounded-xl p-3">
                                                 <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-2">Variante A</div>
                                                 <div className="text-sm text-slate-200 whitespace-pre-wrap">{currentSafetyCheck.variantA}</div>
+                                                <button onClick={() => handleApplySafetyVariant('variantA')} className="mt-3 px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-[10px] font-black uppercase text-emerald-200 transition-all">
+                                                    Variante A übernehmen
+                                                </button>
                                             </div>
                                             <div className="bg-black/20 border border-white/5 rounded-xl p-3">
                                                 <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-2">Variante B</div>
                                                 <div className="text-sm text-slate-200 whitespace-pre-wrap">{currentSafetyCheck.variantB}</div>
+                                                <button onClick={() => handleApplySafetyVariant('variantB')} className="mt-3 px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-[10px] font-black uppercase text-emerald-200 transition-all">
+                                                    Variante B übernehmen
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
