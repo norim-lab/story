@@ -1,4 +1,4 @@
-import { SegmentControls } from "../types";
+import { PlatformSafetyCheck, SegmentControls } from "../types";
 import { getOpenAIKey } from "./settings";
 import { loadPrompt } from "./prompts";
 
@@ -374,5 +374,75 @@ Antworte NUR mit dem verbesserten Skript, keine Erklärungen.`;
 
         const data = await response.json();
         return data.choices?.[0]?.message?.content || existingText;
+    });
+};
+
+export const analyzePlatformSafety = async (text: string, model: string): Promise<PlatformSafetyCheck> => {
+    return handleApiCall(async () => {
+        const apiKey = getOpenAIKey();
+        const prompt = `Prüfe diesen Text auf mögliche algorithmische Risiken für YouTube und TikTok.
+
+Gib NUR gültiges JSON zurück, ohne Markdown.
+
+Schema:
+{
+  "summary": "kurze Einordnung",
+  "issues": [
+    {
+      "problematicQuote": "genaue problematische Stelle",
+      "probability": 0.0,
+      "reason": "warum diese Stelle problematisch sein könnte"
+    }
+  ],
+  "variantA": "erste entschärfte Gesamtversion",
+  "variantB": "zweite entschärfte Gesamtversion"
+}
+
+Regeln:
+- probability zwischen 0 und 1.
+- Finde problematische Begriffe, Pauschalisierungen, Gewalt-/Hass-/Diskriminierungsnähe, heikle politische Zuschreibungen, sensationalistische Begriffe, Fehlinformations-Risiken.
+- variantA und variantB behalten die Aussageabsicht, formulieren aber plattformfreundlicher.
+
+Text:
+${text}`;
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model,
+                max_tokens: 4096,
+                messages: [
+                    { role: 'system', content: 'Du bist ein strenger Safety-Editor für plattformfreundliche Formulierungen. Antworte nur mit JSON.' },
+                    { role: 'user', content: prompt }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error?.message || `OpenAI Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const raw = data.choices?.[0]?.message?.content || "";
+        const start = raw.indexOf('{');
+        const end = raw.lastIndexOf('}');
+        if (start === -1 || end === -1 || end <= start) throw new Error("Ungültige Safety-Analyse.");
+        const parsed = JSON.parse(raw.slice(start, end + 1));
+        return {
+            summary: String(parsed?.summary || ""),
+            issues: Array.isArray(parsed?.issues) ? parsed.issues.map((x: any) => ({
+                problematicQuote: String(x?.problematicQuote || ""),
+                probability: Math.max(0, Math.min(1, Number(x?.probability ?? 0))),
+                reason: String(x?.reason || "")
+            })).filter((x: any) => x.problematicQuote || x.reason) : [],
+            variantA: String(parsed?.variantA || text),
+            variantB: String(parsed?.variantB || text),
+            checkedAt: Date.now()
+        };
     });
 };

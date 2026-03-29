@@ -1,4 +1,4 @@
-import { SegmentControls } from "../types";
+import { PlatformSafetyCheck, SegmentControls } from "../types";
 import { getSettings, hasValidKey, getMissingKeyMessage } from "./settings";
 import * as gemini from "./gemini";
 import * as openai from "./openai";
@@ -94,6 +94,16 @@ export const improveExistingScript = async (existingText: string, controls: Segm
         return anthropic.improveExistingScript(existingText, controls, model);
     }
     return gemini.improveExistingScript(existingText, controls, model);
+};
+
+export const analyzePlatformSafety = async (text: string, model: string): Promise<PlatformSafetyCheck> => {
+    const provider = getProvider();
+    if (provider === 'openai') {
+        return openai.analyzePlatformSafety(text, model);
+    } else if (provider === 'anthropic') {
+        return anthropic.analyzePlatformSafety(text, model);
+    }
+    return gemini.analyzePlatformSafety(text, model);
 };
 
 export { rewriteSelectionWithCustomPrompt } from "./gemini";

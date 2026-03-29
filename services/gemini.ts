@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { ScriptResult, ScriptSection, SegmentControls } from "../types";
+import { PlatformSafetyCheck, ScriptResult, ScriptSection, SegmentControls } from "../types";
 import { getGoogleKey } from "./settings";
 import { loadPrompt } from "./prompts";
 
@@ -72,38 +72,7 @@ export const generateZeitblitzScript = async (rawText: string, model: string): P
         title: "Hauptskript",
         newsHeadline: "Manuskript",
         versions: {
-            short_1: rawText, // Default start
-            short_2: "",
-            short_3: "",
-            short_4: "",
-            short_5: "",
-            short_6: "",
-            short_7: "",
-            short_8: "",
-            long_1: "",
-            long_2: "",
-            long_3: "",
-            long_4: "",
-            long_5: "",
-            long_6: "",
-            long_7: "",
-            long_8: "",
-            dialogue_1: "",
-            dialogue_2: "",
-            dialogue_3: "",
-            dialogue_4: "",
-            dialogue_5: "",
-            dialogue_6: "",
-            dialogue_7: "",
-            dialogue_8: "",
-            insta_1: "",
-            insta_2: "",
-            insta_3: "",
-            insta_4: "",
-            insta_5: "",
-            insta_6: "",
-            insta_7: "",
-            insta_8: ""
+            short_1: rawText
         },
         sources: []
     };
@@ -419,5 +388,64 @@ Antworte NUR mit dem verbesserten Skript, keine Erklärungen.`;
       config: { systemInstruction, temperature: 0.8 } 
     });
     return response.text || existingText;
+  });
+};
+
+export const analyzePlatformSafety = async (text: string, model: string): Promise<PlatformSafetyCheck> => {
+  return handleApiCall(async () => {
+    const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
+    const prompt = `Du prüfst einen Text auf mögliche algorithmische Risiken für YouTube und TikTok.
+
+Gib NUR gültiges JSON zurück, ohne Markdown, ohne Backticks.
+
+Schema:
+{
+  "summary": "kurze Einordnung",
+  "issues": [
+    {
+      "problematicQuote": "genaue problematische Stelle",
+      "probability": 0.0,
+      "reason": "warum die Stelle für Plattform-Algorithmen problematisch sein könnte"
+    }
+  ],
+  "variantA": "erste vollständig entschärfte Gesamtversion",
+  "variantB": "zweite vollständig entschärfte Gesamtversion"
+}
+
+Regeln:
+- probability ist zwischen 0 und 1.
+- Erkenne problematische Begriffe, pauschalisierende Formulierungen, Gewalt-/Hass-/Diskriminierungsnähe, medizinische/kriminelle/extreme Begriffe, heikle politische Zuschreibungen, sensationalistische Wörter und Fehlinformations-Risiken.
+- issues nur für echte Risikostellen.
+- variantA und variantB müssen den Kerninhalt behalten, aber deutlich plattformfreundlicher formuliert sein.
+- Antworte ausschließlich mit JSON.
+
+Text:
+${text}`;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        systemInstruction: "Du bist ein strenger Safety-Editor für plattformfreundliche Formulierungen.",
+        temperature: 0.2
+      }
+    });
+
+    const raw = response.text || "";
+    const start = raw.indexOf('{');
+    const end = raw.lastIndexOf('}');
+    if (start === -1 || end === -1 || end <= start) throw new Error("Ungültige Safety-Analyse.");
+    const parsed = JSON.parse(raw.slice(start, end + 1));
+    return {
+      summary: String(parsed?.summary || ""),
+      issues: Array.isArray(parsed?.issues) ? parsed.issues.map((x: any) => ({
+        problematicQuote: String(x?.problematicQuote || ""),
+        probability: Math.max(0, Math.min(1, Number(x?.probability ?? 0))),
+        reason: String(x?.reason || "")
+      })).filter((x: any) => x.problematicQuote || x.reason) : [],
+      variantA: String(parsed?.variantA || text),
+      variantB: String(parsed?.variantB || text),
+      checkedAt: Date.now()
+    };
   });
 };
