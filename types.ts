@@ -52,6 +52,12 @@ export interface PlatformSafetyCheck {
   checkedAt: number;
 }
 
+export interface SeriesSlotInfo {
+  seriesId: string;
+  part: number;
+  total: number;
+}
+
 export interface ScriptSection {
   id: string;
   title: string;
@@ -59,6 +65,7 @@ export interface ScriptSection {
   versions: Record<string, string>;
   isFinal?: Record<string, boolean>; // Tracks finalized status per version key
   platformSafetyChecks?: Record<string, PlatformSafetyCheck>;
+  seriesSlots?: Record<string, SeriesSlotInfo>;
   sources?: { title: string; url: string; type?: string }[];
   researchSnippet?: string;
 }

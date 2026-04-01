@@ -828,17 +828,28 @@ export const App: React.FC = () => {
     const buildSeriesSlots = (prefix: 'short' | 'long' | 'dialogue', parts: number, preferredSlot?: ScriptLength): ScriptLength[] => {
         const all = getSlotsByPrefix(prefix, true);
         const empties = all.filter(s => isSlotUnedited(s));
-        const filled = all.filter(s => !isSlotUnedited(s));
         const ordered: ScriptLength[] = [];
         const preferredOk = preferredSlot && preferredSlot.startsWith(prefix) && isSlotUnedited(preferredSlot);
         if (preferredOk) ordered.push(preferredSlot as ScriptLength);
         for (const s of empties) if (!ordered.includes(s)) ordered.push(s);
-        for (const s of filled) if (!ordered.includes(s)) ordered.push(s);
         while (ordered.length < parts) {
-            const next = `${prefix}_${Math.max(0, ...ordered.map(getSlotNumber)) + 1}` as ScriptLength;
+            const next = `${prefix}_${Math.max(0, ...all.map(getSlotNumber), ...ordered.map(getSlotNumber)) + 1}` as ScriptLength;
             ordered.push(next);
         }
         return ordered.slice(0, parts);
+    };
+
+    const getSeriesBadge = (slot: ScriptLength): number | null => {
+        const series = activeProject?.scriptResult?.sections?.[0]?.seriesSlots?.[slot];
+        return typeof series?.part === "number" ? series.part : null;
+    };
+
+    const buildSeriesSlotMap = (targetSlots: ScriptLength[], total: number) => {
+        const seriesId = `series_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        return targetSlots.reduce<Record<string, { seriesId: string; part: number; total: number }>>((acc, slot, idx) => {
+            acc[slot] = { seriesId, part: idx + 1, total };
+            return acc;
+        }, {});
     };
 
     const normalizeHookForDialogue = (hook: string): string => {
@@ -913,32 +924,53 @@ export const App: React.FC = () => {
         const targetSlots = buildSeriesSlots(prefix, parts, currentV);
         const section0 = activeProject.scriptResult.sections[0];
         const versions = section0.versions;
+        const nextSeriesSlots = { ...(section0.seriesSlots || {}), ...buildSeriesSlotMap(targetSlots, parts) };
 
         setIsZapping(true);
+        const updatedVersions = { ...versions };
+        let prevText = "";
+        let generatedCount = 0;
         try {
-            const updatedVersions = { ...versions };
-            let prevText = "";
             for (let idx = 0; idx < parts; idx++) {
                 const partNo = idx + 1;
                 const seriesMeta = buildSeriesMeta('writefit', partNo, parts, prevText);
                 const factsAug = [sourceFacts, seriesMeta].filter(Boolean).join("\n\n");
                 const generatedText = await generateScriptWithControls(sourceRaw, factsAug, controls, model);
                 if (!generatedText || generatedText.trim().length === 0) throw new Error("Generierter Text ist leer.");
-                const finalText = await enforceSeriesHookAndCTA('writefit', generatedText, controls, model);
+                let finalText = generatedText;
+                try {
+                    finalText = await enforceSeriesHookAndCTA('writefit', generatedText, controls, model);
+                } catch (hookCtaError: any) {
+                    addLog(`Teil ${partNo}: Hook/CTA fehlgeschlagen, nutze Basisteil (${hookCtaError?.message || hookCtaError})`, "warn");
+                }
                 const slot = targetSlots[idx];
                 updatedVersions[slot] = finalText;
                 prevText = generatedText;
+                generatedCount += 1;
                 addLog(`Teil ${partNo}/${parts} -> ${slot} (${finalText.length} Zeichen)`, "success");
             }
 
             const updatedResult = {
                 ...activeProject.scriptResult,
                 model,
-                sections: [{ ...section0, versions: updatedVersions }]
+                sections: [{ ...section0, versions: updatedVersions, seriesSlots: nextSeriesSlots }]
             };
             const lastSlot = targetSlots[targetSlots.length - 1] || currentV;
             commitAction(`Write & Fit Serie (${parts} Teile) -> ${prefix}`, { scriptResult: updatedResult, segmentVersions: { [MAIN_ID]: lastSlot } });
         } catch (e: any) {
+            if (generatedCount > 0) {
+                const partialSeriesSlots = targetSlots.slice(0, generatedCount).reduce<Record<string, { seriesId: string; part: number; total: number }>>((acc, slot) => {
+                    acc[slot] = nextSeriesSlots[slot];
+                    return acc;
+                }, {});
+                const updatedResult = {
+                    ...activeProject.scriptResult,
+                    model,
+                    sections: [{ ...section0, versions: updatedVersions, seriesSlots: { ...(section0.seriesSlots || {}), ...partialSeriesSlots } }]
+                };
+                const lastGeneratedSlot = targetSlots[Math.max(0, generatedCount - 1)] || currentV;
+                commitAction(`Write & Fit Serie teilweise (${generatedCount}/${parts})`, { scriptResult: updatedResult, segmentVersions: { [MAIN_ID]: lastGeneratedSlot } });
+            }
             addLog(`❌ FEHLER: ${e?.message || e}`, "error");
         } finally {
             setIsZapping(false);
@@ -972,32 +1004,53 @@ export const App: React.FC = () => {
         const versions = section0.versions;
         const currentV = activeProject.segmentVersions[MAIN_ID] || 'short_1';
         const targetSlots = buildSeriesSlots('short', parts, currentV);
+        const nextSeriesSlots = { ...(section0.seriesSlots || {}), ...buildSeriesSlotMap(targetSlots, parts) };
 
         setIsZapping(true);
+        const updatedVersions = { ...versions };
+        let prevText = "";
+        let generatedCount = 0;
         try {
-            const updatedVersions = { ...versions };
-            let prevText = "";
             for (let idx = 0; idx < parts; idx++) {
                 const partNo = idx + 1;
                 const seriesMeta = buildSeriesMeta('news', partNo, parts, prevText);
                 const factsAug = [sourceFacts, seriesMeta].filter(Boolean).join("\n\n");
                 const newsText = await generateNewsFlash(sourceRaw, factsAug, controls, model);
                 if (!newsText || newsText.trim().length === 0) throw new Error("Generierter Text ist leer.");
-                const finalText = await enforceSeriesHookAndCTA('news', newsText, controls, model);
+                let finalText = newsText;
+                try {
+                    finalText = await enforceSeriesHookAndCTA('news', newsText, controls, model);
+                } catch (hookCtaError: any) {
+                    addLog(`News Teil ${partNo}: Hook/CTA fehlgeschlagen, nutze Basisteil (${hookCtaError?.message || hookCtaError})`, "warn");
+                }
                 const slot = targetSlots[idx];
                 updatedVersions[slot] = finalText;
                 prevText = newsText;
+                generatedCount += 1;
                 addLog(`News Teil ${partNo}/${parts} -> ${slot}`, "success");
             }
 
             const updatedResult = {
                 ...activeProject.scriptResult,
                 model,
-                sections: [{ ...section0, versions: updatedVersions }]
+                sections: [{ ...section0, versions: updatedVersions, seriesSlots: nextSeriesSlots }]
             };
             const lastSlot = targetSlots[targetSlots.length - 1] || currentV;
             commitAction(`News Flash Serie (${parts} Teile)`, { scriptResult: updatedResult, segmentVersions: { [MAIN_ID]: lastSlot } });
         } catch (e: any) {
+            if (generatedCount > 0) {
+                const partialSeriesSlots = targetSlots.slice(0, generatedCount).reduce<Record<string, { seriesId: string; part: number; total: number }>>((acc, slot) => {
+                    acc[slot] = nextSeriesSlots[slot];
+                    return acc;
+                }, {});
+                const updatedResult = {
+                    ...activeProject.scriptResult,
+                    model,
+                    sections: [{ ...section0, versions: updatedVersions, seriesSlots: { ...(section0.seriesSlots || {}), ...partialSeriesSlots } }]
+                };
+                const lastGeneratedSlot = targetSlots[Math.max(0, generatedCount - 1)] || currentV;
+                commitAction(`News Flash Serie teilweise (${generatedCount}/${parts})`, { scriptResult: updatedResult, segmentVersions: { [MAIN_ID]: lastGeneratedSlot } });
+            }
             addLog(`Fehler: ${e?.message || e}`, "error");
         } finally {
             setIsZapping(false);
@@ -1030,32 +1083,53 @@ export const App: React.FC = () => {
         const versions = section0.versions;
         const currentV = activeProject.segmentVersions[MAIN_ID] || 'dialogue_1';
         const targetSlots = buildSeriesSlots('dialogue', parts, currentV);
+        const nextSeriesSlots = { ...(section0.seriesSlots || {}), ...buildSeriesSlotMap(targetSlots, parts) };
 
         setIsZapping(true);
+        const updatedVersions = { ...versions };
+        let prevText = "";
+        let generatedCount = 0;
         try {
-            const updatedVersions = { ...versions };
-            let prevText = "";
             for (let idx = 0; idx < parts; idx++) {
                 const partNo = idx + 1;
                 const seriesMeta = buildSeriesMeta('dialogue', partNo, parts, prevText);
                 const factsAug = [sourceFacts, seriesMeta].filter(Boolean).join("\n\n");
                 const dialogueText = await generateDialogue(sourceRaw, factsAug, controls, model);
                 if (!dialogueText || dialogueText.trim().length === 0) throw new Error("Generierter Dialog ist leer.");
-                const finalText = await enforceSeriesHookAndCTA('dialogue', dialogueText, controls, model);
+                let finalText = dialogueText;
+                try {
+                    finalText = await enforceSeriesHookAndCTA('dialogue', dialogueText, controls, model);
+                } catch (hookCtaError: any) {
+                    addLog(`Dialogue Teil ${partNo}: Hook/CTA fehlgeschlagen, nutze Basisteil (${hookCtaError?.message || hookCtaError})`, "warn");
+                }
                 const slot = targetSlots[idx];
                 updatedVersions[slot] = finalText;
                 prevText = dialogueText;
+                generatedCount += 1;
                 addLog(`Dialogue Teil ${partNo}/${parts} -> ${slot}`, "success");
             }
 
             const updatedResult = {
                 ...activeProject.scriptResult,
                 model,
-                sections: [{ ...section0, versions: updatedVersions }]
+                sections: [{ ...section0, versions: updatedVersions, seriesSlots: nextSeriesSlots }]
             };
             const lastSlot = targetSlots[targetSlots.length - 1] || currentV;
             commitAction(`Dialogue Serie (${parts} Teile)`, { scriptResult: updatedResult, segmentVersions: { [MAIN_ID]: lastSlot } });
         } catch (e: any) {
+            if (generatedCount > 0) {
+                const partialSeriesSlots = targetSlots.slice(0, generatedCount).reduce<Record<string, { seriesId: string; part: number; total: number }>>((acc, slot) => {
+                    acc[slot] = nextSeriesSlots[slot];
+                    return acc;
+                }, {});
+                const updatedResult = {
+                    ...activeProject.scriptResult,
+                    model,
+                    sections: [{ ...section0, versions: updatedVersions, seriesSlots: { ...(section0.seriesSlots || {}), ...partialSeriesSlots } }]
+                };
+                const lastGeneratedSlot = targetSlots[Math.max(0, generatedCount - 1)] || currentV;
+                commitAction(`Dialogue Serie teilweise (${generatedCount}/${parts})`, { scriptResult: updatedResult, segmentVersions: { [MAIN_ID]: lastGeneratedSlot } });
+            }
             addLog(`Fehler: ${e?.message || e}`, "error");
         } finally {
             setIsZapping(false);
@@ -1650,12 +1724,18 @@ export const App: React.FC = () => {
             }
             
             const updatedVersions = { ...section.versions, [slot]: "" };
+            const updatedSafetyChecks = { ...(section.platformSafetyChecks || {}) };
+            delete updatedSafetyChecks[slot];
+            const updatedSeriesSlots = { ...(section.seriesSlots || {}) };
+            delete updatedSeriesSlots[slot];
             
             const updatedResult = {
                 ...project.scriptResult,
                 sections: [{
                     ...section,
-                    versions: updatedVersions
+                    versions: updatedVersions,
+                    platformSafetyChecks: updatedSafetyChecks,
+                    seriesSlots: updatedSeriesSlots
                 }]
             };
             
@@ -1909,8 +1989,14 @@ export const App: React.FC = () => {
                                         {allSlotGroups.shorts.map(v => {
                                             const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
                                             const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
+                                            const seriesBadge = getSeriesBadge(v);
                                             return (
                                             <div key={v} className="relative flex items-center">
+                                                {seriesBadge && (
+                                                    <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-yellow-400 text-[8px] font-black text-black flex items-center justify-center z-10 shadow">
+                                                        {seriesBadge}
+                                                    </div>
+                                                )}
                                                 <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-emerald-600 border-emerald-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
                                                     {isFinal && <span className="text-[10px]">🔒</span>}
                                                     {getSlotLabel(v).replace('Short ', '')}
@@ -1930,8 +2016,14 @@ export const App: React.FC = () => {
                                         {allSlotGroups.longs.map(v => {
                                             const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
                                             const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
+                                            const seriesBadge = getSeriesBadge(v);
                                             return (
                                             <div key={v} className="relative flex items-center">
+                                                {seriesBadge && (
+                                                    <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-yellow-400 text-[8px] font-black text-black flex items-center justify-center z-10 shadow">
+                                                        {seriesBadge}
+                                                    </div>
+                                                )}
                                                 <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-indigo-600 border-indigo-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
                                                     {isFinal && <span className="text-[10px]">🔒</span>}
                                                     {getSlotLabel(v).replace('Long ', '')}
@@ -1950,8 +2042,14 @@ export const App: React.FC = () => {
                                         {allSlotGroups.dialogues.map(v => {
                                             const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
                                             const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
+                                            const seriesBadge = getSeriesBadge(v);
                                             return (
                                             <div key={v} className="relative flex items-center">
+                                                {seriesBadge && (
+                                                    <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-yellow-400 text-[8px] font-black text-black flex items-center justify-center z-10 shadow">
+                                                        {seriesBadge}
+                                                    </div>
+                                                )}
                                                 <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-purple-600 border-purple-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
                                                     {isFinal && <span className="text-[10px]">🔒</span>}
                                                     {getSlotLabel(v).replace('Dialog ', '')}
@@ -1970,8 +2068,14 @@ export const App: React.FC = () => {
                                         {allSlotGroups.instas.map(v => {
                                             const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
                                             const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
+                                            const seriesBadge = getSeriesBadge(v);
                                             return (
                                             <div key={v} className="relative flex items-center">
+                                                {seriesBadge && (
+                                                    <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-yellow-400 text-[8px] font-black text-black flex items-center justify-center z-10 shadow">
+                                                        {seriesBadge}
+                                                    </div>
+                                                )}
                                                 <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-fuchsia-600 border-fuchsia-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
                                                     {isFinal && <span className="text-[10px]">🔒</span>}
                                                     {getSlotLabel(v).replace('IG ', '')}
