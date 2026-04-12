@@ -2,7 +2,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { PlatformSafetyCheck, ScriptResult, ScriptSection, SegmentControls } from "../types";
 import { getGoogleKey } from "./settings";
-import { loadPrompt } from "./prompts";
+import { applyShortRules, loadPrompt } from "./prompts";
 
 async function handleApiCall<T>(call: () => Promise<T>): Promise<T> {
   console.log("[Gemini] API Call starting...");
@@ -90,7 +90,7 @@ export const generateZeitblitzScript = async (rawText: string, model: string): P
 export const enrichScriptWithDeep = async (script: ScriptResult, research: string): Promise<ScriptResult['sections']> => {
   return handleApiCall(async () => {
     const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
-    const systemInstruction = loadPrompt('script_generation', 'deep_upgrade');
+    const systemInstruction = applyShortRules(loadPrompt('script_generation', 'deep_upgrade'));
     
     // Da wir nur eine Section haben
     const currentText = script.sections[0].versions['short_1'];
@@ -131,6 +131,7 @@ export const regenerateHook = async (text: string, controls: SegmentControls, mo
     systemInstruction = safeReplace(systemInstruction, '{style}', controls.style.toString());
     systemInstruction = safeReplace(systemInstruction, '{metaphor}', controls.metaphor.toString());
     systemInstruction = safeReplace(systemInstruction, '{context}', context);
+    systemInstruction = applyShortRules(systemInstruction);
 
     const response = await ai.models.generateContent({ 
         model, 
@@ -160,6 +161,7 @@ export const generateDialogue = async (rawText: string, factText: string, contro
     systemInstruction = safeReplace(systemInstruction, '{style}', controls.style.toString());
     systemInstruction = safeReplace(systemInstruction, '{metaphor}', controls.metaphor.toString());
     systemInstruction = safeReplace(systemInstruction, '{info}', controls.info.toString());
+    systemInstruction = applyShortRules(systemInstruction);
 
     // Combine raw source and facts for full context
     const fullContext = `DOSSIER:\n${rawText}\n\nZUSÄTZLICHE FAKTEN:\n${factText}`;
@@ -203,6 +205,7 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
     promptTemplate = safeReplace(promptTemplate, '{factIntensity}', controls.fact_intensity.toString());
     promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
     promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
+    promptTemplate = applyShortRules(promptTemplate);
 
     console.log(`Sending Prompt to Gemini (${isLongFormat ? 'LONG' : 'STANDARD'}):`, promptTemplate.substring(0, 200) + "...");
 
@@ -210,7 +213,7 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
         model,
         contents: promptTemplate, 
         config: {
-            systemInstruction: "Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Skript.",
+            systemInstruction: applyShortRules("Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Skript."),
             temperature: 0.7 
         }
     });
@@ -241,12 +244,13 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
     promptTemplate = safeReplace(promptTemplate, '{factIntensity}', controls.fact_intensity.toString());
     promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
     promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
+    promptTemplate = applyShortRules(promptTemplate);
 
     const response = await ai.models.generateContent({
       model,
       contents: promptTemplate,
       config: {
-        systemInstruction: "Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Text.",
+        systemInstruction: applyShortRules("Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Text."),
         temperature: 0.75
       }
     });
@@ -270,12 +274,13 @@ export const generateInstagramWisdom = async (quote: string, author: string, dea
     promptTemplate = safeReplace(promptTemplate, '{author}', author || "");
     promptTemplate = safeReplace(promptTemplate, '{deathYear}', deathYear ? String(deathYear) : "");
     promptTemplate = safeReplace(promptTemplate, '{sourceUrl}', sourceUrl || "");
+    promptTemplate = applyShortRules(promptTemplate);
 
     const response = await ai.models.generateContent({
       model,
       contents: promptTemplate,
       config: {
-        systemInstruction: "Du bist ein Scriptwriter. Antworte exakt im gewünschten Format.",
+        systemInstruction: applyShortRules("Du bist ein Scriptwriter. Antworte exakt im gewünschten Format."),
         temperature: 0.8
       }
     });
@@ -310,6 +315,7 @@ export const generateCTA = async (text: string, controls: SegmentControls, model
     systemInstruction = safeReplace(systemInstruction, '{context}', context);
     systemInstruction = safeReplace(systemInstruction, '{scriptType}', scriptType);
     systemInstruction = safeReplace(systemInstruction, '{targetWords}', targetWords);
+    systemInstruction = applyShortRules(systemInstruction);
 
     const response = await ai.models.generateContent({
         model,
@@ -329,6 +335,7 @@ export const rewriteSelectionWithTone = async (text: string, tone: string, model
     const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
     let systemInstruction = loadPrompt('script_generation', 'tone_transformation');
     systemInstruction = safeReplace(systemInstruction, '{toneKey}', tone);
+    systemInstruction = applyShortRules(systemInstruction);
     const response = await ai.models.generateContent({ model, contents: text, config: { systemInstruction, temperature: 0.8 } });
     return response.text || text;
   });
@@ -339,6 +346,7 @@ export const rewriteSelectionWithCustomPrompt = async (text: string, prompt: str
     const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
     let systemInstruction = loadPrompt('script_generation', 'custom_selection_rewrite');
     systemInstruction = safeReplace(systemInstruction, '{instruction}', prompt);
+    systemInstruction = applyShortRules(systemInstruction);
     const response = await ai.models.generateContent({ model, contents: text, config: { systemInstruction, temperature: 0.7 } });
     return response.text || text;
   });
@@ -351,7 +359,7 @@ export const improveExistingScript = async (existingText: string, controls: Segm
     const seconds = controls.target_seconds || 60;
     const targetWords = Math.round((seconds / 45) * 100);
 
-    const systemInstruction = `Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'.
+    const systemInstruction = applyShortRules(`Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'.
 Deine Aufgabe ist es, einen bestehenden Skriptentwurf zu verbessern und weiterzuentwickeln.
 
 ZIEL:
@@ -380,7 +388,7 @@ LÄNGENVORGABE (STRIKT):
 - Ziel-Wortzahl: ca. ${targetWords} Wörter
 - Passe den Text an diese Länge an (kürzen oder erweitern).
 
-Antworte NUR mit dem verbesserten Skript, keine Erklärungen.`;
+Antworte NUR mit dem verbesserten Skript, keine Erklärungen.`);
 
     const response = await ai.models.generateContent({ 
       model, 

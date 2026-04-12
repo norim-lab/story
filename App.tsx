@@ -23,7 +23,7 @@ import {
 } from './services/provider';
 import { initStorage, listProjects, saveProject, deleteProject as deleteCloudProject, checkConnection } from './services/storage';
 import SettingsModal from './components/SettingsModal';
-import { getSettings, getFastModel, getProModel } from './services/settings';
+import { getSettings, getFastModel, getProModel, saveSettings } from './services/settings';
 import { getRandomHistoricalWikiquote } from './services/wikiquote';
 import { getPerplexityLegalCheck } from './services/perplexity';
 
@@ -425,6 +425,13 @@ export const App: React.FC = () => {
     const getCurrentModel = useCallback((usePro: boolean = false) => {
         return usePro ? getProModel() : getFastModel();
     }, [settingsVersion]);
+
+    const toggleShortRules = useCallback(() => {
+        const nextValue = !SETTINGS.shortRulesEnabled;
+        saveSettings({ shortRulesEnabled: nextValue });
+        setSettingsVersion(v => v + 1);
+        addLog(`SHORTRULES ${nextValue ? 'aktiviert' : 'deaktiviert'}`, nextValue ? 'success' : 'info');
+    }, [SETTINGS.shortRulesEnabled, addLog]);
 
     // Helper to check if current version is final
     const checkProtection = useCallback(() => {
@@ -1895,6 +1902,9 @@ export const App: React.FC = () => {
                     <button onClick={() => setSettingsOpen(true)} className="w-8 h-8 bg-white/5 hover:bg-white/10 rounded-lg flex items-center justify-center transition-all group shrink-0 border border-white/10">
                         <svg className="w-4 h-4 text-slate-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </button>
+                    <button onClick={toggleShortRules} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all border whitespace-nowrap ${SETTINGS.shortRulesEnabled ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400/40' : 'bg-white/5 text-slate-500 border-white/10 hover:text-white hover:bg-white/10'}`}>
+                        SHORTRULES
+                    </button>
                     <div className="hidden md:flex items-center gap-1">
                         <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
                             {SETTINGS.activeProvider === 'google' && (
@@ -1928,6 +1938,9 @@ export const App: React.FC = () => {
             <div className="md:hidden h-6 bg-slate-900/80 border-b border-white/5 flex items-center justify-between px-4">
                 <CloudStatusIndicator status={cloudStatus} lastSaved={lastSavedTime} />
                 <div className="flex items-center gap-2">
+                    <button onClick={toggleShortRules} className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${SETTINGS.shortRulesEnabled ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400/40' : 'bg-white/5 text-slate-500 border-white/10'}`}>
+                        SR
+                    </button>
                     <span className="text-[8px] font-bold text-slate-600 uppercase">{SETTINGS.activeProvider}</span>
                     <span className="text-[9px] font-mono text-slate-500">{getCurrentModel().split('-').slice(-2).join('-')}</span>
                 </div>

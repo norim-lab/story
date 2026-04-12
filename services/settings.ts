@@ -13,6 +13,7 @@ export interface ZBSettings {
   anthropicFastModel: string;
   anthropicProModel: string;
   perplexityApiKey: string;
+  shortRulesEnabled: boolean;
   activeProvider: Provider;
 }
 
@@ -27,6 +28,7 @@ const defaults: ZBSettings = {
   anthropicFastModel: 'claude-haiku-4-5',
   anthropicProModel: 'claude-sonnet-4-6',
   perplexityApiKey: '',
+  shortRulesEnabled: false,
   activeProvider: 'google'
 };
 

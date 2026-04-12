@@ -1,4 +1,4 @@
-
+import { getSettings } from "./settings";
 export const PROMPT_REGISTRY = {
   script_generation: {
     // Generischer Editor Prompt
@@ -498,4 +498,54 @@ Gib NUR die zwei Zeilen zurück.`
 export const loadPrompt = (category: keyof typeof PROMPT_REGISTRY, version: string) => {
   const cat = PROMPT_REGISTRY[category] as any;
   return cat[version] || Object.values(cat)[0];
+};
+
+const SHORT_RULES_PROMPT = `SHORTRULES — 6 Prinzipien (GLOBAL AKTIV, ALLE GENERIERUNGEN):
+
+PRINZIP 1 — DER HOOK IST EIN VERSPRECHEN, KEIN THEMA:
+- Der Hook beschreibt NICHT das Thema. Er öffnet eine Frage, die der Zuschauer nicht schließen kann ohne weiterzuschauen.
+- Er MUSS in 3 Sekunden einen der vier Trigger feuern: ANGST, EMPÖRUNG, BESTÄTIGUNG oder SCHADENFREUDE.
+- FALSCH: "Heute geht es um die Pflegekosten." RICHTIG: "Du wirst in Rente gehen — und trotzdem nichts haben. Hier ist warum."
+- Nicht erklären. Zünden. Der Zuschauer wird zum Mitbetroffenen.
+
+PRINZIP 2 — JEDER SATZ RECHTFERTIGT DEN NÄCHSTEN (MICRO-CLIFFHANGER):
+- Ein Short verliert Zuschauer zwischen den Sätzen, nicht am Ende.
+- Jeder Satz erzeugt eine Mini-Spannung, die den nächsten Satz notwendig macht.
+- Retention durch informationelle Unvollständigkeit: NIE 100% in einem Satz, immer nur 70%. Die restlichen 30% im nächsten.
+- Beispiel: "Die Koalition hat ein Problem." → Welches? "Es betrifft jeden, der Pflegeheime bezahlt." → Was genau? "Und die Lösung macht es teurer — nicht billiger." → Wie?
+
+PRINZIP 3 — ESKALATION MUSS FAKTISCH SEIN, NICHT RHETORISCH:
+- Eskalation funktioniert NUR durch persönliche Betroffenheit, nicht durch emotionale Lautstärke.
+- FALSCH: "Das ist ein Skandal!" RICHTIG: "Das kostet dich konkret 340 Euro mehr pro Monat."
+- Betroffenheit > Empörung. "Du zahlst mehr" > "Das ist eine Frechheit."
+
+PRINZIP 4 — DER KONFLIKT BRAUCHT ZWEI GESICHTER:
+- Abstrakte Konflikte erzeugen schwächere Retention als konkrete Figuren.
+- IMMER: Einen Schuldigen (konkrete Person/Institution) + Einen Betroffenen (Zuschauer oder Identifikationsfigur).
+- FALSCH: "Die Regierung versagt beim Thema Pflege." RICHTIG: "Merz verspricht Entlastung. Gleichzeitig steigen die Beiträge um 0,2 Prozent. Das hat er nicht erwähnt."
+- Konkret, personalisiert, mit einem Widerspruch als Motor.
+
+PRINZIP 5 — DAS PACING IST INHALT, NICHT TECHNIK:
+- Kein Satz über 12 Wörter — sonst Verlust in der Sprachverarbeitungsgeschwindigkeit.
+- Keine zwei Informationen in einem Satz — eine Aussage, ein Satz.
+- Zahlen IMMER isolieren: "3,4 Milliarden Euro." Punkt. Pause. Weiter.
+- Die Sprechpause nach einer Zahl oder starken Statement ist selbst eine Retention-Technik.
+
+PRINZIP 6 — DER CLIFFHANGER ENTSCHEIDET ÜBER KANAL-RETTENTION:
+- Der Cliffhanger hat keinen Effekt mehr auf das aktuelle Video — aber auf: Kommt der Zuschauer zurück? Folgt er dem Kanal?
+- Stärkste Formel: Eine echte, ungelöste Frage die die Zielgruppe persönlich betrifft — als DENKAUFTRAG, nicht als Teaser.
+- FALSCH: "Mehr dazu im nächsten Video." RICHTIG: "Und die eigentliche Frage ist: Wer hat das beschlossen — und warum hört man davon nichts?"
+
+ZEITBLYTZ KURZFORMEL (JEDER SHORT FOLGT DIESEM BOGEN):
+1. HOOK (3 Sek./1-2 Sätze): Frage öffnen, Trigger feuern. KEINE Begrüßung.
+2. KONTEXT (5-7 Sek./2-3 Sätze): Betroffenheit herstellen.
+3. ESKALATION (5-7 Sek./2-3 Sätze): Persönliche Konsequenz benennen, faktisch nicht rhetorisch.
+4. KONFLIKT (7-10 Sek./3-4 Sätze): Konkrete Figuren, konkreter Widerspruch.
+5. CLIFFHANGER (3-5 Sek./1-2 Sätze): Ungelöste Frage als Denkauftrag.
+
+GOLDENE REGEL: Wenn du jeden Satz einzeln lesen kannst und denkst "das kann ich weglassen" — dann kann es auch der Algorithmus weglassen. Nur Sätze, die der Zuschauer BRAUCHT um weiterzuschauen.`;
+
+export const applyShortRules = (prompt: string): string => {
+  if (!getSettings().shortRulesEnabled) return prompt;
+  return `${prompt}\n\n${SHORT_RULES_PROMPT}`;
 };

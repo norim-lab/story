@@ -1,6 +1,6 @@
 import { PlatformSafetyCheck, SegmentControls } from "../types";
 import { getAnthropicKey } from "./settings";
-import { loadPrompt } from "./prompts";
+import { applyShortRules, loadPrompt } from "./prompts";
 
 const anthropicMessagesUrl = import.meta.env.DEV ? '/anthropic' : '/anthropic.php';
 const anthropicProxyMode = import.meta.env.DEV ? 'direct' : 'wrapped';
@@ -111,11 +111,13 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
         promptTemplate = safeReplace(promptTemplate, '{factIntensity}', controls.fact_intensity.toString());
         promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
         promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
+        promptTemplate = applyShortRules(promptTemplate);
+        const systemInstruction = applyShortRules("Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Skript.");
 
         const response = await postAnthropic(apiKey, '2023-06-01', {
             model: model,
             max_tokens: 4096,
-            system: "Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Skript.",
+            system: systemInstruction,
             messages: [
                 { role: 'user', content: promptTemplate }
             ]
@@ -150,11 +152,13 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
         promptTemplate = safeReplace(promptTemplate, '{factIntensity}', controls.fact_intensity.toString());
         promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
         promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
+        promptTemplate = applyShortRules(promptTemplate);
+        const systemInstruction = applyShortRules("Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Text.");
 
         const response = await postAnthropic(apiKey, '2023-06-01', {
             model: model,
             max_tokens: 2048,
-            system: "Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Text.",
+            system: systemInstruction,
             messages: [
                 { role: 'user', content: promptTemplate }
             ]
@@ -182,11 +186,13 @@ export const generateInstagramWisdom = async (quote: string, author: string, dea
         promptTemplate = safeReplace(promptTemplate, '{author}', author || "");
         promptTemplate = safeReplace(promptTemplate, '{deathYear}', deathYear ? String(deathYear) : "");
         promptTemplate = safeReplace(promptTemplate, '{sourceUrl}', sourceUrl || "");
+        promptTemplate = applyShortRules(promptTemplate);
+        const systemInstruction = applyShortRules("Du bist ein Scriptwriter. Antworte exakt im gewünschten Format.");
 
         const response = await postAnthropic(apiKey, '2023-06-01', {
             model: model,
             max_tokens: 2048,
-            system: "Du bist ein Scriptwriter. Antworte exakt im gewünschten Format.",
+            system: systemInstruction,
             messages: [
                 { role: 'user', content: promptTemplate }
             ]
@@ -213,6 +219,7 @@ export const generateDialogue = async (rawText: string, factText: string, contro
         systemInstruction = safeReplace(systemInstruction, '{style}', controls.style.toString());
         systemInstruction = safeReplace(systemInstruction, '{metaphor}', controls.metaphor.toString());
         systemInstruction = safeReplace(systemInstruction, '{info}', controls.info.toString());
+        systemInstruction = applyShortRules(systemInstruction);
 
         const fullContext = `DOSSIER:\n${rawText}\n\nZUSÄTZLICHE FAKTEN:\n${factText}`;
 
@@ -241,6 +248,7 @@ export const regenerateHook = async (text: string, controls: SegmentControls, mo
         systemInstruction = safeReplace(systemInstruction, '{style}', controls.style.toString());
         systemInstruction = safeReplace(systemInstruction, '{metaphor}', controls.metaphor.toString());
         systemInstruction = safeReplace(systemInstruction, '{context}', context);
+        systemInstruction = applyShortRules(systemInstruction);
 
         const response = await postAnthropic(apiKey, '2023-06-01', {
             model: model,
@@ -276,6 +284,7 @@ export const generateCTA = async (text: string, controls: SegmentControls, model
         systemInstruction = safeReplace(systemInstruction, '{context}', context);
         systemInstruction = safeReplace(systemInstruction, '{scriptType}', scriptType);
         systemInstruction = safeReplace(systemInstruction, '{targetWords}', targetWords);
+        systemInstruction = applyShortRules(systemInstruction);
 
         const response = await postAnthropic(apiKey, '2023-06-01', {
             model: model,
@@ -299,6 +308,7 @@ export const rewriteSelectionWithTone = async (text: string, tone: string, model
         
         let systemInstruction = loadPrompt('script_generation', 'tone_transformation');
         systemInstruction = safeReplace(systemInstruction, '{toneKey}', tone);
+        systemInstruction = applyShortRules(systemInstruction);
 
         const response = await postAnthropic(apiKey, '2023-06-01', {
             model: model,
@@ -323,7 +333,7 @@ export const improveExistingScript = async (existingText: string, controls: Segm
         const seconds = controls.target_seconds || 60;
         const targetWords = Math.round((seconds / 45) * 100);
 
-        const systemInstruction = `Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'.
+        const systemInstruction = applyShortRules(`Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'.
 Deine Aufgabe ist es, einen bestehenden Skriptentwurf zu verbessern und weiterzuentwickeln.
 
 ZIEL:
@@ -352,7 +362,7 @@ LÄNGENVORGABE (STRIKT):
 - Ziel-Wortzahl: ca. ${targetWords} Wörter
 - Passe den Text an diese Länge an (kürzen oder erweitern).
 
-Antworte NUR mit dem verbesserten Skript, keine Erklärungen.`;
+Antworte NUR mit dem verbesserten Skript, keine Erklärungen.`);
 
         const response = await postAnthropic(apiKey, '2023-06-01', {
             model: model,
