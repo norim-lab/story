@@ -94,6 +94,34 @@ const SettingsModal: React.FC<Props> = ({ open, onClose }) => {
             </div>
             <div className="text-[10px] text-slate-500 mt-1">Bestimmt, welche API für die Generierung verwendet wird.</div>
           </div>
+          
+          <div className="space-y-3">
+            <div className="text-[10px] uppercase font-bold text-slate-500">Shadowban-Schutz</div>
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input 
+                type="checkbox" 
+                checked={s.youtubeShadowbanAvoid} 
+                onChange={e => setS({...s, youtubeShadowbanAvoid: e.target.checked})} 
+                className="w-4 h-4 rounded accent-red-500"
+              />
+              <div>
+                <div className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">YouTube Shadowban Avoid</div>
+                <div className="text-[10px] text-slate-500">Trigger-Wörter umgehen, sichere Alternativen nutzen, Beobachtungs-Frames statt Anklage-Frames</div>
+              </div>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input 
+                type="checkbox" 
+                checked={s.tiktokShadowbanAvoid} 
+                onChange={e => setS({...s, tiktokShadowbanAvoid: e.target.checked})} 
+                className="w-4 h-4 rounded accent-red-500"
+              />
+              <div>
+                <div className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">TikTok Shadowban Avoid</div>
+                <div className="text-[10px] text-slate-500">Zusätzlich: Keine Konkurrenz-Plattformen nennen, FYF-optimiertes Framing, max. 5 sichere Hashtags</div>
+              </div>
+            </label>
+          </div>
         </div>
         
         <div className="p-4 border-t border-white/10 flex justify-end gap-2">

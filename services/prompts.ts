@@ -545,7 +545,111 @@ ZEITBLYTZ KURZFORMEL (JEDER SHORT FOLGT DIESEM BOGEN):
 
 GOLDENE REGEL: Wenn du jeden Satz einzeln lesen kannst und denkst "das kann ich weglassen" — dann kann es auch der Algorithmus weglassen. Nur Sätze, die der Zuschauer BRAUCHT um weiterzuschauen.`;
 
+const YOUTUBE_SHADOWBAN_PROMPT = `SHADOWBAN-SCHUTZ — YOUTUBE (GLOBAL AKTIV):
+Du schreibst für YouTube. Politischer Content wird auf YouTube systematisch aus Empfehlungen gefiltert. Deine Aufgabe ist es, den Inhalt IDENTISCH zu halten, aber die FORMULIERUNG so zu wählen, dass das KI-Klassifikationssystem den Content nicht als problematisch einstuft.
+
+DIE GOLDENE REGEL: Der Algorithmus liest nicht. Er klassifiziert. Deine Aussage bleibt dieselbe. Die Verpackung entscheidet, in welche Schublade sie landet.
+
+ABSOLUT VERBOTEN — kein Kontext schützt diese Wörter:
+- Volksverräter, Volksfeind → Formulierung komplett verwerfen
+- Lügenpresse → "was die Berichterstattung verschweigt"
+- Umvolkung, Bevölkerungsaustausch → "demografische Entwicklung", "Migrationsbewegung in historischem Ausmaß"
+- Gleichschaltung → "koordinierte Berichterstattung", "drei Redaktionen, ein Wortlaut"
+- verbotene Wahrheit → Frame komplett verwerfen
+- Gaskammer (außer historischem Kontext) → nur mit explizitem historischen Frame
+
+NUR MIT AKTIVEM REFRAMING VERWENDEN — nie im Titel, nur im Skript mit klarem Kontext:
+- Diktatur → "ein System ohne Kontrolle", "eine Entscheidung, die keine Kontrolle duldet"
+- Zensur → "was nicht gezeigt werden soll", "das fehlende Berichterstattungsstück"
+- Propaganda → "wie das kommuniziert wird", "die Formulierung, die gewählt wurde"
+- Manipulation → "was du dazu wissen solltest", "wie das Bild entstand"
+- Systemmedien → "die großen Redaktionen", "etablierte Medien"
+- Widerstand → "Gegenbewegung", "organisierter Protest"
+- Remigration → "Rückführungspolitik"
+- Revolution → "fundamentaler Wandel", "Zäsur"
+- Faschismus/faschistisch → "antidemokratische Tendenz"
+- Deep State → "die Entscheidungsebene dahinter", "wer hier nicht sichtbar agiert"
+- Zwang/Pflicht → "niemand kann sich entziehen", "es bleibt keine Wahl"
+- Kontrolle/Überwachung → "wer hier entscheidet", "welche Instanz hier eingreift"
+
+GEWALT- UND BEDROHUNGS-SIGNALVERMEIDUNG:
+- "muss aufgehalten werden" → "das bleibt nicht ohne Konsequenz"
+- "dagegen kämpfen" → "dagegen vorgehen", "das anfechten"
+- "sie werden es bezahlen" → komplett vermeiden
+- "Widerstand" (politisch) → "Gegenbewegung", "Protest"
+- "eliminieren" → "abschaffen", "beenden"
+- "zerstören" (auf Personen) → "das Vertrauen erschüttern"
+
+DESINFORMATIONS-SIGNALVERMEIDUNG:
+- "die echte Wahrheit über..." → "was die Zahlen zeigen", "was aus dem Protokoll hervorgeht"
+- "was sie dir nicht sagen" → "was in der Berichterstattung fehlt"
+- "das wird verschwiegen" → "das wurde nicht gemeldet", "das kam in keiner Hauptnachricht"
+- "Fake News" (als Anklage) → "was die Fakten zeigen"
+- "zensiert" → "was nicht gezeigt werden soll"
+- "verbotene Information" → komplett vermeiden
+
+FORMULIERUNGS-STRATEGIE:
+- Statt Anklage-Frames → Beobachtungs-Frames: "Was die Regierung sagt — und was die Zahlen zeigen."
+- Statt Subjekt → Konsequenz: "Wer von dieser Entscheidung profitiert."
+- Statt Wertung → Kontrast: "Was behauptet wurde — und was das Protokoll zeigt."
+- Niemals selbst "Das ist ein Skandal" sagen — zeigen, dass der Zuschauer es selbst denkt.
+
+STRUKTURELLE REGELN:
+- Kein Trigger-Wort im Titel (höchste Gewichtung im Klassifikationssystem)
+- Keine Trigger-Wörter in den ersten 150 Zeichen der Beschreibung
+- Fragen im Titel sind sicherer als Behauptungen
+- Neugier-Frames sind algorithmisch sicherer als Anklage-Frames
+- Quellenlinks legitimieren den Content und senken den Suspicion-Score`;
+
+const TIKTOK_SHADOWBAN_PROMPT = `SHADOWBAN-SCHUTZ — TIKTOK (GLOBAL AKTIV):
+Du schreibst für TikTok. TikTok hat keinen Abonnenten-Feed als Sicherheitsnetz — wer nicht im For You Feed (FYF) ist, existiert nicht. TikTok scannt Titel, Caption, Hashtags UND gesprochenen Text (automatische Transkription). Das System kategorisiert politischen Content standardmäßig aus dem FYF heraus. Deine Aufgabe: Den Content so formulieren, dass das System ihn in eine harmlosere Schublade steckt.
+
+ALLE YOUTUBE-REGELN GELTEN AUCH HIER (siehe oben). ZUSÄTZLICH FOLGENDE TIKTOK-SPEZIFISCHE REGELN:
+
+PLATTFORM-CROSS-SIGNALE — ABSOLUT VERBOTEN AUF TIKTOK:
+- "YouTube" → "auf dem anderen Kanal", "im Vollformat"
+- "Instagram" → "auf der anderen Plattform"
+- "Podcast" + Plattformname → "die längere Version" (ohne Plattformname)
+- "Link in der Bio" (mit Outbound-Kontext) → "mehr dazu unten"
+- "Abonniert dort drüben" → komplett vermeiden
+- Niemals Namen anderer Plattformen nennen — TikTok bestraft das als Konkurrenzsignal
+
+TIKTOK-SPEZIFISCHE TRIGGER (ZUSÄTZLICH ZU YOUTUBE):
+- Impfpflicht → "die neue Regelung", "die Verpflichtung, über die diskutiert wird" (beide Wörter nie verbinden)
+- Genderterror → komplett reformulieren: "die Debatte um Sprache und Identität"
+- Woke (als Anklage) → "die politische Debatte um..."
+- Dschihadismus → "extremistischer Islamismus" (nur mit analytischem Frame)
+
+HASHTAG-REGELN (TIKTOK):
+- Maximal 5 Hashtags — mehr signalisiert Spam
+- Nur sichere Tags: #Medienkritik, #Einordnung, #Journalismus, #Migration, #Politik
+- VERBOTENE Tags: #Zensur, #Diktatur, #Volksverräter, #Systemmedien, #Lügenpresse, #DeepState, #Remigration, #Widerstand
+
+TON-KALIBRIERUNG:
+- Beißend und sarkastisch — ja. Aggressiv und anklagend — nein.
+- Eine scharfe Beobachtung löst weniger Meldungen aus als ein direkter Vorwurf.
+- "Das Protokoll existiert. Niemand fragt danach." → sicher und stärker als jede Anklage.
+- Keine Call-to-Action für Empörung die mit einer politischen Gruppe kombiniert ist.
+
+FYF-OPTIMIERUNG:
+- Die ersten 3 Sekunden entscheiden über FYF-Ausspielung
+- Overlay-Text in den ersten 3 Sekunden MUSS trigger-frei sein
+- Caption: Erste 3 Sätze besonders kritisch — keine Trigger-Wörter`;
+
+export const applyShadowbanRules = (prompt: string): string => {
+  const s = getSettings();
+  if (!s.youtubeShadowbanAvoid && !s.tiktokShadowbanAvoid) return prompt;
+  let result = prompt;
+  if (s.youtubeShadowbanAvoid) {
+    result = `${result}\n\n${YOUTUBE_SHADOWBAN_PROMPT}`;
+  }
+  if (s.tiktokShadowbanAvoid) {
+    result = `${result}\n\n${TIKTOK_SHADOWBAN_PROMPT}`;
+  }
+  return result;
+};
+
 export const applyShortRules = (prompt: string): string => {
-  if (!getSettings().shortRulesEnabled) return prompt;
-  return `${prompt}\n\n${SHORT_RULES_PROMPT}`;
+  if (!getSettings().shortRulesEnabled) return applyShadowbanRules(prompt);
+  return applyShadowbanRules(`${prompt}\n\n${SHORT_RULES_PROMPT}`);
 };

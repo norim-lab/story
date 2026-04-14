@@ -14,6 +14,8 @@ export interface ZBSettings {
   anthropicProModel: string;
   perplexityApiKey: string;
   shortRulesEnabled: boolean;
+  youtubeShadowbanAvoid: boolean;
+  tiktokShadowbanAvoid: boolean;
   activeProvider: Provider;
 }
 
@@ -29,6 +31,8 @@ const defaults: ZBSettings = {
   anthropicProModel: 'claude-sonnet-4-6',
   perplexityApiKey: '',
   shortRulesEnabled: false,
+  youtubeShadowbanAvoid: false,
+  tiktokShadowbanAvoid: false,
   activeProvider: 'google'
 };
 
