@@ -548,7 +548,9 @@ export const loadPrompt = (category: keyof typeof PROMPT_REGISTRY, version: stri
   return cat[version] || Object.values(cat)[0];
 };
 
-const SHORT_RULES_PROMPT = `ZEITBLYTZ REGELWERK v3.5 — GESPROMCHENES WORT (GLOBAL AKTIV, ALLE GENERIERUNGEN, ZWINGEND):
+const SHORT_RULES_PROMPT = `ZEITBLYTZ REGELWERK v3.5 — GESPROMCHENES WORT (ZWINGEND, NICHT VERHANDELBAR, GILT FÜR JEDEN TEXT UNTER 1 MINUTE):
+
+DU MUSST diese Regeln befolgen. Jede Verletzung führt zu einem unbrauchbaren Skript. Lies jeden Block und wende ihn an.
 
 DAS GRUNDGESETZ:
 Die Auflösung kommt einmal. Am Ende. Nirgendwo sonst.
@@ -760,6 +762,5 @@ export const applyShadowbanRules = (prompt: string): string => {
 };
 
 export const applyShortRules = (prompt: string): string => {
-  if (!getSettings().shortRulesEnabled) return applyShadowbanRules(prompt);
-  return applyShadowbanRules(`${prompt}\n\n${SHORT_RULES_PROMPT}`);
+  return applyShadowbanRules(`${SHORT_RULES_PROMPT}\n\n${prompt}`);
 };
