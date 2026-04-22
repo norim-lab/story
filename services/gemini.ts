@@ -2,7 +2,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { PlatformSafetyCheck, ScriptResult, ScriptSection, SegmentControls } from "../types";
 import { getGoogleKey } from "./settings";
-import { applyShortRules, loadPrompt } from "./prompts";
+import { applyShortRules, loadPrompt, getStyleInstruction, getMetaphorInstruction, getFactInstruction } from "./prompts";
 
 async function handleApiCall<T>(call: () => Promise<T>): Promise<T> {
   console.log("[Gemini] API Call starting...");
@@ -128,8 +128,8 @@ export const regenerateHook = async (text: string, controls: SegmentControls, mo
     const context = text.slice(0, 1000) + "...";
 
     let systemInstruction = loadPrompt('script_generation', 'hook_regen');
-    systemInstruction = safeReplace(systemInstruction, '{style}', controls.style.toString());
-    systemInstruction = safeReplace(systemInstruction, '{metaphor}', controls.metaphor.toString());
+    systemInstruction = safeReplace(systemInstruction, '{styleText}', getStyleInstruction(controls.style));
+    systemInstruction = safeReplace(systemInstruction, '{metaphorText}', getMetaphorInstruction(controls.metaphor));
     systemInstruction = safeReplace(systemInstruction, '{context}', context);
     systemInstruction = applyShortRules(systemInstruction);
 
@@ -158,9 +158,8 @@ export const generateDialogue = async (rawText: string, factText: string, contro
     let systemInstruction = loadPrompt('script_generation', 'dialogue_generation');
     systemInstruction = safeReplace(systemInstruction, '{seconds}', seconds.toString());
     systemInstruction = safeReplace(systemInstruction, '{targetWords}', targetWords.toString());
-    systemInstruction = safeReplace(systemInstruction, '{style}', controls.style.toString());
-    systemInstruction = safeReplace(systemInstruction, '{metaphor}', controls.metaphor.toString());
-    systemInstruction = safeReplace(systemInstruction, '{info}', controls.info.toString());
+    systemInstruction = safeReplace(systemInstruction, '{styleText}', getStyleInstruction(controls.style));
+    systemInstruction = safeReplace(systemInstruction, '{metaphorText}', getMetaphorInstruction(controls.metaphor));
     systemInstruction = applyShortRules(systemInstruction);
 
     // Combine raw source and facts for full context
@@ -199,10 +198,9 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
     // Use safeReplace to handle potential special characters in user input (dossier/facts)
     promptTemplate = safeReplace(promptTemplate, '{seconds}', seconds.toString());
     promptTemplate = safeReplace(promptTemplate, '{targetWords}', targetWords.toString());
-    promptTemplate = safeReplace(promptTemplate, '{style}', controls.style.toString());
-    promptTemplate = safeReplace(promptTemplate, '{metaphor}', controls.metaphor.toString());
-    promptTemplate = safeReplace(promptTemplate, '{info}', controls.info.toString());
-    promptTemplate = safeReplace(promptTemplate, '{factIntensity}', controls.fact_intensity.toString());
+    promptTemplate = safeReplace(promptTemplate, '{styleText}', getStyleInstruction(controls.style));
+    promptTemplate = safeReplace(promptTemplate, '{metaphorText}', getMetaphorInstruction(controls.metaphor));
+    promptTemplate = safeReplace(promptTemplate, '{factText}', getFactInstruction(controls.fact_intensity));
     promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
     promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
     promptTemplate = applyShortRules(promptTemplate);
@@ -238,10 +236,9 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
     let promptTemplate = loadPrompt('script_generation', promptKey);
     promptTemplate = safeReplace(promptTemplate, '{seconds}', seconds.toString());
     promptTemplate = safeReplace(promptTemplate, '{targetWords}', targetWords.toString());
-    promptTemplate = safeReplace(promptTemplate, '{style}', controls.style.toString());
-    promptTemplate = safeReplace(promptTemplate, '{metaphor}', controls.metaphor.toString());
-    promptTemplate = safeReplace(promptTemplate, '{info}', controls.info.toString());
-    promptTemplate = safeReplace(promptTemplate, '{factIntensity}', controls.fact_intensity.toString());
+    promptTemplate = safeReplace(promptTemplate, '{styleText}', getStyleInstruction(controls.style));
+    promptTemplate = safeReplace(promptTemplate, '{metaphorText}', getMetaphorInstruction(controls.metaphor));
+    promptTemplate = safeReplace(promptTemplate, '{factText}', getFactInstruction(controls.fact_intensity));
     promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
     promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
     promptTemplate = applyShortRules(promptTemplate);
@@ -310,8 +307,8 @@ export const generateCTA = async (text: string, controls: SegmentControls, model
     const promptKey = isDialogue ? 'cta_dialogue_generation' : 'cta_generation';
     
     let systemInstruction = loadPrompt('script_generation', promptKey);
-    systemInstruction = safeReplace(systemInstruction, '{style}', controls.style.toString());
-    systemInstruction = safeReplace(systemInstruction, '{metaphor}', controls.metaphor.toString());
+    systemInstruction = safeReplace(systemInstruction, '{styleText}', getStyleInstruction(controls.style));
+    systemInstruction = safeReplace(systemInstruction, '{metaphorText}', getMetaphorInstruction(controls.metaphor));
     systemInstruction = safeReplace(systemInstruction, '{context}', context);
     systemInstruction = safeReplace(systemInstruction, '{scriptType}', scriptType);
     systemInstruction = safeReplace(systemInstruction, '{targetWords}', targetWords);

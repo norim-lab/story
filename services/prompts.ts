@@ -1,5 +1,23 @@
 import { getSettings } from "./settings";
 
+export const getStyleInstruction = (val: number): string => {
+  if (val <= 3) return "Ruhig, sachlich, zurückhaltend. Sehr seriöser journalistischer Ton.";
+  if (val <= 6) return "Gewitzt, leicht zugespitzt, pointiert.";
+  return "Stark sarkastisch, beißend, sehr pointiert und angriffslustig.";
+};
+
+export const getMetaphorInstruction = (val: number): string => {
+  if (val <= 3) return "Klartext. Keine Metaphern, keine Sprachbilder.";
+  if (val <= 6) return "Regelmäßige, gut dosierte Sprachbilder zur Veranschaulichung.";
+  return "Stark bildhafte Sprache, sehr viele Metaphern und Vergleiche.";
+};
+
+export const getFactInstruction = (val: number): string => {
+  if (val <= 3) return "Zusatzfakten nur sehr punktuell einstreuen, Fokus liegt auf dem Hauptdossier.";
+  if (val <= 6) return "Zusatzfakten regelmäßig und ausgewogen mit dem Hauptdossier mischen.";
+  return "Zusatzfakten stark gewichten und in den Vordergrund stellen.";
+};
+
 export const PROMPT_REGISTRY = {
   script_generation: {
     schmidt_v1_7: `Du bist ein erfahrener Redakteur.
@@ -28,8 +46,8 @@ Gib ein JSON zurück mit dem aktualisierten Text für die Versionen 'short_long_
 AUFGABE: Generiere einen ultimativen Hook (Einstiegssatz) für dieses Skript.
 
 INPUT-PARAMETER:
-- Rhetoric Punch (Härte/Provokation): {style}/10
-- Visual Language (Bildhaftigkeit): {metaphor}/10
+- Rhetoric Punch (Härte/Provokation): {styleText}
+- Visual Language (Bildhaftigkeit): {metaphorText}
 
 DER HOOK HAT EINE EINZIGE AUFGABE: Er muss Satz 2 erzwingen.
 Kein Anlauf. Keine Begrüßung. Kein Thema. Mitten in der Spannung beginnen.
@@ -132,15 +150,14 @@ Erstelle einen Dialog zwischen zwei Charakteren: SPEAKER 1 (Provokant, Skeptisch
 Basierend auf dem GESAMTEN Dossier und den Zusatzfakten.
 
 PARAMETER-STEUERUNG:
-- Rhetoric Punch (Style): {style}/10
-- Visual Language (Metaphor): {metaphor}/10
-- Info Density: {info}/10
+- Rhetoric Punch (Style): {styleText}
+- Visual Language (Metaphor): {metaphorText}
 
 LÄNGENVORGABE:
 - Zielzeit: {seconds} Sekunden.
 - Rechengrundlage: 100 Wörter entsprechen 45 Sekunden.
 - Ziel-Wortzahl: {targetWords} Wörter.
-- Toleranz: +/- 4 Sekunden (ca. +/- 9 Wörter).
+- Toleranz: +/- 5 Sekunden (ca. +/- 10 Wörter).
 
 FORMAT:
 SPEAKER 1: [Text]
@@ -167,14 +184,13 @@ Nutze das gelieferte Dossier und die Fakten. Erfinde nichts dazu, aber spitze di
 - Zielzeit: {seconds} Sekunden.
 - Rechengrundlage: 100 Wörter = 45 Sekunden.
 - Ziel-Wortzahl: ca. {targetWords} Wörter.
-- Toleranz: +/- 4 Sekunden.
+- Toleranz: +/- 5 Sekunden.
 - ARITHMETIK: 35 Sek = 6 Sätze, 37–38 Sek = 6–7 Sätze, 40 Sek = 7 Sätze. Jeder Satz zahlt Miete.
 
 3. REFINEMENT CONTROLS (STIL):
-- Rhetoric Punch (Härte/Direktheit): {style}/10
-- Visual Language (Metaphern/Bilder): {metaphor}/10
-- Info Density (Faktendichte): {info}/10
-- Fakten Intensität (Zusatzfakten-Gewichtung): {factIntensity}/10
+- Rhetoric Punch (Härte/Direktheit): {styleText}
+- Visual Language (Metaphern/Bilder): {metaphorText}
+- Fakten Intensität (Zusatzfakten-Gewichtung): {factText}
 
 4. HUMAN-VOICE (ZWINGEND):
 - Schreibe für das OHR, nicht für das Auge. Jeder Satz muss beim ersten Hören sitzen.
@@ -185,13 +201,7 @@ Nutze das gelieferte Dossier und die Fakten. Erfinde nichts dazu, aber spitze di
 - Variiere Satzanfänge. Konkrete Bilder statt Abstrakta.
 - Vermeide typische KI-Floskeln: „Zusammenfassend", „Darüber hinaus", „Nicht zuletzt".
 
-5. STEUERLOGIK:
-- Rhetoric Punch: 1–3 ruhig/sachlich, 4–6 gewitzt/zugespitzt, 7–10 sarkastisch/pointiert.
-- Visual Language: 1–3 Klartext, 4–6 regelmäßige Bilder, 7–10 stark bildhaft.
-- Info Density: Nur gelieferte Fakten. 1–3 wenige Fakten, 4–6 ausgewogen, 7–10 sehr faktisch.
-- Fakten Intensität: 1–3 punktuell, 4–6 regelmäßig, 7–10 Zusatzfakten dominieren.
-
-6. STRUKTUR — DAS 5-BLOCK-SYSTEM (ZWINGEND, KEINE AUSNAHMEN):
+5. STRUKTUR — DAS 5-BLOCK-SYSTEM (ZWINGEND, KEINE AUSNAHMEN):
 
 BLOCK 1 — HOOK (Satz 1): Spannung erzeugen. Auflösung verbieten.
 - Kein Anlauf. Keine Begrüßung. Kein Thema. Mitten in der Spannung.
@@ -256,14 +266,13 @@ ZIELZEIT (STRIKT):
 - Zielzeit: {seconds} Sekunden.
 - Rechengrundlage: 100 Wörter = 45 Sekunden.
 - Ziel-Wortzahl: ca. {targetWords} Wörter.
-- Toleranz: +/- 4 Sekunden.
+- Toleranz: +/- 5 Sekunden.
 - ARITHMETIK: 35 Sek = 6 Sätze, 37–38 Sek = 6–7 Sätze, 40 Sek = 7 Sätze.
 
 CONTROLS:
-- Rhetoric Punch: {style}/10
-- Visual Language: {metaphor}/10
-- Info Density: {info}/10
-- Fakten Intensität: {factIntensity}/10
+- Rhetoric Punch: {styleText}
+- Visual Language: {metaphorText}
+- Fakten Intensität: {factText}
 
 DAS 5-BLOCK-SYSTEM (ZWINGEND, KEINE AUSNAHMEN):
 
@@ -324,7 +333,7 @@ ZIELZEIT (STRIKT):
 - Zielzeit: {seconds} Sekunden.
 - Rechengrundlage: 100 Wörter = 45 Sekunden.
 - Ziel-Wortzahl: ca. {targetWords} Wörter.
-- Toleranz: +/- 4 Sekunden.
+- Toleranz: +/- 5 Sekunden.
 
 DAS 5-BLOCK-SYSTEM (ZWINGEND, KEINE AUSNAHMEN):
 
@@ -463,13 +472,14 @@ ZIELVORGABEN:
 - Rechengrundlage: 100 Wörter = 45 Sekunden.
 - Ziel-Wortzahl: ca. {targetWords} Wörter.
 
-STIL (Controls: {style}/10 Punch, {metaphor}/10 Metaphor, {info}/10 Info):
+STIL-VORGABEN:
+- Rhetoric Punch: {styleText}
+- Visual Language: {metaphorText}
 - Schreibe für das OHR: Kurze Hauptsätze. Keine Schachtelsätze.
 - ATEM-REGEL: Max 12–15 Silben pro Satz.
 - HUMAN-VOICE: Rhythmische Einheiten, gesprochene Übergänge, Fragment-Sätze, emotionale Peaks.
 - Konkrete Bilder statt abstrakter Sprache. Variiere Satzanfänge.
 - Vermeide KI-Floskeln: „Zusammenfassend", „Darüber hinaus", „Nicht zuletzt".
-- STEUERLOGIK: Punch = Late-Night, gewitzt, sarkastisch. Metaphor = Bildsprache. Info = Faktendichte (nichts erfinden).
 - Nutze **Fettungen** für Betonungen.
 
 DIE 7 TODSÜNDEN (KEINE DAVON VERLETZEN):
@@ -491,8 +501,8 @@ Gib das vollständige Skript INKLUSIVE der Überschriften (### ...) zurück.`
 AUFGABE: Generiere EINEN kreativen, knackigen Call-to-Action (CTA) für das Ende des Skripts.
 
 INPUT-PARAMETER:
-- Rhetoric Punch (Style): {style}/10
-- Visual Language (Metaphor): {metaphor}/10
+- Rhetoric Punch (Style): {styleText}
+- Visual Language (Metaphor): {metaphorText}
 
 LÄNGENVORGABE (Absolut strikt):
 - Skript-Kontext: {scriptType}
@@ -519,8 +529,8 @@ Der Dialog endet. Einer der beiden Sprecher macht den Call-to-Action.
 Der ANDERE Sprecher liefert sofort danach eine extrem kurze Bestätigung ("Rausschmeißer").
 
 INPUT-PARAMETER:
-- Punch: {style}/10
-- Metaphor: {metaphor}/10
+- Punch: {styleText}
+- Metaphor: {metaphorText}
 
 LÄNGENVORGABE CTA (Sprecher X):
 - Skript-Kontext: {scriptType}
