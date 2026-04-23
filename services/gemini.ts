@@ -2,7 +2,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { PlatformSafetyCheck, ScriptResult, ScriptSection, SegmentControls } from "../types";
 import { getGoogleKey } from "./settings";
-import { applyShortRules, loadPrompt, getStyleInstruction, getMetaphorInstruction, getFactInstruction } from "./prompts";
+import { applyShortRules, loadPrompt, getStyleInstruction, getMetaphorInstruction, getFactInstruction, appendStyleEnforcement } from "./prompts";
 
 async function handleApiCall<T>(call: () => Promise<T>): Promise<T> {
   console.log("[Gemini] API Call starting...");
@@ -204,6 +204,7 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
     promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
     promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
     promptTemplate = applyShortRules(promptTemplate);
+    promptTemplate = appendStyleEnforcement(promptTemplate, controls.style, controls.metaphor, controls.fact_intensity);
 
     console.log(`Sending Prompt to Gemini (${isLongFormat ? 'LONG' : 'STANDARD'}):`, promptTemplate.substring(0, 200) + "...");
 
@@ -242,6 +243,7 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
     promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
     promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
     promptTemplate = applyShortRules(promptTemplate);
+    promptTemplate = appendStyleEnforcement(promptTemplate, controls.style, controls.metaphor, controls.fact_intensity);
 
     const response = await ai.models.generateContent({
       model,

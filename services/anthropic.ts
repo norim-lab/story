@@ -1,6 +1,6 @@
 import { PlatformSafetyCheck, SegmentControls } from "../types";
 import { getAnthropicKey } from "./settings";
-import { applyShortRules, loadPrompt, getStyleInstruction, getMetaphorInstruction, getFactInstruction } from "./prompts";
+import { applyShortRules, loadPrompt, getStyleInstruction, getMetaphorInstruction, getFactInstruction, appendStyleEnforcement } from "./prompts";
 
 const anthropicMessagesUrl = import.meta.env.DEV ? '/anthropic' : '/anthropic.php';
 const anthropicProxyMode = import.meta.env.DEV ? 'direct' : 'wrapped';
@@ -111,6 +111,7 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
         promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
         promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
         promptTemplate = applyShortRules(promptTemplate);
+        promptTemplate = appendStyleEnforcement(promptTemplate, controls.style, controls.metaphor, controls.fact_intensity);
         const systemInstruction = applyShortRules("Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Skript.");
 
         const response = await postAnthropic(apiKey, '2023-06-01', {
@@ -151,6 +152,7 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
         promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
         promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
         promptTemplate = applyShortRules(promptTemplate);
+        promptTemplate = appendStyleEnforcement(promptTemplate, controls.style, controls.metaphor, controls.fact_intensity);
         const systemInstruction = applyShortRules("Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Text.");
 
         const response = await postAnthropic(apiKey, '2023-06-01', {

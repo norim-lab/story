@@ -1,6 +1,6 @@
 import { PlatformSafetyCheck, SegmentControls } from "../types";
 import { getOpenAIKey } from "./settings";
-import { applyShortRules, loadPrompt, getStyleInstruction, getMetaphorInstruction, getFactInstruction } from "./prompts";
+import { applyShortRules, loadPrompt, getStyleInstruction, getMetaphorInstruction, getFactInstruction, appendStyleEnforcement } from "./prompts";
 
 function safeReplace(template: string, key: string, value: string): string {
     return template.split(key).join(value);
@@ -38,6 +38,7 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
         promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
         promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
         promptTemplate = applyShortRules(promptTemplate);
+        promptTemplate = appendStyleEnforcement(promptTemplate, controls.style, controls.metaphor, controls.fact_intensity);
         const systemInstruction = applyShortRules("Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Skript.");
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -88,6 +89,7 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
         promptTemplate = safeReplace(promptTemplate, '{dossier}', dossier || "");
         promptTemplate = safeReplace(promptTemplate, '{facts}', facts || "");
         promptTemplate = applyShortRules(promptTemplate);
+        promptTemplate = appendStyleEnforcement(promptTemplate, controls.style, controls.metaphor, controls.fact_intensity);
         const systemInstruction = applyShortRules("Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Text.");
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {

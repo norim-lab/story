@@ -18,6 +18,29 @@ export const getFactInstruction = (val: number): string => {
   return "Zusatzfakten stark gewichten und in den Vordergrund stellen.";
 };
 
+export const appendStyleEnforcement = (prompt: string, style: number, metaphor: number, fact: number): string => {
+  const styleText = getStyleInstruction(style);
+  const metaphorText = getMetaphorInstruction(metaphor);
+  const factText = getFactInstruction(fact);
+
+  return `${prompt}
+
+======================================================================
+🔥 ABSOLUTE PRIORITÄT: FINE-TUNING SLIDER FÜR DIESES SKRIPT 🔥
+Die folgenden 3 Parameter MÜSSEN den gesamten Text prägen. Sie sind wichtiger als der Standard-Tonfall!
+
+1. RHETORIC PUNCH (Härtegrad ${style}/10):
+-> ${styleText}
+(Hinweis: Block 4 bleibt der Höhepunkt, aber passe das Grundlevel des gesamten Skripts an diese Vorgabe an!)
+
+2. VISUAL LANGUAGE (Bildsprache ${metaphor}/10):
+-> ${metaphorText}
+
+3. FAKTEN-INTENSITÄT (Zusatzfakten ${fact}/10):
+-> ${factText}
+======================================================================`;
+};
+
 export const PROMPT_REGISTRY = {
   script_generation: {
     schmidt_v1_7: `Du bist ein erfahrener Redakteur.
