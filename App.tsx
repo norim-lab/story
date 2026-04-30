@@ -1858,6 +1858,41 @@ export const App: React.FC = () => {
     const seconds = totalSeconds % 60;
     const readingTime = `${minutes}:${seconds.toString().padStart(2, '0')} min`;
     
+    const exportShorts = (type: 'copy' | 'download') => {
+        const versions = activeProject?.scriptResult?.sections?.[0]?.versions || {};
+        const shortSlots = getSlotsByPrefix('short', false).filter(v => (versions[v]?.trim().length ?? 0) > 0);
+        
+        if (shortSlots.length === 0) {
+            alert('Keine generierten Short-Texte gefunden.');
+            return;
+        }
+
+        let exportContent = '';
+        shortSlots.forEach((slot, index) => {
+            exportContent += `Version ${index + 1}\n\n${versions[slot].trim()}\n\n`;
+        });
+
+        if (type === 'copy') {
+            navigator.clipboard.writeText(exportContent.trim()).then(() => {
+                alert('Alle Short-Texte wurden in die Zwischenablage kopiert!');
+            }).catch(err => {
+                console.error('Fehler beim Kopieren:', err);
+                alert('Fehler beim Kopieren in die Zwischenablage.');
+            });
+        } else if (type === 'download') {
+            const blob = new Blob([exportContent.trim()], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const safeName = (activeProject?.name || 'Projekt').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            a.download = `${safeName}_shorts.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    };
+
     const allSlotGroups = {
         shorts: getSlotsByPrefix('short', true),
         longs: getSlotsByPrefix('long', true),
@@ -2004,7 +2039,13 @@ export const App: React.FC = () => {
                                 <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Script Versions</h3>
                                 
                                 <div className="space-y-2">
-                                    <div className="text-[9px] font-bold text-slate-600 uppercase">Shorts (&lt; 3min)</div>
+                                    <div className="flex items-center justify-between">
+                                        <div className="text-[9px] font-bold text-slate-600 uppercase">Shorts (&lt; 3min)</div>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => exportShorts('copy')} className="px-2 py-0.5 bg-white/5 hover:bg-white/10 rounded text-[9px] font-bold text-slate-400 transition-colors" title="Alle Short-Texte kopieren">📋 Kopieren</button>
+                                            <button onClick={() => exportShorts('download')} className="px-2 py-0.5 bg-white/5 hover:bg-white/10 rounded text-[9px] font-bold text-slate-400 transition-colors" title="Alle Short-Texte als TXT herunterladen">💾 Download</button>
+                                        </div>
+                                    </div>
                                     <div className="flex flex-wrap gap-2">
                                         {allSlotGroups.shorts.map(v => {
                                             const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
