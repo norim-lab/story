@@ -458,33 +458,36 @@ Nutze diese Erkenntnisse für die Argumentation.
 PHASE 2: DAS SKRIPT — 5-BLOCK-SYSTEM (ZWINGEND)
 Schreibe das Skript und GLIEDERE es sichtbar mit den folgenden Überschriften:
 
-### BLOCK 1 — HOOK (0:00–0:30)
+### BLOCK 1 — HOOK (Die ersten 1-3 Sätze)
 - Spannung erzeugen. Auflösung verbieten.
 - KEINE Begrüßung. Direkt rein. Mitten in der Spannung.
 - Wähle: Direkte Frage / Kontraintuitiver Fakt / Leiser Skandal.
 - Der Hook muss den nächsten Satz erzwingen.
 
-### BLOCK 2 — KONTEXT & WARUM JETZT (0:30–2:00)
+### BLOCK 2 — KONTEXT & WARUM JETZT (Die nächsten 15-30 Sekunden)
 - Fallhöhe erhöhen. Niemals schließen.
 - Was steht auf dem Spiel? Fallhöhe = Relevanz.
 - Aktueller Aufhänger. Mini-Fahrplan für Orientierung.
 - ❌ Erklären. ✅ Eskalieren.
 
-### BLOCK 3 — EINORDNUNG / KERNTEIL (2:00–8:00)
+### BLOCK 3 — EINORDNUNG / KERNTEIL (Der Hauptteil: 80-90% der Gesamtzeit!)
+- HIER findet die eigentliche inhaltliche Arbeit statt. Fülle die Zeit HIER, nicht am Ende!
 - EIN Kernpunkt pro Unterabschnitt. Vollständig durchgeführt.
 - Erst konkret — dann abstrakt. Anker: Zahl, Name oder Datum.
 - 3–4 klar getrennte Unterpunkte mit These → Fakt → Wendung.
 - Empörung NOCH zurückhalten. Schlussfolgerung kommt NICHT hier. Jeder Satz öffnet den nächsten.
 
-### BLOCK 4 — KONFLIKT (8:00–11:00)
+### BLOCK 4 — KONFLIKT (Das Finale vor dem Schlusssatz: ca. 15-30 Sekunden)
 - Widerspruch zeigen. Ton kippen: sachlich → kalt-sarkastisch. Marken-Moment.
 - Zwei Realitäten nebeneinander, die nicht gleichzeitig wahr sein können.
 - Zuschauer urteilt selbst. Nur Indikativ. Kein Konjunktiv. Kein Weichzeichner.
 - Entweder Fakt oder Witz — ganz rein, nie halbherzig. Keine Schreie, keine Empörung.
+- WICHTIG: Vermeide hier überladene Metaphern-Teppiche! Bleib präzise und hart.
 - Auflösung NOCH zurückhalten. Block 5 entscheidet.
 
-### BLOCK 5 — CLOSE (11:00–Ende)
+### BLOCK 5 — CLOSE (NUR DER ALLERLETZTE SATZ)
 - Einmal auflösen. Vollständig. Dann aufhören.
+- Dies ist MAXIMAL 1-2 Sätze lang. Ziehe das Ende unter keinen Umständen in die Länge!
 - Faustregel: Empörung im Thema → Offener Stich. Klare Pointe → Punch-Close. Offene Geschichte → Cliffhanger-Close.
 - Langsamer gesprochen (~0.9x). Punkt statt Fragezeichen. Danach Stille.
 - VERBOTEN: "Danke fürs Zuschauen", "Abonniert", "Schreibt eure Meinung", "Was denkt ihr?", Zusammenfassungen, Kanalname im Outro, Fragezeichen im Close.
