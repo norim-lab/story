@@ -1,5 +1,23 @@
 import { getAuphonicKey, getAuphonicPresetUuid } from './settings';
 
+export const getAuphonicUserInfo = async (): Promise<{ credits: number }> => {
+  const token = getAuphonicKey();
+  if (!token) throw new Error('Auphonic API Token fehlt in den Einstellungen.');
+
+  const response = await fetch('https://auphonic.com/api/user.json', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  const result = await response.json();
+  if (!response.ok || result?.error_message) {
+    throw new Error(`Fehler beim Abrufen der Auphonic User Info: ${result?.error_message || response.statusText}`);
+  }
+
+  return { credits: result?.data?.credits || 0 }; // Returns credits in hours
+};
+
 // Helper function to convert a Base64 string to a Blob
 const base64ToBlob = (base64: string, mimeType: string = 'audio/mpeg'): Blob => {
   const byteString = atob(base64.split(',')[1]);

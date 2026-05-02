@@ -29,7 +29,7 @@ import { getSettings, getFastModel, getProModel, saveSettings } from './services
 import { getRandomHistoricalWikiquote } from './services/wikiquote';
 import { getPerplexityLegalCheck } from './services/perplexity';
 import { generateElevenLabsAudio, getElevenLabsUserInfo } from './services/elevenlabs';
-import { processWithAuphonic } from './services/auphonic';
+import { processWithAuphonic, getAuphonicUserInfo } from './services/auphonic';
 
 const MAX_HISTORY_STEPS = 50;
 const MAIN_ID = "main-script";
@@ -419,6 +419,7 @@ export const App: React.FC = () => {
     const [legalCheck, setLegalCheck] = useState<LegalCheckState>({ open: false });
     const [platformCheckLoadingSlot, setPlatformCheckLoadingSlot] = useState<ScriptLength | null>(null);
     const [elevenLabsUsage, setElevenLabsUsage] = useState<{ used: number, limit: number } | null>(null);
+    const [auphonicQuota, setAuphonicQuota] = useState<{ credits: number } | null>(null);
 
     // Fetch ElevenLabs Usage
     const fetchElevenLabsUsage = useCallback(async () => {
@@ -430,12 +431,25 @@ export const App: React.FC = () => {
         }
     }, []);
 
+    // Fetch Auphonic Usage
+    const fetchAuphonicUsage = useCallback(async () => {
+        try {
+            const usage = await getAuphonicUserInfo();
+            setAuphonicQuota(usage);
+        } catch (e) {
+            console.error("Konnte Auphonic Usage nicht abrufen", e);
+        }
+    }, []);
+
     // Initial fetch when settings change or component mounts
     useEffect(() => {
         if (SETTINGS.elevenLabsApiKey) {
             fetchElevenLabsUsage();
         }
-    }, [SETTINGS.elevenLabsApiKey, fetchElevenLabsUsage]);
+        if (SETTINGS.auphonicApiKey) {
+            fetchAuphonicUsage();
+        }
+    }, [SETTINGS.elevenLabsApiKey, SETTINGS.auphonicApiKey, fetchElevenLabsUsage, fetchAuphonicUsage]);
 
     // --- Helpers ---
     const addLog = useCallback((message: string, type: any = 'info') => {
@@ -1841,10 +1855,12 @@ export const App: React.FC = () => {
             };
 
             commitAction(`Auphonic Mastering für ${currentSlot}`, { scriptResult: updatedResult });
+            fetchAuphonicUsage();
             addLog("Auphonic Verarbeitung erfolgreich abgeschlossen!", "success");
         } catch (e: any) {
             console.error("Auphonic Error:", e);
             addLog(`Fehler bei Auphonic Verarbeitung: ${e.message}`, "error");
+            alert(`Fehler bei Auphonic: ${e.message}`);
         } finally {
             setIsGeneratingAuphonic(false);
         }
@@ -2707,8 +2723,13 @@ export const App: React.FC = () => {
                                                 <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400">ElevenLabs V3 Prep</div>
                                                 <div className="text-[10px] text-emerald-500/50">Generiert</div>
                                                 {elevenLabsUsage && (
-                                                    <div className="text-[10px] text-emerald-500/80 bg-emerald-900/40 px-2 py-0.5 rounded-full border border-emerald-500/20" title="Verbrauchte Zeichen / Limit">
-                                                        Quota: {elevenLabsUsage.used.toLocaleString()} / {elevenLabsUsage.limit.toLocaleString()}
+                                                    <div className="text-[10px] text-emerald-500/80 bg-emerald-900/40 px-2 py-0.5 rounded-full border border-emerald-500/20" title="ElevenLabs: Verbrauchte Zeichen / Limit">
+                                                        EL Quota: {elevenLabsUsage.used.toLocaleString()} / {elevenLabsUsage.limit.toLocaleString()}
+                                                    </div>
+                                                )}
+                                                {auphonicQuota && (
+                                                    <div className="text-[10px] text-purple-400/80 bg-purple-900/40 px-2 py-0.5 rounded-full border border-purple-500/20" title="Auphonic: Verbleibende Stunden">
+                                                        Auphonic: {auphonicQuota.credits.toFixed(2)} h übrig
                                                     </div>
                                                 )}
                                             </div>
