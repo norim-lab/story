@@ -725,8 +725,9 @@ export const App: React.FC = () => {
             setProjects(prev => prev.map(p => {
                 if (p.id !== activeProjectId) return p;
                 
-                // Wir benennen das Projekt nach der internen ID (Rohskript-ID) oder dem Fallback
-                const newName = res.sections?.[0]?.id || `Projekt_${Date.now().toString().slice(-6)}`;
+                // Wir benennen das Projekt nach dem generierten Titel oder der internen ID
+                const generatedTitle = res.sections?.[0]?.title;
+                const newName = generatedTitle || res.sections?.[0]?.id || `Projekt_${Date.now().toString().slice(-6)}`;
                 
                 const updated = {
                     ...p,

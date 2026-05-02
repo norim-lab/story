@@ -4,6 +4,8 @@ import { PlatformSafetyCheck, ScriptResult, ScriptSection, SegmentControls } fro
 import { getGoogleKey } from "./settings";
 import { applyShortRules, loadPrompt, getStyleInstruction, getMetaphorInstruction, getFactInstruction, appendStyleEnforcement } from "./prompts";
 
+import { generateTitle } from './provider';
+
 async function handleApiCall<T>(call: () => Promise<T>): Promise<T> {
   console.log("[Gemini] API Call starting...");
   try { 
@@ -66,10 +68,26 @@ const deepUpgradeSchema = {
 
 // Vereinfachte Funktion: Nimmt den Raw Text und packt ihn in eine Section
 export const generateZeitblitzScript = async (rawText: string, model: string): Promise<ScriptResult> => {
+    // Generate an ID similar to what the backend would normally do
+    const id = `Projekt_${Date.now().toString().slice(-6)}`;
+    
+    // Versuche einen Titel aus dem Text zu generieren
+    let generatedTitle = id;
+    try {
+        if (rawText && rawText.trim().length > 0) {
+            const title = await generateTitle(rawText, model);
+            if (title && title.trim().length > 0) {
+                generatedTitle = title;
+            }
+        }
+    } catch (e) {
+        console.error("Titel-Generierung beim Import fehlgeschlagen, nutze Fallback ID", e);
+    }
+    
     // Wir erstellen EINE Sektion für das gesamte Skript
     const mainSection: ScriptSection = {
-        id: "main-script",
-        title: "Hauptskript",
+        id: id,
+        title: generatedTitle, // Sinnvoller Titel oder Fallback ID
         newsHeadline: "Manuskript",
         versions: {
             short_1: rawText
