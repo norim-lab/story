@@ -634,9 +634,10 @@ export const App: React.FC = () => {
 
     const createNewProject = useCallback(async () => {
         const newId = crypto.randomUUID();
+        const fallbackName = `Projekt_${Date.now().toString().slice(-6)}`;
         const newProject: ProjectSession = {
             id: newId,
-            name: "Untitled Project",
+            name: fallbackName,
             lastModified: Date.now(),
             rawInput: "",
             factText: "",
@@ -724,15 +725,14 @@ export const App: React.FC = () => {
             setProjects(prev => prev.map(p => {
                 if (p.id !== activeProjectId) return p;
                 
-                let name = p.name;
-                if (name === "Untitled Project" && sourceText.length > 0) {
-                     name = sourceText.split('\n')[0].substring(0, 30) + "...";
-                }
+                // Wir benennen das Projekt nach der internen ID (Rohskript-ID) oder dem Fallback
+                const newName = res.sections?.[0]?.id || `Projekt_${Date.now().toString().slice(-6)}`;
+                
                 const updated = {
                     ...p,
                     scriptResult: res,
                     segmentVersions: { [MAIN_ID]: 'short_1' as ScriptLength },
-                    name,
+                    name: p.name.startsWith('Projekt_') ? newName : p.name, // Überschreibe nur, wenn es noch der Default-Name ist
                     lastModified: Date.now()
                 };
                 const snapshot = createSnapshot(updated);
@@ -1249,10 +1249,11 @@ export const App: React.FC = () => {
                 segmentVersions: { [MAIN_ID]: targetSlot }
             };
 
-            if (generatedTitle) {
-                actionUpdates.name = generatedTitle;
-                addLog(`Titel aktualisiert: ${generatedTitle}`, "success");
-            }
+            // Remove project renaming to generatedTitle so it keeps the ID name
+            // if (generatedTitle) {
+            //     actionUpdates.name = generatedTitle;
+            //     addLog(`Titel aktualisiert: ${generatedTitle}`, "success");
+            // }
 
             commitAction(`Generiert: ${wordCount} Wörter -> ${targetSlot}`, actionUpdates);
             addLog(`✅ ERFOLG: ${wordCount} Wörter in ${targetSlot}`, "success");
@@ -1317,10 +1318,11 @@ export const App: React.FC = () => {
                 segmentVersions: { [MAIN_ID]: targetSlot }
             };
 
-            if (generatedTitle) {
-                actionUpdates.name = generatedTitle;
-                addLog(`Titel aktualisiert: ${generatedTitle}`, "success");
-            }
+            // Remove project renaming to generatedTitle so it keeps the ID name
+            // if (generatedTitle) {
+            //     actionUpdates.name = generatedTitle;
+            //     addLog(`Titel aktualisiert: ${generatedTitle}`, "success");
+            // }
 
             const wordCount = newsText.split(/\s+/).filter(w => w.length > 0).length;
             commitAction(`News Flash: ${seconds}s (${wordCount} Wörter) -> ${targetSlot}`, actionUpdates);
