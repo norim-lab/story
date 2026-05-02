@@ -53,8 +53,8 @@ export const generateElevenLabsAudio = async (text: string): Promise<{ audioBase
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      text: text, // Bei V3 lassen wir die Tags drin, da V3 (eleven_multilingual_v3) sie als Prompt-Anweisungen verstehen sollte.
-      model_id: 'eleven_multilingual_v3', // Das offizielle V3 Modell
+      text: text, // Bei V3 lassen wir die Tags drin, da V3 sie als Prompt-Anweisungen verstehen sollte.
+      model_id: 'eleven_v3', // Das offizielle V3 Modell (Muss eleven_v3 heißen)
       apply_text_normalization: "auto",
       voice_settings: {
         stability: 0.5,
