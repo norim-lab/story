@@ -29,6 +29,7 @@ import { getSettings, getFastModel, getProModel, saveSettings } from './services
 import { getRandomHistoricalWikiquote } from './services/wikiquote';
 import { getPerplexityLegalCheck } from './services/perplexity';
 import { generateElevenLabsAudio } from './services/elevenlabs';
+import { processWithAuphonic } from './services/auphonic';
 
 const MAX_HISTORY_STEPS = 50;
 const MAIN_ID = "main-script";
@@ -410,6 +411,7 @@ export const App: React.FC = () => {
     const [isZapping, setIsZapping] = useState(false);
     const [isElevenLabsLoading, setIsElevenLabsLoading] = useState(false);
     const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+    const [isGeneratingAuphonic, setIsGeneratingAuphonic] = useState(false);
     const [selectionMenu, setSelectionMenu] = useState<{ x: number, y: number, text: string, visible: boolean } | null>(null);
     const [mobileTab, setMobileTab] = useState<'inputs' | 'editor'>('inputs');
     const [editorMode, setEditorMode] = useState<'controls' | 'source'>('controls');
@@ -1793,6 +1795,43 @@ export const App: React.FC = () => {
         });
     };
 
+    const handleAuphonicProcessing = async () => {
+        if (!activeProject?.scriptResult?.sections?.[0]) return;
+        const currentSlot = activeProject.segmentVersions?.[MAIN_ID] ?? 'short_1';
+        const elevenLabsAudio = activeProject.scriptResult.sections[0].elevenLabsAudio?.[currentSlot];
+        
+        if (!elevenLabsAudio) {
+            addLog("Kein ElevenLabs Audio vorhanden zum Verarbeiten.", "error");
+            return;
+        }
+        
+        setIsGeneratingAuphonic(true);
+        addLog("Sende Audio an Auphonic zur Verarbeitung...", "info");
+        
+        try {
+            const masteredAudioBase64 = await processWithAuphonic(elevenLabsAudio);
+            
+            const updatedResult = {
+                ...activeProject.scriptResult,
+                sections: [{
+                    ...activeProject.scriptResult.sections[0],
+                    auphonicAudio: {
+                        ...(activeProject.scriptResult.sections[0].auphonicAudio || {}),
+                        [currentSlot]: masteredAudioBase64
+                    }
+                }]
+            };
+
+            commitAction(`Auphonic Mastering für ${currentSlot}`, { scriptResult: updatedResult });
+            addLog("Auphonic Verarbeitung erfolgreich abgeschlossen!", "success");
+        } catch (e: any) {
+            console.error("Auphonic Error:", e);
+            addLog(`Fehler bei Auphonic Verarbeitung: ${e.message}`, "error");
+        } finally {
+            setIsGeneratingAuphonic(false);
+        }
+    };
+
     const handleGlobalExport = () => {
         const exportData: WorkspaceExport = { version: 1, projects: projects };
         const blob = new Blob([JSON.stringify(exportData)], { type: "application/json" });
@@ -2658,19 +2697,49 @@ export const App: React.FC = () => {
                                         {activeProject.scriptResult.sections[0].elevenLabsAudio?.[currentSlot] && (
                                             <div className="mt-4 pt-4 border-t border-emerald-500/20">
                                                 <div className="flex items-center justify-between mb-3">
-                                                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Fertiges Audio</div>
-                                                    <a 
-                                                        href={activeProject.scriptResult.sections[0].elevenLabsAudio[currentSlot]} 
-                                                        download={`${activeProject.name || 'Projekt'}_${currentSlot}_audio.mp3`}
-                                                        className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-[10px] font-black uppercase text-emerald-200 transition-all flex items-center gap-1.5"
-                                                    >
-                                                        ⬇️ Download MP3
-                                                    </a>
+                                                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Fertiges Audio (ElevenLabs)</div>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={handleAuphonicProcessing}
+                                                            disabled={isGeneratingAuphonic}
+                                                            className="px-3 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-[10px] font-black uppercase text-purple-200 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                                                        >
+                                                            {isGeneratingAuphonic ? <span className="animate-spin inline-block">⏳</span> : '🎛️'}
+                                                            {isGeneratingAuphonic ? 'Mastering...' : 'An Auphonic senden'}
+                                                        </button>
+                                                        <a 
+                                                            href={activeProject.scriptResult.sections[0].elevenLabsAudio[currentSlot]} 
+                                                            download={`${activeProject.name || 'Projekt'}_${currentSlot}_audio.mp3`}
+                                                            className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-[10px] font-black uppercase text-emerald-200 transition-all flex items-center gap-1.5"
+                                                        >
+                                                            ⬇️ Download MP3
+                                                        </a>
+                                                    </div>
                                                 </div>
                                                 <audio 
                                                     controls 
                                                     className="w-full h-10 rounded-lg outline-none" 
                                                     src={activeProject.scriptResult.sections[0].elevenLabsAudio[currentSlot]} 
+                                                />
+                                            </div>
+                                        )}
+
+                                        {activeProject.scriptResult.sections[0].auphonicAudio?.[currentSlot] && (
+                                            <div className="mt-4 pt-4 border-t border-purple-500/20">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <div className="text-[10px] font-black uppercase tracking-widest text-purple-500">Mastered Audio (Auphonic)</div>
+                                                    <a 
+                                                        href={activeProject.scriptResult.sections[0].auphonicAudio[currentSlot]} 
+                                                        download={`${activeProject.name || 'Projekt'}_${currentSlot}_mastered.mp3`}
+                                                        className="px-3 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-[10px] font-black uppercase text-purple-200 transition-all flex items-center gap-1.5"
+                                                    >
+                                                        ⬇️ Download Master
+                                                    </a>
+                                                </div>
+                                                <audio 
+                                                    controls 
+                                                    className="w-full h-10 rounded-lg outline-none" 
+                                                    src={activeProject.scriptResult.sections[0].auphonicAudio[currentSlot]} 
                                                 />
                                             </div>
                                         )}

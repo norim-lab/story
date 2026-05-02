@@ -82,6 +82,22 @@ const SettingsModal: React.FC<Props> = ({ open, onClose }) => {
           </div>
 
           <div className="space-y-2">
+            <div className="text-[10px] uppercase font-bold text-slate-500">Auphonic (Audio Processing)</div>
+            <input 
+              value={s.auphonicApiKey} 
+              onChange={e => setS({...s, auphonicApiKey: e.target.value})} 
+              placeholder="API Token (Bearer)" 
+              className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm" 
+            />
+            <input 
+              value={s.auphonicPresetUuid} 
+              onChange={e => setS({...s, auphonicPresetUuid: e.target.value})} 
+              placeholder="Preset UUID (optional)" 
+              className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm mt-1" 
+            />
+          </div>
+
+          <div className="space-y-2">
             <div className="text-[10px] uppercase font-bold text-slate-500">Perplexity (Deep Dive)</div>
             <input 
               value={s.perplexityApiKey} 

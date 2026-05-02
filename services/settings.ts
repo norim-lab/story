@@ -15,6 +15,8 @@ export interface ZBSettings {
   perplexityApiKey: string;
   elevenLabsApiKey: string;
   elevenLabsVoiceId: string;
+  auphonicApiKey: string;
+  auphonicPresetUuid: string;
   shortRulesEnabled: boolean;
   youtubeShadowbanAvoid: boolean;
   tiktokShadowbanAvoid: boolean;
@@ -34,6 +36,8 @@ const defaults: ZBSettings = {
   perplexityApiKey: '',
   elevenLabsApiKey: '',
   elevenLabsVoiceId: 'JBFqnCBsd6RMkjVDRZzb', // Example default voice ID
+  auphonicApiKey: '',
+  auphonicPresetUuid: '',
   shortRulesEnabled: true,
   youtubeShadowbanAvoid: false,
   tiktokShadowbanAvoid: false,
@@ -100,6 +104,14 @@ export function getElevenLabsKey(): string {
 
 export function getElevenLabsVoiceId(): string {
   return getSettings().elevenLabsVoiceId || '';
+}
+
+export function getAuphonicKey(): string {
+  return getSettings().auphonicApiKey || '';
+}
+
+export function getAuphonicPresetUuid(): string {
+  return getSettings().auphonicPresetUuid || '';
 }
 
 export function hasValidKey(): boolean {

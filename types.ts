@@ -67,6 +67,7 @@ export interface ScriptSection {
   platformSafetyChecks?: Record<string, PlatformSafetyCheck>;
   elevenLabsPrep?: Record<string, string>; // Stores ElevenLabs V3 prepared text
   elevenLabsAudio?: Record<string, string>; // Stores Base64 or Blob URL for audio
+  auphonicAudio?: Record<string, string>; // Stores Auphonic processed audio (Base64)
   seriesSlots?: Record<string, SeriesSlotInfo>;
   sources?: { title: string; url: string; type?: string }[];
   researchSnippet?: string;
