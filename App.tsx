@@ -2504,27 +2504,27 @@ export const App: React.FC = () => {
                                         </div>
                                     )}
 
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-wrap items-center gap-2 justify-end relative z-10">
                                         {activeProject.scriptResult?.model && (
-                                            <span className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-wider">
+                                            <span className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-wider shrink-0">
                                                 {activeProject.scriptResult.model.replace('gemini-', '').replace('gpt-', '').replace('claude-', '')}
                                             </span>
                                         )}
-                                        <button onClick={handleEmptyEditor} className="px-3 py-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/20" title="Editor leeren">
+                                        <button onClick={handleEmptyEditor} className="px-3 py-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/20 shrink-0" title="Editor leeren">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                         </button>
-                                        <button onClick={handleToggleFinal} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border flex items-center gap-2 ${isCurrentFinal ? 'bg-white/10 text-white border-white/20' : 'bg-transparent text-slate-500 border-transparent hover:text-white'}`}>
+                                        <button onClick={handleToggleFinal} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border flex items-center gap-2 shrink-0 ${isCurrentFinal ? 'bg-white/10 text-white border-white/20' : 'bg-transparent text-slate-500 border-transparent hover:text-white'}`}>
                                             {isCurrentFinal ? 'Finalized' : 'Mark as Final'}
                                             {isCurrentFinal && <span>🔒</span>}
                                         </button>
-                                        <button onClick={handleElevenLabsPrep} disabled={isElevenLabsLoading || !currentText.trim()} className="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 disabled:opacity-40 flex items-center gap-2">
+                                        <button onClick={handleElevenLabsPrep} disabled={isElevenLabsLoading || !currentText.trim()} className="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 disabled:opacity-40 flex items-center gap-2 shrink-0">
                                             {isElevenLabsLoading ? <span className="animate-spin inline-block">⏳</span> : '🎙️'}
-                                            {isElevenLabsLoading ? 'Bereitet vor...' : 'Für ElevenLabs V3 vorbereiten'}
+                                            {isElevenLabsLoading ? 'Bereitet vor...' : 'ElevenLabs Prep'}
                                         </button>
-                                        <button onClick={handlePlatformSafetyCheck} disabled={platformCheckLoadingSlot === currentSlot || !currentText.trim()} className="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/20 disabled:opacity-40">
+                                        <button onClick={handlePlatformSafetyCheck} disabled={platformCheckLoadingSlot === currentSlot || !currentText.trim()} className="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/20 disabled:opacity-40 shrink-0">
                                             {platformCheckLoadingSlot === currentSlot ? 'Prüft…' : 'Plattform-Check'}
                                         </button>
-                                        <button onClick={handleToggleEdit} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${activeProject.isEditing ? 'bg-green-600 text-white' : 'bg-white/5 text-slate-400 hover:text-white'}`}>
+                                        <button onClick={handleToggleEdit} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shrink-0 ${activeProject.isEditing ? 'bg-green-600 text-white' : 'bg-white/5 text-slate-400 hover:text-white'}`}>
                                             {activeProject.isEditing ? 'Save' : 'Edit'}
                                         </button>
                                     </div>
