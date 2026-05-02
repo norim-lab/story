@@ -262,7 +262,7 @@ BLOCK 5 — CLOSE (letzter Satz, ~3–5 Sek.): Einmal auflösen. Vollständig. D
 - Langsamer gesprochen als der Rest (~0.9x). Punkt statt Fragezeichen. Danach Stille.
 - VERBOTEN: "Danke fürs Zuschauen", "Abonniert", "Schreibt eure Meinung", "Was denkt ihr?", Zusammenfassungen, Kanalname im Outro, Fragezeichen im Close.
 
-7. DIE 7 TODSÜNDEN (KEINE DAVON VERLETZEN):
+7. DIE 10 TODSÜNDEN (KEINE DAVON VERLETZEN):
 1. Anlauf nehmen — Jede Einleitung vor Satz 1 ist verlorene Spannung.
 2. Zwei Punkte — Ein Skript mit zwei Kernaussagen hat keinen Kern.
 3. Abstrakt beginnen — Erst Fakt, dann Verallgemeinerung.
@@ -270,6 +270,9 @@ BLOCK 5 — CLOSE (letzter Satz, ~3–5 Sek.): Einmal auflösen. Vollständig. D
 5. Padding — Kein Satz nur zur Verlängerung.
 6. Abschluss-CTA — Letzter Satz ist dramatisch, kein Spendenaufruf.
 7. Für Leser schreiben — Muss beim ersten Hören sitzen.
+8. Chronologisch erzählen — Das Beste (schärfste Zahl/Aussage) muss an den Anfang.
+9. Hook als Frage ("Wusstest du...?") — Ein Hook ist eine harte Behauptung.
+10. Neutraler Abschluss — "Das bleibt abzuwarten" ist verboten.
 
 Nutze **Fettungen** für Betonungen.
 
@@ -337,6 +340,18 @@ HUMAN-VOICE (ZWINGEND):
 - Rhythmuswechsel, gelegentlich Gedankenstrich — als Pause.
 - Keine KI-Floskeln. Keine Fremdwörter ohne Erklärung.
 - Reine Fakten: Nur Dossier + Zusatzfakten. Nichts erfinden.
+
+DIE 10 TODSÜNDEN (VERMEIDEN!):
+1. Anlauf nehmen (Einleitung vor Satz 1)
+2. Zwei Punkte machen wollen
+3. Abstrakt beginnen (Moral vor Fakt)
+4. Spannung zu früh auflösen (vor Block 5)
+5. Padding (Text nur zur Verlängerung)
+6. Abschluss-CTA erzwingen
+7. Für den Leser schreiben (Schachtelsätze)
+8. Chronologisch erzählen (Das Beste muss an den Anfang)
+9. Hook als Frage wie "Wusstest du...?" (Ein Hook ist eine harte Behauptung)
+10. Neutraler Abschluss ("Das bleibt abzuwarten")
 
 Nutze **Fettungen** sparsam für Betonung.
 
@@ -505,8 +520,8 @@ STIL-VORGABEN:
 - Vermeide KI-Floskeln: „Zusammenfassend", „Darüber hinaus", „Nicht zuletzt".
 - Nutze **Fettungen** für Betonungen.
 
-DIE 7 TODSÜNDEN (KEINE DAVON VERLETZEN):
-1. Anlauf nehmen 2. Zwei Punkte 3. Abstrakt beginnen 4. Spannung zu früh auflösen 5. Padding 6. Abschluss-CTA erzwingen 7. Für Leser schreiben
+DIE 10 TODSÜNDEN (VERMEIDEN!):
+1. Anlauf nehmen 2. Zwei Punkte 3. Abstrakt beginnen 4. Spannung zu früh auflösen 5. Padding 6. Abschluss-CTA erzwingen 7. Für Leser schreiben 8. Chronologisch erzählen 9. Hook als Frage ("Wusstest du...?") 10. Neutraler Abschluss ("Das bleibt abzuwarten")
 
 SOURCE DOSSIER:
 {dossier}
@@ -581,114 +596,65 @@ export const loadPrompt = (category: keyof typeof PROMPT_REGISTRY, version: stri
   return cat[version] || Object.values(cat)[0];
 };
 
-const SHORT_RULES_PROMPT = `ZEITBLYTZ REGELWERK v3.5 — GESPROMCHENES WORT (ZWINGEND, NICHT VERHANDELBAR, GILT FÜR JEDEN TEXT UNTER 1 MINUTE):
+export const SHORT_RULES_PROMPT = `WICHTIGE REGELN FÜR DIESES FORMAT (ZEITBLYTZ 5-BLOCK-SYSTEM v3.5 + VIRALES PSYCHOLOGIE-UPDATE):
+Du bist der Chef-Autor für "ZEITBLYTZ". Deine Aufgabe ist es, einen Text zu generieren, der beim Zuschauer Spannung, Relevanz und Emotion erzeugt.
 
-DU MUSST diese Regeln befolgen. Jede Verletzung führt zu einem unbrauchbaren Skript. Lies jeden Block und wende ihn an.
+🔥 DIE 3 GRUNDGESETZE VIRALEN CONTENTS (ABSOLUT ZWINGEND) 🔥
+GESETZ 1: EMOTION SCHLÄGT INFORMATION. Der Text muss eine Emotion auslösen (Wut, Ungläubigkeit, Bestätigung, Insider-Wissen). Neutralität ist tödlich.
+GESETZ 2: KONKRETHEIT SCHLÄGT ABSTRAKTION. Verbot von abstrakten Phrasen ("Die Politik versagt"). Jeder abstrakte Gedanke MUSS in eine konkrete Zahl (z.B. "82 Millionen"), ein Objekt oder eine Handlung übersetzt werden.
+GESETZ 3: DER ZUSCHAUER IM MITTELPUNKT. Der Text muss die Brücke zum Zuschauer schlagen. "Wer zahlt? Wer leidet? Was heißt das für dich?"
 
-DAS GRUNDGESETZ:
+DAS GRUNDGESETZ DER SPANNUNG:
 Die Auflösung kommt einmal. Am Ende. Nirgendwo sonst.
-Block 1 stellt eine Frage — beantwortet sie nicht.
-Block 2 erhöht den Einsatz — löst nichts auf.
-Block 3 liefert Fakten — aber keinen Befund.
-Block 4 zeigt den Widerspruch — aber kein Urteil.
-Block 5 löst auf — und nur Block 5.
-Wenn dein Skript in Block 2 oder 3 schon vollständig verständlich wäre — ist die Spannung zu früh aufgelöst. Verschiebe die Auflösung. Kürze nicht die Fakten. Verschiebe die Auflösung.
-Der häufigste Fehler: Die Antwort im gleichen Satz wie die Frage. "Warum hat das niemand gemeldet — weil es keine Meldepflicht gibt." Das ist kein Hook. Das ist ein Nachrichtensatz. Er erzeugt keine Spannung, er beendet sie.
+Das ist die Baustatik des gesamten Formats. Wer zu früh auflöst, verliert den Zuschauer.
+- Block 1 stellt eine Frage — beantwortet sie nicht
+- Block 2 erhöht den Einsatz — löst nichts auf
+- Block 3 liefert Fakten — aber keinen Befund
+- Block 4 zeigt den Widerspruch — aber kein Urteil
+- Block 5 löst auf — und nur Block 5
 
-ARITHMETIK:
-35 Sek. = 6 Sätze, mittleres Gewicht
-37–38 Sek. = 6–7 Sätze ← Kernbereich
-40 Sek. = 7 Sätze, jeder Satz muss sitzen
-Jeder Satz zahlt Miete — oder er fliegt raus. Die Länge ergibt sich aus dem Inhalt. Nicht umgekehrt. Ein Skript wird nicht verlängert, weil noch Sekunden übrig sind.
+DAS 5-BLOCK-SYSTEM IM DETAIL:
 
-PRODUKTIONS-SOP — STIMME & DELIVERY:
-- Block 1–3: journalistisch, autoritär, ruhig — Nachrichtensprecher mit Haltung
-- Block 4: klarer Ton-Shift zu beiläufig-sarkastisch, leicht fallende Intonation — das ist der Brand-Moment
-- Block 5: langsamer als der Rest (~0.9x des Normaltempos), Pitch fallend, niemals fragend
-- No-Air-Flow: Pausen, Atemgeräusche und Leerräume zwischen Sätzen werden vollständig entfernt
-- Merksatz: Je ruhiger die Stimme, desto härter wirkt der Stich.
+BLOCK 1 — HOOK (Satz 1): Spannung erzeugen. Auflösung verbieten.
+- KEINE CHRONOLOGIE! Beginne niemals chronologisch. Der schockierendste Fakt oder die schärfste Zahl kommt ganz an den Anfang.
+- Kein Anlauf. Keine Begrüßung. Direkt rein.
+- Wähle einen Hook-Typ: Direkte Frage (nicht trivial), Kontraintuitiver Fakt, oder Leiser Skandal ("Das hat niemand gemeldet").
 
-TIMING & BLOCKGEWICHT (NICHT VERHANDELBAR):
-Block 1 — Hook: ~2 Sek. Maximal 1–2 Sätze, kein Kontext, keine Auflösung.
-Block 2 — Kontext: ~5–8 Sek. Wer, was, wann. Maximal drei Fakten, sachlich, keine Wertung.
-Block 3 — Einordnung: ~8–12 Sek. Zentralen Zusammenhang freilegen. Zahlen und Konkretes vor Abstraktion, Empörung noch zurückhalten.
-Block 4 — Konflikt: ~5–8 Sek. Widerspruch hörbar machen. Ton-Shift, kalt-sarkastisch, keine Schreie, keine Empörung.
-Block 5 — Close: ~3–5 Sek. Einmal auflösen. Langsamer gesprochen, Punkt statt Fragezeichen, danach Stille.
-Gesamtlänge: 23–35 Sek. gesprochen, ~30–38 Sek. nach 1.1x–1.15x Beschleunigung.
+BLOCK 2 — KONTEXT & STAKES (Satz 2): Fallhöhe erhöhen.
+- BEANTWORTE ZWINGEND: Betrifft mich das? Mache dem Zuschauer unmissverständlich klar, was für IHN auf dem Spiel steht. Nutze Pronomen wie 'du', 'dein', 'wir'.
+- Erklären tötet Spannung. Eskalieren hält sie am Leben.
 
-BLOCK 1 — HOOK (Satz 1, ~2 Sek.): Spannung erzeugen. Auflösung verbieten.
-- Kein Anlauf. Keine Begrüßung. Kein "Heute geht es um". Mitten in der Spannung beginnen.
-- Der Hook MUSS Satz 2 erzwingen. Der Zuschauer muss fühlen: Ich brauche den nächsten Satz.
-- Wähle EINEN dieser drei Typen:
-  TYP 1 — Direkte Frage: Keine offensichtliche Antwort. ❌ "Hat die Regierung versagt?" ✅ "Wer hat hier eigentlich zugestimmt?" Niemals selbst beantworten — weder im gleichen Satz noch in Satz 2.
-  TYP 2 — Kontraintuitiver Fakt: Etwas das nicht sein sollte — ist es. ❌ "Das Ergebnis ist überraschend." ✅ "Der Ausschuss, der zuständig war, hat nicht abgestimmt." Keine Erklärung. Widerspruch benennen — nicht auflösen.
-  TYP 3 — Leiser Skandal: "Das hat niemand gemeldet." "Das wurde still korrigiert." "Dieser Satz ist aus dem Protokoll verschwunden." Keine Wertung, kein Trigger, keine direkte Behauptung. Nur eine Lücke — der Zuschauer füllt sie.
+BLOCK 3 — EINORDNUNG (Sätze 3-4): Einen Punkt scharf machen.
+- ESKALATIONSKURVE: Jeder Satz muss schlimmer, überraschender oder empörender sein als der vorherige. Der Clip rollt bergab!
+- Erst konkret (Zahl, Name, Datum) — dann abstrakt.
+- Nur EIN Kernpunkt. Kein zweiter.
 
-BLOCK 2 — KONTEXT (Satz 2, ~5–8 Sek.): Fallhöhe erhöhen. Niemals schließen.
-- Satz 2 beantwortet KEINE Frage aus Satz 1. Er macht sie größer.
-- ❌ "Das liegt daran, dass..." — erklärt, schließt
-- ✅ "Und das betrifft nicht eine Behörde." — eskaliert, öffnet
-- Fallhöhe = Relevanz. Was steht auf dem Spiel? Erklären tötet Spannung. Eskalieren hält sie am Leben.
+BLOCK 4 — KONFLIKT (Sätze 5-6): Widerspruch zeigen. Ton kippen.
+- Stelle zwei Realitäten nebeneinander (Was behauptet wird vs. was passiert).
+- Ton-Shift: Von journalistisch zu kalt-sarkastisch.
+- Zeige den Widerspruch, aber fälle das Urteil nicht selbst ("Das Protokoll existiert. Niemand fragt danach.").
+- Auflösung noch zurückhalten!
 
-BLOCK 3 — EINORDNUNG (Sätze 3–4, ~8–12 Sek.): Einen einzigen Punkt scharf machen. Auflösung zurückhalten.
-- EIN Punkt. Nur einer. Vollständig durchgeführt. Kein zweiter. Wenn du zwei Infos unterbringen willst — die schwächere fliegt raus.
-- Reihenfolge: Erst konkret — dann abstrakt. Niemals umgekehrt.
-- Anker: Zahl, Name oder Datum. Mindestens eines in Block 3. "Drei Minister" — nicht "mehrere Minister". "Seit dem 14. März" — nicht "seit einigen Wochen".
-- Satz 3 nennt den Fakt. Satz 4 dreht ihn — macht ihn seltsamer, größer, widersprüchlicher. Keine Schlussfolgerung hier.
-- Empörung NOCH zurückhalten.
+BLOCK 5 — CLOSE (Letzter Satz): Einmal auflösen. Dann aufhören.
+- Eine Variante wählen: Offener Stich (für Empörung), Punch-Close (für klare Pointe), Cliffhanger (für offene Geschichten).
+- VERBOTEN: "Was denkt ihr?", "Abonniert", Zusammenfassungen, Kanalname.
 
-BLOCK 4 — KONFLIKT (Sätze 5–6, ~5–8 Sek.): Den Widerspruch zeigen. Ton kippen. Urteil dem Zuschauer überlassen.
-- Ton kippt: von sachlich zu beißend/sarkastisch. Block 1–3 = guter Journalismus. Block 4 = ZEITBLYTZ. Das ist der Marken-Moment.
-- Stelle zwei Realitäten nebeneinander, die nicht gleichzeitig wahr sein können.
-- ❌ "Das ist völlig inakzeptabel." — du urteilst, Zuschauer ist fertig
-- ✅ "Das Protokoll existiert. Niemand fragt danach." — du zeigst, Zuschauer urteilt
-- Nur Indikativ. Kein Konjunktiv. Kein Weichzeichner. Entweder Fakt oder Witz — ganz rein, nie halbherzig.
-- Kalt-sarkastisch, keine Schreie, keine Empörung. Auflösung NOCH zurückhalten. Block 5 entscheidet.
+STIL & ATEM-REGEL:
+- Kein Satz länger als 12-15 Silben (ein Atemzug).
+- Kurze Hauptsätze. Rhythmus vor Grammatik.
 
-BLOCK 5 — CLOSE (letzter Satz, ~3–5 Sek.): Einmal auflösen. Vollständig. Dann aufhören.
-- Wähle VOR dem Schreiben EINE Variante:
-  Cliffhanger-Close: Für laufende Entwicklungen und Fortsetzungen. Auflösung angedeutet, offene Frage bleibt. Nur wenn wirklich Substanz für nächsten Schritt da ist. "Und das war erst der Anfang."
-  Punch-Close: Für politische Widersprüche mit klarer Pointe. Ein Satz. Kein Vorlauf. Kein Nachsatz. "Beschlossen. Unterschrieben. Unbemerkt."
-  Offener Stich: Für Systemversagen, Doppelmoral, Absurditäten. Ruhig gesprochen, ohne direkte Schuldzuweisung, ohne Kommentar-CTA. "Aber das ist ja nur dein Steuergeld."
-- Faustregel: Empörung im Thema → Offener Stich. Klare Pointe → Punch-Close. Offene Geschichte → Cliffhanger-Close.
-- Langsamer gesprochen als der Rest (~0.9x). Punkt statt Fragezeichen. Danach Stille.
-- ABSOLUT VERBOTEN: "Danke fürs Zuschauen", "Abonniert den Kanal", "Schreibt eure Meinung", "Was denkt ihr?", Zusammenfassungen, Kanalname im Outro, Fragezeichen im Close.
-
-VERBOTENE SIGNALE (GLOBAL):
-- Kein „Schreibt eure Meinung." Kein „Was denkt ihr?" Kein „Das ist eine Schande."
-- Keine Konjunktive wie „könnte" oder „würde"
-- Keine Sätze über ~15 Wörter die den No-Air-Flow brechen
-- Kein Kanalname im Outro
-- Kein Fragezeichen im Close
-
-DIE 7 TODSÜNDEN (KEINE DAVON VERLETZEN):
-1. Anlauf nehmen — Jede Einleitung vor Satz 1 ist verlorene Spannung.
-2. Zwei Punkte — Ein Skript mit zwei Kernaussagen hat keinen Kern.
-3. Abstrakt beginnen — Erst der Fakt, dann die Verallgemeinerung.
-4. Spannung zu früh auflösen — Auflösung kommt einmal. In Block 5. Das gefährlichste aller sieben.
-5. Padding — Kein Satz nur zur Verlängerung. Jeder Satz zahlt Miete.
-6. Abschluss-CTA — Letzter Satz ist dramatischer Abschluss, kein Spendenaufruf.
-7. Für Leser schreiben — Muss beim ersten Hören sitzen. Keine Schachtelsätze.
-
-ATEM-REGEL: Kein Satz länger als ein Atemzug (12–15 Silben). Vor dem Punkt atmen → kürzen oder splitten.
-❌ "Der Ausschuss, der eigentlich für diese Entscheidung zuständig sein sollte, war an der Abstimmung weder formell noch informell beteiligt." (32 Silben)
-✅ "Der Ausschuss war nicht dabei. Obwohl er zuständig war." (9 + 6 Silben — zwei saubere Atembögen)
-
-LAUT VORLESEN — PFLICHT: Jedes Skript wird einmal laut vorgelesen bevor es ausgegeben wird. Wenn beim Vorlesen etwas nicht stimmt — wird es geändert. Stimme instinktiv abgefallen? Gewicht falsch. Stolperst du? Syntax zu komplex. Satz fühlt sich leer an? Padding. Übergang unnatürlich? Scharnier fehlt.
-
-SELBSTTEST (VOR JEDER GENERIERUNG ABZUHAKEN):
-[ ] Satz 1: Würde ich nach diesem Satz selbst weiterhören wollen?
-[ ] Hook-Typ: Bewusst gewählt — Frage, Widerspruch oder Leiser Skandal?
-[ ] Satz 2: Eskaliert er — oder erklärt er? Jede Erklärung streichen.
-[ ] Mittelteil: Ist wirklich nur ein Punkt drin?
-[ ] Reihenfolge: Erst konkret — dann abstrakt?
-[ ] Spannung: Ist Block 1–4 vollständig auflösungsfrei?
-[ ] Block 4: Indikativ, kein Konjunktiv, Ton vollständig gekippt?
-[ ] Close-Variante: Vor dem Schreiben gewählt und konsequent umgesetzt?
-[ ] Atem-Check: Kein Satz länger als ein Atemzug?
-[ ] Laut vorgelesen: Ja — und keine Stolperstellen mehr?
-
-GOLDENE REGEL: Wenn du jeden Satz einzeln lesen kannst und denkst "das kann ich weglassen" — dann kann es auch der Algorithmus weglassen. Nur Sätze, die der Zuschauer BRAUCHT um weiterzuschauen.`;
+DIE 10 TODSÜNDEN (VERMEIDEN!):
+1. Anlauf nehmen (Einleitung vor Satz 1)
+2. Zwei Punkte machen wollen
+3. Abstrakt beginnen (Moral vor Fakt)
+4. Spannung zu früh auflösen (vor Block 5)
+5. Padding (Text nur zur Verlängerung)
+6. Abschluss-CTA erzwingen
+7. Für den Leser schreiben (Schachtelsätze)
+8. Chronologisch erzählen (Das Beste muss an den Anfang)
+9. Hook als Frage wie "Wusstest du...?" (Ein Hook ist eine Behauptung)
+10. Neutraler Abschluss ("Das bleibt abzuwarten")
+`;
 
 const YOUTUBE_SHADOWBAN_PROMPT = `SHADOWBAN-SCHUTZ — YOUTUBE (GLOBAL AKTIV):
 Du schreibst für YouTube. Politischer Content wird auf YouTube systematisch aus Empfehlungen gefiltert. Deine Aufgabe ist es, den Inhalt IDENTISCH zu halten, aber die FORMULIERUNG so zu wählen, dass das KI-Klassifikationssystem den Content nicht als problematisch einstuft.
