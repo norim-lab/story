@@ -19,7 +19,8 @@ import {
     generateCTA,
     analyzePlatformSafety,
     checkApiKey,
-    improveExistingScript
+    improveExistingScript,
+    generateTitle
 } from './services/provider';
 import { initStorage, listProjects, saveProject, deleteProject as deleteCloudProject, checkConnection } from './services/storage';
 import SettingsModal from './components/SettingsModal';
@@ -1202,6 +1203,12 @@ export const App: React.FC = () => {
                 throw new Error("Generierter Text ist leer.");
             }
 
+            addLog("Generiere klickstarken Titel...", "info");
+            const generatedTitle = await generateTitle(generatedText, model).catch(e => {
+                console.error("Titel-Generierung fehlgeschlagen:", e);
+                return ""; // Fallback
+            });
+
             // Classify by actual word count (150 words ≈ 1 min, 450 words ≈ 3 min)
             const wordCount = generatedText.split(/\s+/).filter(w => w.length > 0).length;
             const isShort = wordCount < 450;
@@ -1227,15 +1234,23 @@ export const App: React.FC = () => {
                 ...activeProject.scriptResult, 
                 model,
                 sections: [{ 
-                    ...activeProject.scriptResult.sections[0], 
+                    ...activeProject.scriptResult.sections[0],
+                    title: generatedTitle || activeProject.scriptResult.sections[0].title,
                     versions: { ...versions, [targetSlot]: generatedText } 
                 }] 
             };
             
-            commitAction(`Generiert: ${wordCount} Wörter -> ${targetSlot}`, { 
+            const actionUpdates: Partial<typeof activeProject> = {
                 scriptResult: updatedResult,
                 segmentVersions: { [MAIN_ID]: targetSlot }
-            });
+            };
+
+            if (generatedTitle) {
+                actionUpdates.name = generatedTitle;
+                addLog(`Titel aktualisiert: ${generatedTitle}`, "success");
+            }
+
+            commitAction(`Generiert: ${wordCount} Wörter -> ${targetSlot}`, actionUpdates);
             addLog(`✅ ERFOLG: ${wordCount} Wörter in ${targetSlot}`, "success");
         } catch(e: any) { 
             addLog(`❌ FEHLER: ${e.message}`, "error"); 
@@ -1273,6 +1288,12 @@ export const App: React.FC = () => {
             const newsText = await generateNewsFlash(sourceRaw, sourceFacts, { ...controls, news_seconds: seconds }, model);
             if (!newsText || newsText.trim().length === 0) throw new Error("Generierter Text ist leer.");
 
+            addLog("Generiere klickstarken Titel...", "info");
+            const generatedTitle = await generateTitle(newsText, model).catch(e => {
+                console.error("Titel-Generierung fehlgeschlagen:", e);
+                return ""; // Fallback
+            });
+
             const versions = activeProject.scriptResult.sections[0].versions;
             const currentV = activeProject.segmentVersions[MAIN_ID] || 'short_1';
             const targetSlot: ScriptLength = getFirstWritableSlot('short', currentV.startsWith('short') ? currentV : undefined);
@@ -1282,15 +1303,23 @@ export const App: React.FC = () => {
                 model,
                 sections: [{
                     ...activeProject.scriptResult.sections[0],
+                    title: generatedTitle || activeProject.scriptResult.sections[0].title,
                     versions: { ...versions, [targetSlot]: newsText }
                 }]
             };
 
-            const wordCount = newsText.split(/\s+/).filter(w => w.length > 0).length;
-            commitAction(`News Flash: ${seconds}s (${wordCount} Wörter) -> ${targetSlot}`, {
+            const actionUpdates: Partial<typeof activeProject> = {
                 scriptResult: updatedResult,
                 segmentVersions: { [MAIN_ID]: targetSlot }
-            });
+            };
+
+            if (generatedTitle) {
+                actionUpdates.name = generatedTitle;
+                addLog(`Titel aktualisiert: ${generatedTitle}`, "success");
+            }
+
+            const wordCount = newsText.split(/\s+/).filter(w => w.length > 0).length;
+            commitAction(`News Flash: ${seconds}s (${wordCount} Wörter) -> ${targetSlot}`, actionUpdates);
         } catch (e: any) {
             addLog(`Fehler: ${e.message}`, "error");
         } finally {
@@ -2425,6 +2454,15 @@ export const App: React.FC = () => {
                                         <button onClick={() => navigateHistory(1)} disabled={activeProject.historyIndex >= activeProject.history.length - 1} className="px-3 py-1 rounded hover:bg-white/10 text-slate-500 hover:text-white text-xs">Redo</button>
                                         <HistoryMenu history={activeProject.history} currentIndex={activeProject.historyIndex} onSelect={navigateHistory} />
                                     </div>
+                                    
+                                    {activeProject.scriptResult?.sections[0]?.title && (
+                                        <div className="hidden lg:block absolute left-1/2 -translate-x-1/2 max-w-[40%] text-center">
+                                            <span className="text-xs font-bold text-white/70 truncate block px-4 py-1 bg-white/5 rounded-full border border-white/10">
+                                                {activeProject.scriptResult.sections[0].title}
+                                            </span>
+                                        </div>
+                                    )}
+
                                     <div className="flex items-center gap-2">
                                         {activeProject.scriptResult?.model && (
                                             <span className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-wider">

@@ -587,7 +587,28 @@ REGELN:
 KONTEXT (Letzte Zeilen des Dialogs):
 {context}
 
-Gib NUR die zwei Zeilen zurück.`
+Gib NUR die zwei Zeilen zurück.`,
+
+    title_generation: `Du bist der YouTube- und TikTok-Thumbnail-Experte für "ZEITBLYTZ".
+AUFGABE: Generiere EINEN einzigen, extrem klickstarken Titel für das folgende Skript.
+
+DIE 4 TITEL-MUSTER (Wähle das passendste):
+1. Zahl + Drama: [X Mio./Mrd./kg/%] – [Was passiert] (z.B. "82 Mio. Dollar weg – Ungarn friert Ukraine-Bargeld ein")
+2. Kontrast / Heuchelei: [Privileg der Mächtigen] – [Bürde der Bürger] (z.B. "Ministerin gönnt sich Luxus – wir sollen sparen")
+3. Enthüllung / Exklusiv: [Das hat niemand] + [so gesagt / gewusst] (z.B. "Das hat niemand so gesagt: Deutschland in der Rezession")
+4. Statistik der Angst: [X% der Menschen] + [drastisches Verb] (z.B. "84% GEGEN MERZ: Der freie Fall beginnt")
+
+REGELN:
+- Maximal 60 Zeichen!
+- Enthält idealerweise mindestens eine konkrete Zahl oder einen starken Begriff.
+- Kein Clickbait, der im Video nicht eingelöst wird.
+- Keine Anführungszeichen um den Titel.
+- Keine Erklärungen. NUR der Titel.
+
+SKRIPT:
+{script}
+
+GIB NUR DEN TITEL ZURÜCK:`
   }
 };
 

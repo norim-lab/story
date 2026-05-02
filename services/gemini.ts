@@ -227,6 +227,28 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
   });
 };
 
+export const generateTitle = async (script: string, model: string): Promise<string> => {
+  return handleApiCall(async () => {
+    const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
+    
+    let promptTemplate = loadPrompt('script_generation', 'title_generation');
+    promptTemplate = safeReplace(promptTemplate, '{script}', script);
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: promptTemplate,
+      config: {
+        systemInstruction: "Du bist ein Experte für klickstarke YouTube-Titel.",
+        temperature: 0.7
+      }
+    });
+
+    let result = response.text?.trim() || "";
+    result = result.replace(/^["']|["']$/g, '');
+    return result;
+  });
+};
+
 export const generateNewsFlash = async (dossier: string, facts: string, controls: SegmentControls, model: string): Promise<string> => {
   return handleApiCall(async () => {
     const ai = new GoogleGenAI({ apiKey: getGoogleKey() });

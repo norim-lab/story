@@ -73,6 +73,42 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
     });
 };
 
+export const generateTitle = async (script: string, model: string): Promise<string> => {
+    return handleApiCall(async () => {
+        const apiKey = getOpenAIKey();
+        
+        let promptTemplate = loadPrompt('script_generation', 'title_generation');
+        promptTemplate = safeReplace(promptTemplate, '{script}', script);
+        
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: model,
+                max_tokens: 150,
+                messages: [
+                    { role: 'system', content: 'Du bist ein Experte für klickstarke YouTube-Titel.' },
+                    { role: 'user', content: promptTemplate }
+                ],
+                temperature: 0.7
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error?.message || `OpenAI Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        let result = data.choices?.[0]?.message?.content?.trim() || "";
+        result = result.replace(/^["']|["']$/g, '');
+        return result;
+    });
+};
+
 export const generateNewsFlash = async (dossier: string, facts: string, controls: SegmentControls, model: string): Promise<string> => {
     return handleApiCall(async () => {
         const apiKey = getOpenAIKey();

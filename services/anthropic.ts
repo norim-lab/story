@@ -136,6 +136,31 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
     });
 };
 
+export const generateTitle = async (script: string, model: string): Promise<string> => {
+    return handleApiCall(async () => {
+        const apiKey = getAnthropicKey();
+        
+        let promptTemplate = loadPrompt('script_generation', 'title_generation');
+        promptTemplate = safeReplace(promptTemplate, '{script}', script);
+
+        const response = await postAnthropic(apiKey, '2023-06-01', {
+            model: model,
+            max_tokens: 150,
+            system: 'Du bist ein Experte für klickstarke YouTube-Titel.',
+            messages: [
+                { role: 'user', content: promptTemplate }
+            ]
+        });
+
+        if (!response.ok) throw new Error(await getErrorMessage(response));
+
+        const data = await response.json();
+        let result = data.content?.[0]?.text?.trim() || "";
+        result = result.replace(/^["']|["']$/g, '');
+        return result;
+    });
+};
+
 export const generateNewsFlash = async (dossier: string, facts: string, controls: SegmentControls, model: string): Promise<string> => {
     return handleApiCall(async () => {
         const apiKey = getAnthropicKey();
