@@ -1,6 +1,31 @@
 import { getElevenLabsKey, getElevenLabsVoiceId } from './settings';
 
-export const generateElevenLabsAudio = async (text: string): Promise<string> => {
+export const getElevenLabsUserInfo = async (): Promise<{ used: number, limit: number }> => {
+  const apiKey = getElevenLabsKey();
+  if (!apiKey) {
+    throw new Error('ElevenLabs API Key fehlt in den Einstellungen.');
+  }
+
+  const response = await fetch('https://api.elevenlabs.io/v1/user', {
+    method: 'GET',
+    headers: {
+      'xi-api-key': apiKey,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Fehler beim Abrufen der ElevenLabs Nutzerdaten: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return {
+    used: data.subscription?.character_count || 0,
+    limit: data.subscription?.character_limit || 0
+  };
+};
+
+export const generateElevenLabsAudio = async (text: string): Promise<{ audioBase64: string, characterCount: number }> => {
   const apiKey = getElevenLabsKey();
   const voiceId = getElevenLabsVoiceId();
 
@@ -21,7 +46,7 @@ export const generateElevenLabsAudio = async (text: string): Promise<string> => 
     },
     body: JSON.stringify({
       text: text,
-      model_id: 'eleven_multilingual_v2',
+      model_id: 'eleven_multilingual_v2', // Standard-Modell. Für reines V3 müsste hier 'eleven_v3' (falls im Account freigeschaltet) stehen.
       voice_settings: {
         stability: 0.5,
         similarity_boost: 0.75,
@@ -36,11 +61,15 @@ export const generateElevenLabsAudio = async (text: string): Promise<string> => 
     throw new Error(`ElevenLabs API Fehler: ${response.status} ${errText}`);
   }
 
+  // Extract character count from headers
+  const charCountHeader = response.headers.get("x-character-count");
+  const characterCount = charCountHeader ? parseInt(charCountHeader, 10) : 0;
+
   const blob = await response.blob();
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
-      resolve(reader.result as string); // Returns Base64 data URL
+      resolve({ audioBase64: reader.result as string, characterCount }); // Returns Base64 data URL and character count
     };
     reader.onerror = reject;
     reader.readAsDataURL(blob);

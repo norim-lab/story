@@ -28,7 +28,7 @@ import SettingsModal from './components/SettingsModal';
 import { getSettings, getFastModel, getProModel, saveSettings } from './services/settings';
 import { getRandomHistoricalWikiquote } from './services/wikiquote';
 import { getPerplexityLegalCheck } from './services/perplexity';
-import { generateElevenLabsAudio } from './services/elevenlabs';
+import { generateElevenLabsAudio, getElevenLabsUserInfo } from './services/elevenlabs';
 import { processWithAuphonic } from './services/auphonic';
 
 const MAX_HISTORY_STEPS = 50;
@@ -418,6 +418,24 @@ export const App: React.FC = () => {
     const [confirmClearSlot, setConfirmClearSlot] = useState<{ slot: ScriptLength; projectId: string } | null>(null);
     const [legalCheck, setLegalCheck] = useState<LegalCheckState>({ open: false });
     const [platformCheckLoadingSlot, setPlatformCheckLoadingSlot] = useState<ScriptLength | null>(null);
+    const [elevenLabsUsage, setElevenLabsUsage] = useState<{ used: number, limit: number } | null>(null);
+
+    // Fetch ElevenLabs Usage
+    const fetchElevenLabsUsage = useCallback(async () => {
+        try {
+            const usage = await getElevenLabsUserInfo();
+            setElevenLabsUsage(usage);
+        } catch (e) {
+            console.error("Konnte ElevenLabs Usage nicht abrufen", e);
+        }
+    }, []);
+
+    // Initial fetch when settings change or component mounts
+    useEffect(() => {
+        if (SETTINGS.elevenLabsApiKey) {
+            fetchElevenLabsUsage();
+        }
+    }, [SETTINGS.elevenLabsApiKey, fetchElevenLabsUsage]);
 
     // --- Helpers ---
     const addLog = useCallback((message: string, type: any = 'info') => {
@@ -2679,6 +2697,11 @@ export const App: React.FC = () => {
                                             <div className="flex items-center gap-2">
                                                 <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400">ElevenLabs V3 Prep</div>
                                                 <div className="text-[10px] text-emerald-500/50">Generiert</div>
+                                                {elevenLabsUsage && (
+                                                    <div className="text-[10px] text-emerald-500/80 bg-emerald-900/40 px-2 py-0.5 rounded-full border border-emerald-500/20" title="Verbrauchte Zeichen / Limit">
+                                                        Quota: {elevenLabsUsage.used.toLocaleString()} / {elevenLabsUsage.limit.toLocaleString()}
+                                                    </div>
+                                                )}
                                             </div>
                                             <button 
                                                 onClick={handleElevenLabsAudio} 
@@ -2693,6 +2716,12 @@ export const App: React.FC = () => {
                                         <div className="text-sm text-emerald-100/80 whitespace-pre-wrap font-mono p-4 bg-black/40 rounded-xl border border-emerald-500/10">
                                             {activeProject.scriptResult.sections[0].elevenLabsPrep[currentSlot]}
                                         </div>
+                                        
+                                        {activeProject.scriptResult.sections[0].elevenLabsCharCount?.[currentSlot] && (
+                                            <div className="text-[10px] text-emerald-500/60 mt-1">
+                                                Kosten für diesen Clip: {activeProject.scriptResult.sections[0].elevenLabsCharCount[currentSlot]} Zeichen
+                                            </div>
+                                        )}
 
                                         {activeProject.scriptResult.sections[0].elevenLabsAudio?.[currentSlot] && (
                                             <div className="mt-4 pt-4 border-t border-emerald-500/20">
