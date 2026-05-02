@@ -2654,7 +2654,16 @@ export const App: React.FC = () => {
 
                                         {activeProject.scriptResult.sections[0].elevenLabsAudio?.[currentSlot] && (
                                             <div className="mt-4 pt-4 border-t border-emerald-500/20">
-                                                <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-3">Fertiges Audio</div>
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Fertiges Audio</div>
+                                                    <a 
+                                                        href={activeProject.scriptResult.sections[0].elevenLabsAudio[currentSlot]} 
+                                                        download={`${activeProject.name || 'Projekt'}_${currentSlot}_audio.mp3`}
+                                                        className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-[10px] font-black uppercase text-emerald-200 transition-all flex items-center gap-1.5"
+                                                    >
+                                                        ⬇️ Download MP3
+                                                    </a>
+                                                </div>
                                                 <audio 
                                                     controls 
                                                     className="w-full h-10 rounded-lg outline-none" 
