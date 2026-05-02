@@ -161,6 +161,29 @@ export const generateTitle = async (script: string, model: string): Promise<stri
     });
 };
 
+export const prepareForElevenLabs = async (script: string, model: string): Promise<string> => {
+    return handleApiCall(async () => {
+        const apiKey = getAnthropicKey();
+        
+        let promptTemplate = loadPrompt('script_generation', 'elevenlabs_prep');
+        promptTemplate = safeReplace(promptTemplate, '{script}', script);
+
+        const response = await postAnthropic(apiKey, '2023-06-01', {
+            model: model,
+            max_tokens: 4096,
+            system: 'Du bist Audio-Engineer für ZEITBLYTZ. Antworte NUR mit dem getaggten Skript.',
+            messages: [
+                { role: 'user', content: promptTemplate }
+            ]
+        });
+
+        if (!response.ok) throw new Error(await getErrorMessage(response));
+
+        const data = await response.json();
+        return data.content?.[0]?.text?.trim() || script;
+    });
+};
+
 export const generateNewsFlash = async (dossier: string, facts: string, controls: SegmentControls, model: string): Promise<string> => {
     return handleApiCall(async () => {
         const apiKey = getAnthropicKey();

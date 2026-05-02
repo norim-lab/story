@@ -109,6 +109,40 @@ export const generateTitle = async (script: string, model: string): Promise<stri
     });
 };
 
+export const prepareForElevenLabs = async (script: string, model: string): Promise<string> => {
+    return handleApiCall(async () => {
+        const apiKey = getOpenAIKey();
+        
+        let promptTemplate = loadPrompt('script_generation', 'elevenlabs_prep');
+        promptTemplate = safeReplace(promptTemplate, '{script}', script);
+        
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: model,
+                max_tokens: 4096,
+                messages: [
+                    { role: 'system', content: 'Du bist Audio-Engineer für ZEITBLYTZ. Antworte NUR mit dem getaggten Skript.' },
+                    { role: 'user', content: promptTemplate }
+                ],
+                temperature: 0.2
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error?.message || `OpenAI Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.choices?.[0]?.message?.content?.trim() || script;
+    });
+};
+
 export const generateNewsFlash = async (dossier: string, facts: string, controls: SegmentControls, model: string): Promise<string> => {
     return handleApiCall(async () => {
         const apiKey = getOpenAIKey();

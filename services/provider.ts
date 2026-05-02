@@ -36,6 +36,16 @@ export const generateTitle = async (script: string, model: string): Promise<stri
     return gemini.generateTitle(script, model);
 };
 
+export const prepareForElevenLabs = async (script: string, model: string): Promise<string> => {
+    const provider = getProvider();
+    if (provider === 'openai') {
+        return openai.prepareForElevenLabs(script, model);
+    } else if (provider === 'anthropic') {
+        return anthropic.prepareForElevenLabs(script, model);
+    }
+    return gemini.prepareForElevenLabs(script, model);
+};
+
 export const generateNewsFlash = async (dossier: string, facts: string, controls: SegmentControls, model: string): Promise<string> => {
     const provider = getProvider();
     if (provider === 'openai') {

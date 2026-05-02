@@ -20,7 +20,8 @@ import {
     analyzePlatformSafety,
     checkApiKey,
     improveExistingScript,
-    generateTitle
+    generateTitle,
+    prepareForElevenLabs
 } from './services/provider';
 import { initStorage, listProjects, saveProject, deleteProject as deleteCloudProject, checkConnection } from './services/storage';
 import SettingsModal from './components/SettingsModal';
@@ -406,6 +407,7 @@ export const App: React.FC = () => {
     
     // Editor UI State
     const [isZapping, setIsZapping] = useState(false);
+    const [isElevenLabsLoading, setIsElevenLabsLoading] = useState(false);
     const [selectionMenu, setSelectionMenu] = useState<{ x: number, y: number, text: string, visible: boolean } | null>(null);
     const [mobileTab, setMobileTab] = useState<'inputs' | 'editor'>('inputs');
     const [editorMode, setEditorMode] = useState<'controls' | 'source'>('controls');
@@ -1922,6 +1924,45 @@ export const App: React.FC = () => {
         }
     };
 
+    const handleElevenLabsPrep = async () => {
+        if (!currentText || currentText.trim().length === 0) {
+            alert('Kein Text zum Vorbereiten gefunden.');
+            return;
+        }
+
+        setIsElevenLabsLoading(true);
+        try {
+            const model = getProModel();
+            const taggedScript = await prepareForElevenLabs(currentText, model);
+            
+            // Text in die Zwischenablage kopieren
+            await navigator.clipboard.writeText(taggedScript);
+            
+            // Optional: auch im Slot speichern
+            updateActiveProject({
+                scriptResult: {
+                    ...activeProject.scriptResult!,
+                    sections: [
+                        {
+                            ...activeProject.scriptResult!.sections[0],
+                            versions: {
+                                ...activeProject.scriptResult!.sections[0].versions,
+                                [currentSlot]: taggedScript
+                            }
+                        }
+                    ]
+                }
+            });
+            
+            alert('Text wurde für ElevenLabs V3 vorbereitet und in die Zwischenablage kopiert!');
+        } catch (error) {
+            console.error('Fehler bei der ElevenLabs Vorbereitung:', error);
+            alert('Fehler bei der Vorbereitung für ElevenLabs.');
+        } finally {
+            setIsElevenLabsLoading(false);
+        }
+    };
+
     const allSlotGroups = {
         shorts: getSlotsByPrefix('short', true),
         longs: getSlotsByPrefix('long', true),
@@ -2475,6 +2516,10 @@ export const App: React.FC = () => {
                                         <button onClick={handleToggleFinal} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border flex items-center gap-2 ${isCurrentFinal ? 'bg-white/10 text-white border-white/20' : 'bg-transparent text-slate-500 border-transparent hover:text-white'}`}>
                                             {isCurrentFinal ? 'Finalized' : 'Mark as Final'}
                                             {isCurrentFinal && <span>🔒</span>}
+                                        </button>
+                                        <button onClick={handleElevenLabsPrep} disabled={isElevenLabsLoading || !currentText.trim()} className="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 disabled:opacity-40 flex items-center gap-2">
+                                            {isElevenLabsLoading ? <span className="animate-spin inline-block">⏳</span> : '🎙️'}
+                                            {isElevenLabsLoading ? 'Bereitet vor...' : 'Für ElevenLabs V3 vorbereiten'}
                                         </button>
                                         <button onClick={handlePlatformSafetyCheck} disabled={platformCheckLoadingSlot === currentSlot || !currentText.trim()} className="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/20 disabled:opacity-40">
                                             {platformCheckLoadingSlot === currentSlot ? 'Prüft…' : 'Plattform-Check'}

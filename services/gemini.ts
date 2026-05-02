@@ -249,6 +249,26 @@ export const generateTitle = async (script: string, model: string): Promise<stri
   });
 };
 
+export const prepareForElevenLabs = async (script: string, model: string): Promise<string> => {
+  return handleApiCall(async () => {
+    const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
+    
+    let promptTemplate = loadPrompt('script_generation', 'elevenlabs_prep');
+    promptTemplate = safeReplace(promptTemplate, '{script}', script);
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: promptTemplate,
+      config: {
+        systemInstruction: "Du bist Audio-Engineer für ZEITBLYTZ. Antworte NUR mit dem getaggten Skript.",
+        temperature: 0.2
+      }
+    });
+
+    return response.text?.trim() || script;
+  });
+};
+
 export const generateNewsFlash = async (dossier: string, facts: string, controls: SegmentControls, model: string): Promise<string> => {
   return handleApiCall(async () => {
     const ai = new GoogleGenAI({ apiKey: getGoogleKey() });
