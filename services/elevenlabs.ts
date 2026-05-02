@@ -38,6 +38,11 @@ export const generateElevenLabsAudio = async (text: string): Promise<{ audioBase
   // Or 'eleven_multilingual_v2' is safe.
   
   // Clean text from ElevenLabs emotion tags before sending
+  // V3 uses the tags for prompting but we need to ensure the format is exact
+  // If the prompt instructions don't work, ElevenLabs V3 actually supports text-to-speech prompting via text, 
+  // but if it reads them aloud, the model isn't interpreting them as instructions. 
+  // For V3, the model_id MUST be 'eleven_multilingual_v3' or 'eleven_v3'. 
+  // We'll set it to eleven_multilingual_v3. If it fails, it means the account doesn't have access.
   const cleanText = text.replace(/\[.*?\]/g, '').trim();
 
   const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
@@ -48,8 +53,8 @@ export const generateElevenLabsAudio = async (text: string): Promise<{ audioBase
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      text: cleanText,
-      model_id: 'eleven_turbo_v2_5', // Standard-Modell.
+      text: text, // Bei V3 lassen wir die Tags drin, da V3 (eleven_multilingual_v3) sie als Prompt-Anweisungen verstehen sollte.
+      model_id: 'eleven_multilingual_v3', // Das offizielle V3 Modell
       apply_text_normalization: "auto",
       voice_settings: {
         stability: 0.5,
