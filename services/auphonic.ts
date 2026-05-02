@@ -83,7 +83,7 @@ export const processWithAuphonic = async (base64Audio: string): Promise<string> 
   }
 
   // 1. Create and Start Production
-  const createResponse = await fetch('https://auphonic.com/api/productions.json', {
+  const createResponse = await fetch('https://auphonic.com/api/simple/productions.json', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`
