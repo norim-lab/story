@@ -37,6 +37,9 @@ export const generateElevenLabsAudio = async (text: string): Promise<{ audioBase
   // with model_id = "eleven_multilingual_v2" or "eleven_turbo_v2" (or v3 if available, usually v2.5 or v3 via api, let's use 'eleven_multilingual_v2' or what user prefers. User said "ElevenLabs V3", so model_id: 'eleven_multilingual_v2' is typical, or we can use whatever is standard. Actually, for V3 the model is 'eleven_turbo_v2_5' or 'eleven_multilingual_v2'. Wait, there is a new model 'eleven_multilingual_v2' or 'eleven_turbo_v2' or 'eleven_turbo_v2_5'. I will use 'eleven_turbo_v2_5' or 'eleven_multilingual_v2'. Let's use 'eleven_turbo_v2_5'.)
   // Or 'eleven_multilingual_v2' is safe.
   
+  // Clean text from ElevenLabs emotion tags before sending
+  const cleanText = text.replace(/\[.*?\]/g, '').trim();
+
   const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
     method: 'POST',
     headers: {
@@ -45,8 +48,9 @@ export const generateElevenLabsAudio = async (text: string): Promise<{ audioBase
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      text: text,
-      model_id: 'eleven_multilingual_v2', // Standard-Modell. Für reines V3 müsste hier 'eleven_v3' (falls im Account freigeschaltet) stehen.
+      text: cleanText,
+      model_id: 'eleven_turbo_v2_5', // Standard-Modell.
+      apply_text_normalization: "auto",
       voice_settings: {
         stability: 0.5,
         similarity_boost: 0.75,
