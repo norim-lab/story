@@ -1993,6 +1993,7 @@ export const App: React.FC = () => {
         }
 
         setIsElevenLabsLoading(true);
+        addLog("Bereite Skript für ElevenLabs V3 vor...", "info");
         try {
             const model = getProModel();
             const taggedScript = await prepareForElevenLabs(currentText, model);
@@ -2014,9 +2015,10 @@ export const App: React.FC = () => {
                     ]
                 }
             });
-            
+            addLog("Skript erfolgreich für ElevenLabs vorbereitet!", "success");
         } catch (error) {
             console.error('Fehler bei der ElevenLabs Vorbereitung:', error);
+            addLog("Fehler bei der Vorbereitung für ElevenLabs.", "error");
             alert('Fehler bei der Vorbereitung für ElevenLabs.');
         } finally {
             setIsElevenLabsLoading(false);
@@ -2031,6 +2033,7 @@ export const App: React.FC = () => {
         }
 
         setIsGeneratingAudio(true);
+        addLog("Generiere Audio mit ElevenLabs V3...", "info");
         try {
             const { audioBase64, characterCount } = await generateElevenLabsAudio(prepText);
             
@@ -2053,8 +2056,10 @@ export const App: React.FC = () => {
                 }
             });
             fetchElevenLabsUsage();
+            addLog(`ElevenLabs Audio generiert! (Kosten: ${characterCount} Zeichen)`, "success");
         } catch (error: any) {
             console.error('Fehler bei der Audio-Generierung:', error);
+            addLog(`Fehler bei ElevenLabs: ${error.message || 'Unbekannter Fehler'}`, "error");
             alert(error.message || 'Fehler bei der Generierung des Audios.');
         } finally {
             setIsGeneratingAudio(false);
