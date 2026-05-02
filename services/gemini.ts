@@ -4,7 +4,7 @@ import { PlatformSafetyCheck, ScriptResult, ScriptSection, SegmentControls } fro
 import { getGoogleKey } from "./settings";
 import { applyShortRules, loadPrompt, getStyleInstruction, getMetaphorInstruction, getFactInstruction, appendStyleEnforcement } from "./prompts";
 
-import { generateTitle } from './provider';
+import { generateTitle as providerGenerateTitle } from './provider';
 
 async function handleApiCall<T>(call: () => Promise<T>): Promise<T> {
   console.log("[Gemini] API Call starting...");
@@ -75,7 +75,7 @@ export const generateZeitblitzScript = async (rawText: string, model: string): P
     let generatedTitle = id;
     try {
         if (rawText && rawText.trim().length > 0) {
-            const title = await generateTitle(rawText, model);
+            const title = await providerGenerateTitle(rawText, model);
             if (title && title.trim().length > 0) {
                 generatedTitle = title;
             }

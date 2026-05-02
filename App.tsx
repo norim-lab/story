@@ -2032,7 +2032,7 @@ export const App: React.FC = () => {
 
         setIsGeneratingAudio(true);
         try {
-            const audioData = await generateElevenLabsAudio(prepText);
+            const { audioBase64, characterCount } = await generateElevenLabsAudio(prepText);
             
             updateActiveProject({
                 scriptResult: {
@@ -2042,13 +2042,17 @@ export const App: React.FC = () => {
                             ...activeProject.scriptResult!.sections[0],
                             elevenLabsAudio: {
                                 ...(activeProject.scriptResult!.sections[0].elevenLabsAudio || {}),
-                                [currentSlot]: audioData
+                                [currentSlot]: audioBase64
+                            },
+                            elevenLabsCharCount: {
+                                ...(activeProject.scriptResult!.sections[0].elevenLabsCharCount || {}),
+                                [currentSlot]: characterCount
                             }
                         }
                     ]
                 }
             });
-            
+            fetchElevenLabsUsage();
         } catch (error: any) {
             console.error('Fehler bei der Audio-Generierung:', error);
             alert(error.message || 'Fehler bei der Generierung des Audios.');
