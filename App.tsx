@@ -28,6 +28,7 @@ import SettingsModal from './components/SettingsModal';
 import { getSettings, getFastModel, getProModel, saveSettings } from './services/settings';
 import { getRandomHistoricalWikiquote } from './services/wikiquote';
 import { getPerplexityLegalCheck } from './services/perplexity';
+import { generateElevenLabsAudio } from './services/elevenlabs';
 
 const MAX_HISTORY_STEPS = 50;
 const MAIN_ID = "main-script";
@@ -408,6 +409,7 @@ export const App: React.FC = () => {
     // Editor UI State
     const [isZapping, setIsZapping] = useState(false);
     const [isElevenLabsLoading, setIsElevenLabsLoading] = useState(false);
+    const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
     const [selectionMenu, setSelectionMenu] = useState<{ x: number, y: number, text: string, visible: boolean } | null>(null);
     const [mobileTab, setMobileTab] = useState<'inputs' | 'editor'>('inputs');
     const [editorMode, setEditorMode] = useState<'controls' | 'source'>('controls');
@@ -1935,18 +1937,17 @@ export const App: React.FC = () => {
             const model = getProModel();
             const taggedScript = await prepareForElevenLabs(currentText, model);
             
-            // Text in die Zwischenablage kopieren
-            await navigator.clipboard.writeText(taggedScript);
+            // Optional: Text in die Zwischenablage kopieren
+            // await navigator.clipboard.writeText(taggedScript);
             
-            // Optional: auch im Slot speichern
             updateActiveProject({
                 scriptResult: {
                     ...activeProject.scriptResult!,
                     sections: [
                         {
                             ...activeProject.scriptResult!.sections[0],
-                            versions: {
-                                ...activeProject.scriptResult!.sections[0].versions,
+                            elevenLabsPrep: {
+                                ...(activeProject.scriptResult!.sections[0].elevenLabsPrep || {}),
                                 [currentSlot]: taggedScript
                             }
                         }
@@ -1954,12 +1955,45 @@ export const App: React.FC = () => {
                 }
             });
             
-            alert('Text wurde für ElevenLabs V3 vorbereitet und in die Zwischenablage kopiert!');
         } catch (error) {
             console.error('Fehler bei der ElevenLabs Vorbereitung:', error);
             alert('Fehler bei der Vorbereitung für ElevenLabs.');
         } finally {
             setIsElevenLabsLoading(false);
+        }
+    };
+
+    const handleElevenLabsAudio = async () => {
+        const prepText = activeProject.scriptResult?.sections?.[0]?.elevenLabsPrep?.[currentSlot];
+        if (!prepText || prepText.trim().length === 0) {
+            alert('Bitte bereite den Text zuerst für ElevenLabs vor.');
+            return;
+        }
+
+        setIsGeneratingAudio(true);
+        try {
+            const audioData = await generateElevenLabsAudio(prepText);
+            
+            updateActiveProject({
+                scriptResult: {
+                    ...activeProject.scriptResult!,
+                    sections: [
+                        {
+                            ...activeProject.scriptResult!.sections[0],
+                            elevenLabsAudio: {
+                                ...(activeProject.scriptResult!.sections[0].elevenLabsAudio || {}),
+                                [currentSlot]: audioData
+                            }
+                        }
+                    ]
+                }
+            });
+            
+        } catch (error: any) {
+            console.error('Fehler bei der Audio-Generierung:', error);
+            alert(error.message || 'Fehler bei der Generierung des Audios.');
+        } finally {
+            setIsGeneratingAudio(false);
         }
     };
 
@@ -2594,6 +2628,40 @@ export const App: React.FC = () => {
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+                                )}
+
+                                {!activeProject.isEditing && activeProject.scriptResult?.sections?.[0]?.elevenLabsPrep?.[currentSlot] && (
+                                    <div className="mt-4 bg-emerald-900/20 border border-emerald-500/20 rounded-2xl p-4 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400">ElevenLabs V3 Prep</div>
+                                                <div className="text-[10px] text-emerald-500/50">Generiert</div>
+                                            </div>
+                                            <button 
+                                                onClick={handleElevenLabsAudio} 
+                                                disabled={isGeneratingAudio}
+                                                className="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 flex items-center gap-2"
+                                            >
+                                                {isGeneratingAudio ? <span className="animate-spin inline-block">⏳</span> : '▶️'}
+                                                {isGeneratingAudio ? 'Generiere Audio...' : 'Audio generieren'}
+                                            </button>
+                                        </div>
+                                        
+                                        <div className="text-sm text-emerald-100/80 whitespace-pre-wrap font-mono p-4 bg-black/40 rounded-xl border border-emerald-500/10">
+                                            {activeProject.scriptResult.sections[0].elevenLabsPrep[currentSlot]}
+                                        </div>
+
+                                        {activeProject.scriptResult.sections[0].elevenLabsAudio?.[currentSlot] && (
+                                            <div className="mt-4 pt-4 border-t border-emerald-500/20">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-3">Fertiges Audio</div>
+                                                <audio 
+                                                    controls 
+                                                    className="w-full h-10 rounded-lg outline-none" 
+                                                    src={activeProject.scriptResult.sections[0].elevenLabsAudio[currentSlot]} 
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                                 

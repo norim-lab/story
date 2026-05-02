@@ -13,6 +13,8 @@ export interface ZBSettings {
   anthropicFastModel: string;
   anthropicProModel: string;
   perplexityApiKey: string;
+  elevenLabsApiKey: string;
+  elevenLabsVoiceId: string;
   shortRulesEnabled: boolean;
   youtubeShadowbanAvoid: boolean;
   tiktokShadowbanAvoid: boolean;
@@ -30,6 +32,8 @@ const defaults: ZBSettings = {
   anthropicFastModel: 'claude-haiku-4-5',
   anthropicProModel: 'claude-sonnet-4-6',
   perplexityApiKey: '',
+  elevenLabsApiKey: '',
+  elevenLabsVoiceId: 'JBFqnCBsd6RMkjVDRZzb', // Example default voice ID
   shortRulesEnabled: true,
   youtubeShadowbanAvoid: false,
   tiktokShadowbanAvoid: false,
@@ -88,6 +92,14 @@ export function getOpenAIKey(): string {
 
 export function getAnthropicKey(): string {
   return getSettings().anthropicApiKey || '';
+}
+
+export function getElevenLabsKey(): string {
+  return getSettings().elevenLabsApiKey || '';
+}
+
+export function getElevenLabsVoiceId(): string {
+  return getSettings().elevenLabsVoiceId || '';
 }
 
 export function hasValidKey(): boolean {

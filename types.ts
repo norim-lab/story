@@ -65,6 +65,8 @@ export interface ScriptSection {
   versions: Record<string, string>;
   isFinal?: Record<string, boolean>; // Tracks finalized status per version key
   platformSafetyChecks?: Record<string, PlatformSafetyCheck>;
+  elevenLabsPrep?: Record<string, string>; // Stores ElevenLabs V3 prepared text
+  elevenLabsAudio?: Record<string, string>; // Stores Base64 or Blob URL for audio
   seriesSlots?: Record<string, SeriesSlotInfo>;
   sources?: { title: string; url: string; type?: string }[];
   researchSnippet?: string;

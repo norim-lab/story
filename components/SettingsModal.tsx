@@ -66,6 +66,22 @@ const SettingsModal: React.FC<Props> = ({ open, onClose }) => {
           {renderProviderSection('openai', 'OpenAI (GPT)', s.openaiApiKey, v => setS({...s, openaiApiKey: v}))}
           
           <div className="space-y-2">
+            <div className="text-[10px] uppercase font-bold text-slate-500">ElevenLabs (Text-to-Speech)</div>
+            <input 
+              value={s.elevenLabsApiKey} 
+              onChange={e => setS({...s, elevenLabsApiKey: e.target.value})} 
+              placeholder="API Key" 
+              className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm" 
+            />
+            <input 
+              value={s.elevenLabsVoiceId} 
+              onChange={e => setS({...s, elevenLabsVoiceId: e.target.value})} 
+              placeholder="Voice ID (z.B. JBFqnCBsd6RMkjVDRZzb)" 
+              className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm mt-1" 
+            />
+          </div>
+
+          <div className="space-y-2">
             <div className="text-[10px] uppercase font-bold text-slate-500">Perplexity (Deep Dive)</div>
             <input 
               value={s.perplexityApiKey} 
