@@ -40,22 +40,22 @@ jobs:
           mkdir -p dist/data/projects
 
       - name: Preflight target path and permissions
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          script: |
-            TARGET="/home/miron777/web/story.zeitblytz.media/public_html"
-            mkdir -p "$TARGET"
-            mkdir -p "$TARGET/data"
-            mkdir -p "$TARGET/data/images"
-            mkdir -p "$TARGET/data/projects"
-            chmod 0777 "$TARGET" "$TARGET/data" "$TARGET/data/images" "$TARGET/data/projects" || true
-            touch "$TARGET/.write_test"
-            rm -f "$TARGET/.write_test"
-            ls -la "$TARGET"
-          script_stop: true
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          TARGET="/home/miron777/web/story.zeitblytz.media/public_html"
+          sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$SSH_USERNAME@$SSH_HOST" "
+            mkdir -p \"$TARGET\"
+            mkdir -p \"$TARGET/data\"
+            mkdir -p \"$TARGET/data/images\"
+            mkdir -p \"$TARGET/data/projects\"
+            chmod 0777 \"$TARGET\" \"$TARGET/data\" \"$TARGET/data/images\" \"$TARGET/data/projects\" || true
+            touch \"$TARGET/.write_test\"
+            rm -f \"$TARGET/.write_test\"
+            ls -la \"$TARGET\"
+          "
 
       - name: Deploy via native SCP with retry
         env:
@@ -73,14 +73,14 @@ jobs:
           test "$SUCCESS" -eq 1
 
       - name: Verify deployed files
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          script: |
-            TARGET="/home/miron777/web/story.zeitblytz.media/public_html"
-            ls -la "$TARGET"
-            test -f "$TARGET/index.html"
-            test -f "$TARGET/track.php"
-          script_stop: true
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          TARGET="/home/miron777/web/story.zeitblytz.media/public_html"
+          sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$SSH_USERNAME@$SSH_HOST" "
+            ls -la \"$TARGET\"
+            test -f \"$TARGET/index.html\"
+            test -f \"$TARGET/track.php\"
+          "
