@@ -311,11 +311,11 @@ const HomeDashboard: React.FC<{
                         </div>
                     </div>
                     <div className="flex gap-2">
-                        <button onClick={onOpenSettings} className="px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-black uppercase transition-all flex items-center gap-2">
+                        <button onClick={onOpenSettings} className="px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-black uppercase transition-all flex items-center gap-2" title="API-Schlüssel und globale Einstellungen konfigurieren">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             <span>API Keys</span>
                         </button>
-                        <label className="w-full md:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-black uppercase cursor-pointer transition-all flex items-center justify-center gap-2">
+                        <label className="w-full md:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-black uppercase cursor-pointer transition-all flex items-center justify-center gap-2" title="Stellt ein zuvor exportiertes Projekt-Backup wieder her">
                             <span>Import Backup</span>
                             <input type="file" accept=".json" className="hidden" onChange={onImport} />
                         </label>
@@ -329,7 +329,7 @@ const HomeDashboard: React.FC<{
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pb-20">
                         {/* Create New Card */}
-                        <button onClick={onCreate} className="group aspect-video rounded-[2rem] border-2 border-dashed border-white/10 hover:border-emerald-500/50 bg-white/5 hover:bg-emerald-600/5 transition-all flex flex-col items-center justify-center gap-4 text-slate-500 hover:text-emerald-400">
+                        <button onClick={onCreate} className="group aspect-video rounded-[2rem] border-2 border-dashed border-white/10 hover:border-emerald-500/50 bg-white/5 hover:bg-emerald-600/5 transition-all flex flex-col items-center justify-center gap-4 text-slate-500 hover:text-emerald-400" title="Erstellt ein neues, leeres Projekt">
                             <div className="w-16 h-16 rounded-full bg-white/5 group-hover:bg-emerald-500/20 flex items-center justify-center transition-all">
                                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                             </div>
@@ -343,7 +343,7 @@ const HomeDashboard: React.FC<{
                                 : [];
 
                             return (
-                            <div key={p.id} onClick={() => onSelect(p.id)} className="group relative aspect-video bg-slate-900 border border-white/5 rounded-[2rem] p-6 md:p-8 hover:border-emerald-500/30 transition-all cursor-pointer overflow-hidden flex flex-col justify-between hover:shadow-2xl hover:shadow-emerald-900/10">
+                            <div key={p.id} onClick={() => onSelect(p.id)} className="group relative aspect-video bg-slate-900 border border-white/5 rounded-[2rem] p-6 md:p-8 hover:border-emerald-500/30 transition-all cursor-pointer overflow-hidden flex flex-col justify-between hover:shadow-2xl hover:shadow-emerald-900/10" title="Klicke hier, um dieses Projekt zu öffnen">
                                 <div className="absolute top-0 right-0 p-32 bg-emerald-600/10 blur-[80px] rounded-full group-hover:bg-emerald-600/20 transition-all pointer-events-none" />
                                 
                                 <div className="relative z-10 space-y-2">
@@ -376,6 +376,7 @@ const HomeDashboard: React.FC<{
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); onDelete(p.id); }}
                                             className="p-2 hover:bg-red-500/20 hover:text-red-400 rounded-lg text-slate-600 transition-all z-20"
+                                            title="Löscht dieses Projekt unwiderruflich"
                                         >
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                         </button>
@@ -2106,7 +2107,7 @@ export const App: React.FC = () => {
 
             <header className="h-14 md:h-16 border-b border-white/5 bg-slate-900/50 backdrop-blur-md flex items-center justify-between px-4 md:px-8 sticky top-0 z-50">
                 <div className="flex items-center gap-2 md:gap-4 flex-1">
-                    <button onClick={() => setActiveProjectId(null)} className="w-8 h-8 bg-white/5 hover:bg-emerald-600 rounded-lg flex items-center justify-center transition-all group shrink-0">
+                    <button onClick={() => setActiveProjectId(null)} className="w-8 h-8 bg-white/5 hover:bg-emerald-600 rounded-lg flex items-center justify-center transition-all group shrink-0" title="Projekt verlassen & zur Übersicht">
                          <svg className="w-4 h-4 text-slate-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
                     
@@ -2116,9 +2117,10 @@ export const App: React.FC = () => {
                         onChange={(e) => updateActiveProject({ name: e.target.value })}
                         className="bg-transparent border-none outline-none font-bold tracking-widest text-xs uppercase text-slate-400 focus:text-white placeholder-slate-600 transition-all w-32 md:w-64 hover:bg-white/5 rounded px-2 py-1 truncate"
                         placeholder="PROJECT NAME"
+                        title="Projektname ändern"
                     />
                     
-                    <div className="hidden md:block ml-4">
+                    <div className="hidden md:block ml-4" title="Status der Cloud-Speicherung">
                         <CloudStatusIndicator status={cloudStatus} lastSaved={lastSavedTime} />
                     </div>
                 </div>
@@ -2126,17 +2128,17 @@ export const App: React.FC = () => {
                     {activeProject?.segmentControls?.[MAIN_ID]?.target_seconds && 
                      activeProject.segmentControls[MAIN_ID].target_seconds <= 60 && 
                      (activeProject.segmentControls[MAIN_ID].target_seconds < 35 || activeProject.segmentControls[MAIN_ID].target_seconds > 40) && (
-                        <div className="hidden md:flex items-center gap-2 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-lg">
+                        <div className="hidden md:flex items-center gap-2 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-lg" title="Warnung: Vorgeschriebene Zeit überschritten">
                             <span className="text-xs font-bold text-red-500">⚠️ ZEIT-WARNUNG: {activeProject.segmentControls[MAIN_ID].target_seconds}s verletzt die 35-40s Kurzvideo-Regel!</span>
                         </div>
                     )}
-                    <button onClick={() => setSettingsOpen(true)} className="w-8 h-8 bg-white/5 hover:bg-white/10 rounded-lg flex items-center justify-center transition-all group shrink-0 border border-white/10">
+                    <button onClick={() => setSettingsOpen(true)} className="w-8 h-8 bg-white/5 hover:bg-white/10 rounded-lg flex items-center justify-center transition-all group shrink-0 border border-white/10" title="Einstellungen (API-Keys, Modelle, Audio-Settings)">
                         <svg className="w-4 h-4 text-slate-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </button>
-                    <button onClick={toggleShortRules} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all border whitespace-nowrap ${SETTINGS.shortRulesEnabled ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400/40' : 'bg-white/5 text-slate-500 border-white/10 hover:text-white hover:bg-white/10'}`}>
+                    <button onClick={toggleShortRules} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all border whitespace-nowrap ${SETTINGS.shortRulesEnabled ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400/40' : 'bg-white/5 text-slate-500 border-white/10 hover:text-white hover:bg-white/10'}`} title="Strikte ZEITBLYTZ-Regeln (v3.5) für kurze Skripte aktivieren/deaktivieren">
                         SHORTRULES
                     </button>
-                    <div className="hidden md:flex items-center gap-1">
+                    <div className="hidden md:flex items-center gap-1" title="Aktuell gewähltes Sprachmodell (Provider-Einstellungen via Zahnrad)">
                         <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
                             {SETTINGS.activeProvider === 'google' && (
                                 <>
@@ -2162,7 +2164,7 @@ export const App: React.FC = () => {
                         </div>
                     </div>
 
-                    <button onClick={handleGlobalExport} className="px-3 py-1.5 md:px-4 md:py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-[9px] md:text-[10px] font-black uppercase transition-all whitespace-nowrap">Export All</button>
+                    <button onClick={handleGlobalExport} className="px-3 py-1.5 md:px-4 md:py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-[9px] md:text-[10px] font-black uppercase transition-all whitespace-nowrap" title="Alle Projekte als Workspace-Datei exportieren">Export All</button>
                 </div>
             </header>
             
@@ -2203,6 +2205,7 @@ export const App: React.FC = () => {
                                 placeholder="Project Title"
                                 value={activeProject.name}
                                 onChange={e => updateActiveProject({ name: e.target.value })}
+                                title="Hier kannst du den Projektnamen ändern"
                             />
                             <div className="flex-1 flex flex-col gap-4">
                                 <textarea 
@@ -2210,15 +2213,17 @@ export const App: React.FC = () => {
                                     placeholder="Grok Text hier einfügen..."
                                     value={activeProject.rawInput}
                                     onChange={e => updateActiveProject({ rawInput: e.target.value })}
+                                    title="Dossier / Rohmaterial: Füge hier deinen Haupt-Recherchetext ein"
                                 />
                                 <textarea 
                                     className="w-full h-32 md:h-48 bg-black/40 border border-white/10 rounded-2xl p-4 text-sm text-slate-300 outline-none focus:border-emerald-500/50 transition-all resize-none" 
                                     placeholder="Zusätzliche Fakten / Kontext..."
                                     value={activeProject.factText}
                                     onChange={e => updateActiveProject({ factText: e.target.value })}
+                                    title="Zusätzliche Fakten: Hier kannst du weitere Hintergrundinfos hinterlegen"
                                 />
                             </div>
-                            <button onClick={handleGenerate} className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg transition-all flex-shrink-0">
+                            <button onClick={handleGenerate} className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg transition-all flex-shrink-0" title="Startet die Erstanalyse deines Textes und lädt ihn in den Editor">
                                 Load to Editor
                             </button>
                         </div>
@@ -2227,115 +2232,129 @@ export const App: React.FC = () => {
                             <div className="space-y-2 flex-shrink-0">
                                 <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Script Versions</h3>
                                 
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <div className="text-[9px] font-bold text-slate-600 uppercase">Shorts (&lt; 3min)</div>
-                                        <div className="flex gap-1">
-                                            <button onClick={() => exportShorts('copy')} className="px-2 py-0.5 bg-white/5 hover:bg-white/10 rounded text-[9px] font-bold text-slate-400 transition-colors" title="Alle Short-Texte kopieren">📋 Kopieren</button>
-                                            <button onClick={() => exportShorts('download')} className="px-2 py-0.5 bg-white/5 hover:bg-white/10 rounded text-[9px] font-bold text-slate-400 transition-colors" title="Alle Short-Texte als TXT herunterladen">💾 Download</button>
+                                <div className="space-y-3">
+                                    <details open className="group bg-black/20 border border-white/5 rounded-xl p-3 transition-all open:bg-black/40">
+                                        <summary className="text-[10px] font-black text-slate-500 uppercase tracking-widest cursor-pointer select-none list-none flex items-center justify-between">
+                                            <span>Shorts (&lt; 3min)</span>
+                                            <div className="flex gap-2 items-center">
+                                                <div className="flex gap-1" onClick={e => e.preventDefault()}>
+                                                    <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); exportShorts('copy'); }} className="px-2 py-0.5 bg-white/5 hover:bg-white/10 rounded text-[9px] font-bold text-slate-400 transition-colors" title="Alle Short-Texte kopieren">📋 Kopieren</button>
+                                                    <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); exportShorts('download'); }} className="px-2 py-0.5 bg-white/5 hover:bg-white/10 rounded text-[9px] font-bold text-slate-400 transition-colors" title="Alle Short-Texte als TXT herunterladen">💾 Download</button>
+                                                </div>
+                                                <span className="text-slate-600 group-open:rotate-180 transition-transform">▼</span>
+                                            </div>
+                                        </summary>
+                                        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/5">
+                                            {allSlotGroups.shorts.map(v => {
+                                                const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
+                                                const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
+                                                const seriesBadge = getSeriesBadge(v);
+                                                return (
+                                                <div key={v} className="relative flex items-center">
+                                                    {seriesBadge && (
+                                                        <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-yellow-400 text-[8px] font-black text-black flex items-center justify-center z-10 shadow">
+                                                            {seriesBadge}
+                                                        </div>
+                                                    )}
+                                                    <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-emerald-600 border-emerald-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`} title={`Zum Text-Slot "${getSlotLabel(v)}" wechseln`}>
+                                                        {isFinal && <span className="text-[10px]">🔒</span>}
+                                                        {getSlotLabel(v).replace('Short ', '')}
+                                                        {isFinal && activeProject.segmentVersions[MAIN_ID] !== v && <span className="text-emerald-500 ml-0.5">✓</span>}
+                                                    </button>
+                                                    {hasContent && !isFinal && (
+                                                        <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot({ slot: v, projectId: activeProject.id }); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none" title="Diesen Slot leeren">×</button>
+                                                    )}
+                                                </div>
+                                            )})}
                                         </div>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {allSlotGroups.shorts.map(v => {
-                                            const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
-                                            const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
-                                            const seriesBadge = getSeriesBadge(v);
-                                            return (
-                                            <div key={v} className="relative flex items-center">
-                                                {seriesBadge && (
-                                                    <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-yellow-400 text-[8px] font-black text-black flex items-center justify-center z-10 shadow">
-                                                        {seriesBadge}
-                                                    </div>
-                                                )}
-                                                <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-emerald-600 border-emerald-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
-                                                    {isFinal && <span className="text-[10px]">🔒</span>}
-                                                    {getSlotLabel(v).replace('Short ', '')}
-                                                    {isFinal && activeProject.segmentVersions[MAIN_ID] !== v && <span className="text-emerald-500 ml-0.5">✓</span>}
-                                                </button>
-                                                {hasContent && !isFinal && (
-                                                    <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot({ slot: v, projectId: activeProject.id }); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none">×</button>
-                                                )}
-                                            </div>
-                                        )})}
-                                    </div>
-                                </div>
+                                    </details>
 
-                                <div className="space-y-2">
-                                    <div className="text-[9px] font-bold text-slate-600 uppercase">Longs (&gt; 3min)</div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {allSlotGroups.longs.map(v => {
-                                            const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
-                                            const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
-                                            const seriesBadge = getSeriesBadge(v);
-                                            return (
-                                            <div key={v} className="relative flex items-center">
-                                                {seriesBadge && (
-                                                    <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-yellow-400 text-[8px] font-black text-black flex items-center justify-center z-10 shadow">
-                                                        {seriesBadge}
-                                                    </div>
-                                                )}
-                                                <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-indigo-600 border-indigo-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
-                                                    {isFinal && <span className="text-[10px]">🔒</span>}
-                                                    {getSlotLabel(v).replace('Long ', '')}
-                                                </button>
-                                                {hasContent && !isFinal && (
-                                                    <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot({ slot: v, projectId: activeProject.id }); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none">×</button>
-                                                )}
-                                            </div>
-                                        )})}
-                                    </div>
-                                </div>
-                                
-                                <div className="space-y-2">
-                                    <div className="text-[9px] font-bold text-slate-600 uppercase">Dialogues</div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {allSlotGroups.dialogues.map(v => {
-                                            const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
-                                            const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
-                                            const seriesBadge = getSeriesBadge(v);
-                                            return (
-                                            <div key={v} className="relative flex items-center">
-                                                {seriesBadge && (
-                                                    <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-yellow-400 text-[8px] font-black text-black flex items-center justify-center z-10 shadow">
-                                                        {seriesBadge}
-                                                    </div>
-                                                )}
-                                                <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-purple-600 border-purple-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
-                                                    {isFinal && <span className="text-[10px]">🔒</span>}
-                                                    {getSlotLabel(v).replace('Dialog ', '')}
-                                                </button>
-                                                {hasContent && !isFinal && (
-                                                    <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot({ slot: v, projectId: activeProject.id }); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none">×</button>
-                                                )}
-                                            </div>
-                                        )})}
-                                    </div>
-                                </div>
+                                    <details className="group bg-black/20 border border-white/5 rounded-xl p-3 transition-all open:bg-black/40">
+                                        <summary className="text-[10px] font-black text-slate-500 uppercase tracking-widest cursor-pointer select-none list-none flex items-center justify-between">
+                                            <span>Longs (&gt; 3min)</span>
+                                            <span className="text-slate-600 group-open:rotate-180 transition-transform">▼</span>
+                                        </summary>
+                                        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/5">
+                                            {allSlotGroups.longs.map(v => {
+                                                const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
+                                                const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
+                                                const seriesBadge = getSeriesBadge(v);
+                                                return (
+                                                <div key={v} className="relative flex items-center">
+                                                    {seriesBadge && (
+                                                        <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-yellow-400 text-[8px] font-black text-black flex items-center justify-center z-10 shadow">
+                                                            {seriesBadge}
+                                                        </div>
+                                                    )}
+                                                    <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-indigo-600 border-indigo-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`} title={`Zum Text-Slot "${getSlotLabel(v)}" wechseln`}>
+                                                        {isFinal && <span className="text-[10px]">🔒</span>}
+                                                        {getSlotLabel(v).replace('Long ', '')}
+                                                    </button>
+                                                    {hasContent && !isFinal && (
+                                                        <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot({ slot: v, projectId: activeProject.id }); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none" title="Diesen Slot leeren">×</button>
+                                                    )}
+                                                </div>
+                                            )})}
+                                        </div>
+                                    </details>
+                                    
+                                    <details className="group bg-black/20 border border-white/5 rounded-xl p-3 transition-all open:bg-black/40">
+                                        <summary className="text-[10px] font-black text-slate-500 uppercase tracking-widest cursor-pointer select-none list-none flex items-center justify-between">
+                                            <span>Dialogues</span>
+                                            <span className="text-slate-600 group-open:rotate-180 transition-transform">▼</span>
+                                        </summary>
+                                        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/5">
+                                            {allSlotGroups.dialogues.map(v => {
+                                                const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
+                                                const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
+                                                const seriesBadge = getSeriesBadge(v);
+                                                return (
+                                                <div key={v} className="relative flex items-center">
+                                                    {seriesBadge && (
+                                                        <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-yellow-400 text-[8px] font-black text-black flex items-center justify-center z-10 shadow">
+                                                            {seriesBadge}
+                                                        </div>
+                                                    )}
+                                                    <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-purple-600 border-purple-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`} title={`Zum Text-Slot "${getSlotLabel(v)}" wechseln`}>
+                                                        {isFinal && <span className="text-[10px]">🔒</span>}
+                                                        {getSlotLabel(v).replace('Dialog ', '')}
+                                                    </button>
+                                                    {hasContent && !isFinal && (
+                                                        <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot({ slot: v, projectId: activeProject.id }); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none" title="Diesen Slot leeren">×</button>
+                                                    )}
+                                                </div>
+                                            )})}
+                                        </div>
+                                    </details>
 
-                                <div className="space-y-2">
-                                    <div className="text-[9px] font-bold text-slate-600 uppercase">Instagram Wisdom</div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {allSlotGroups.instas.map(v => {
-                                            const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
-                                            const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
-                                            const seriesBadge = getSeriesBadge(v);
-                                            return (
-                                            <div key={v} className="relative flex items-center">
-                                                {seriesBadge && (
-                                                    <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-yellow-400 text-[8px] font-black text-black flex items-center justify-center z-10 shadow">
-                                                        {seriesBadge}
-                                                    </div>
-                                                )}
-                                                <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-fuchsia-600 border-fuchsia-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`}>
-                                                    {isFinal && <span className="text-[10px]">🔒</span>}
-                                                    {getSlotLabel(v).replace('IG ', '')}
-                                                </button>
-                                                {hasContent && !isFinal && (
-                                                    <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot({ slot: v, projectId: activeProject.id }); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none">×</button>
-                                                )}
-                                            </div>
-                                        )})}
-                                    </div>
+                                    <details className="group bg-black/20 border border-white/5 rounded-xl p-3 transition-all open:bg-black/40">
+                                        <summary className="text-[10px] font-black text-slate-500 uppercase tracking-widest cursor-pointer select-none list-none flex items-center justify-between">
+                                            <span>Instagram Wisdom</span>
+                                            <span className="text-slate-600 group-open:rotate-180 transition-transform">▼</span>
+                                        </summary>
+                                        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/5">
+                                            {allSlotGroups.instas.map(v => {
+                                                const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
+                                                const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
+                                                const seriesBadge = getSeriesBadge(v);
+                                                return (
+                                                <div key={v} className="relative flex items-center">
+                                                    {seriesBadge && (
+                                                        <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-yellow-400 text-[8px] font-black text-black flex items-center justify-center z-10 shadow">
+                                                            {seriesBadge}
+                                                        </div>
+                                                    )}
+                                                    <button onClick={() => updateActiveProject({ segmentVersions: { ...activeProject.segmentVersions, [MAIN_ID]: v } })} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-all flex items-center gap-1.5 ${activeProject.segmentVersions[MAIN_ID] === v ? 'bg-fuchsia-600 border-fuchsia-500 text-white' : hasContent ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-white/5 border-white/5 text-slate-600 hover:text-slate-400'}`} title={`Zum Text-Slot "${getSlotLabel(v)}" wechseln`}>
+                                                        {isFinal && <span className="text-[10px]">🔒</span>}
+                                                        {getSlotLabel(v).replace('IG ', '')}
+                                                    </button>
+                                                    {hasContent && !isFinal && (
+                                                        <button onClick={(e) => { e.stopPropagation(); setConfirmClearSlot({ slot: v, projectId: activeProject.id }); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold leading-none" title="Diesen Slot leeren">×</button>
+                                                    )}
+                                                </div>
+                                            )})}
+                                        </div>
+                                    </details>
                                 </div>
 
                             </div>
@@ -2344,12 +2363,14 @@ export const App: React.FC = () => {
                                 <button 
                                     onClick={() => setEditorMode('controls')}
                                     className={`flex-1 py-2 text-[10px] font-black uppercase rounded-md transition-all ${editorMode === 'controls' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                                    title="Zeigt die Steuerelemente und Slider für die Text-Generierung an"
                                 >
                                     Fine-Tuning
                                 </button>
                                 <button 
                                     onClick={() => setEditorMode('source')}
                                     className={`flex-1 py-2 text-[10px] font-black uppercase rounded-md transition-all ${editorMode === 'source' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                                    title="Zeigt das ursprüngliche Recherche-Material an"
                                 >
                                     Source Data
                                 </button>
@@ -2389,7 +2410,7 @@ export const App: React.FC = () => {
                                                         className="w-full h-1 bg-white/10 rounded-full appearance-none accent-amber-500" 
                                                     />
                                                 </div>
-                                                <button onClick={handleWriteAndFit} disabled={isZapping} className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/30 rounded-xl text-[10px] font-black uppercase transition-all shadow-lg text-white">
+                                                <button onClick={handleWriteAndFit} disabled={isZapping} className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/30 rounded-xl text-[10px] font-black uppercase transition-all shadow-lg text-white" title="Generiert ein Skript basierend auf dem eingestellten Zeit-Limit und den Schiebereglern (Fine-Tuning)">
                                                     Write & Fit by Style & Time
                                                 </button>
                                                 <div className="flex items-center gap-2">
@@ -2397,6 +2418,7 @@ export const App: React.FC = () => {
                                                         value={controls.series_parts || 3}
                                                         onChange={(e) => updateActiveProject({ segmentControls: { ...activeProject.segmentControls, [MAIN_ID]: { ...controls, series_parts: parseInt(e.target.value) } } })}
                                                         className="flex-1 py-2 px-3 bg-black/40 border border-white/10 rounded-xl text-[10px] font-black uppercase text-slate-300 outline-none"
+                                                        title="Anzahl der Episoden für eine Serien-Generierung"
                                                     >
                                                         <option value={2}>Serie: 2</option>
                                                         <option value={3}>Serie: 3</option>
@@ -2407,6 +2429,7 @@ export const App: React.FC = () => {
                                                         onClick={() => handleWriteAndFitSeries(controls.series_parts)}
                                                         disabled={isZapping}
                                                         className="flex-1 py-2 bg-emerald-700/40 hover:bg-emerald-600 border border-emerald-500/30 rounded-xl text-[10px] font-black uppercase transition-all text-white"
+                                                        title="Generiert gleich mehrere zusammenhängende Skripte als Serie"
                                                     >
                                                         Write & Fit Serie
                                                     </button>
@@ -2427,8 +2450,9 @@ export const App: React.FC = () => {
                                                         value={controls.news_seconds || 30}
                                                         onChange={(e) => updateActiveProject({ segmentControls: { ...activeProject.segmentControls, [MAIN_ID]: { ...controls, news_seconds: parseInt(e.target.value) } } })}
                                                         className="w-full h-1 bg-white/10 rounded-full appearance-none accent-slate-400"
+                                                        title="Dauer für die News Flash Generierung"
                                                     />
-                                                    <label className="flex items-center gap-2 text-[10px] font-bold uppercase text-slate-500 select-none">
+                                                    <label className="flex items-center gap-2 text-[10px] font-bold uppercase text-slate-500 select-none" title="Passt den Text speziell für den TikTok-Algorithmus an">
                                                         <input
                                                             type="checkbox"
                                                             checked={!!controls.news_tiktok}
@@ -2438,7 +2462,7 @@ export const App: React.FC = () => {
                                                         TikTok Optimization
                                                     </label>
                                                 </div>
-                                                <button onClick={handleNewsFlashGenerate} disabled={isZapping} className="w-full py-3 bg-slate-700/50 hover:bg-slate-600 border border-white/10 rounded-xl text-[10px] font-black uppercase transition-all">
+                                                <button onClick={handleNewsFlashGenerate} disabled={isZapping} className="w-full py-3 bg-slate-700/50 hover:bg-slate-600 border border-white/10 rounded-xl text-[10px] font-black uppercase transition-all" title="Generiert kurze Nachrichten-Updates (20-60s) basierend auf Fakten">
                                                     News Flash (15–50s)
                                                 </button>
                                                 <div className="flex items-center gap-2">
@@ -2456,6 +2480,7 @@ export const App: React.FC = () => {
                                                         onClick={() => handleNewsFlashSeries(controls.series_parts)}
                                                         disabled={isZapping}
                                                         className="flex-1 py-2 bg-slate-700/70 hover:bg-slate-600 border border-white/10 rounded-xl text-[10px] font-black uppercase transition-all"
+                                                        title="Generiert gleich mehrere zusammenhängende News-Skripte als Serie"
                                                     >
                                                         News Serie
                                                     </button>
@@ -2476,9 +2501,10 @@ export const App: React.FC = () => {
                                                         value={controls.insta_seconds || 45}
                                                         onChange={(e) => updateActiveProject({ segmentControls: { ...activeProject.segmentControls, [MAIN_ID]: { ...controls, insta_seconds: parseInt(e.target.value) } } })}
                                                         className="w-full h-1 bg-white/10 rounded-full appearance-none accent-fuchsia-500"
+                                                        title="Dauer für Instagram Wisdom Zitate"
                                                     />
                                                 </div>
-                                                <button onClick={handleInstagramWisdomGenerate} disabled={isZapping} className="w-full py-3 bg-fuchsia-600/20 text-fuchsia-300 border border-fuchsia-500/30 hover:bg-fuchsia-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all">
+                                                <button onClick={handleInstagramWisdomGenerate} disabled={isZapping} className="w-full py-3 bg-fuchsia-600/20 text-fuchsia-300 border border-fuchsia-500/30 hover:bg-fuchsia-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all" title="Generiert ein tiefgründiges Skript, das mit einem passenden historischen Zitat (Wikiquote) beginnt">
                                                     IG Wisdom (Wikiquote)
                                                 </button>
                                             </div>
@@ -2499,9 +2525,10 @@ export const App: React.FC = () => {
                                                     value={controls.dialogue_seconds || 60} 
                                                     onChange={(e) => updateActiveProject({ segmentControls: { ...activeProject.segmentControls, [MAIN_ID]: { ...controls, dialogue_seconds: parseInt(e.target.value) } } })} 
                                                     className="w-full h-1 bg-white/10 rounded-full appearance-none accent-purple-500" 
+                                                    title="Dauer des zu generierenden Dialogs"
                                                 />
                                             </div>
-                                            <button onClick={handleDialogueGenerate} disabled={isZapping} className="w-full py-3 bg-purple-600/20 text-purple-400 border border-purple-500/30 hover:bg-purple-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all">
+                                            <button onClick={handleDialogueGenerate} disabled={isZapping} className="w-full py-3 bg-purple-600/20 text-purple-400 border border-purple-500/30 hover:bg-purple-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all" title="Generiert ein Zwei-Personen-Interview/Dialog (Host & Experte) basierend auf den Fakten">
                                                 Generate Dialogue
                                             </button>
                                             <div className="flex items-center gap-2">
@@ -2509,6 +2536,7 @@ export const App: React.FC = () => {
                                                     value={controls.series_parts || 3}
                                                     onChange={(e) => updateActiveProject({ segmentControls: { ...activeProject.segmentControls, [MAIN_ID]: { ...controls, series_parts: parseInt(e.target.value) } } })}
                                                     className="flex-1 py-2 px-3 bg-black/40 border border-white/10 rounded-xl text-[10px] font-black uppercase text-slate-300 outline-none"
+                                                    title="Anzahl der Episoden für eine Serien-Generierung"
                                                 >
                                                     <option value={2}>Serie: 2</option>
                                                     <option value={3}>Serie: 3</option>
@@ -2519,6 +2547,7 @@ export const App: React.FC = () => {
                                                     onClick={() => handleDialogueSeries(controls.series_parts)}
                                                     disabled={isZapping}
                                                     className="flex-1 py-2 bg-purple-600/30 text-purple-300 border border-purple-500/30 hover:bg-purple-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all"
+                                                    title="Generiert mehrere Dialoge als zusammenhängende Serie"
                                                 >
                                                     Dialogue Serie
                                                 </button>
@@ -2528,7 +2557,7 @@ export const App: React.FC = () => {
                                         <div className="space-y-4 p-4 bg-black/20 rounded-2xl border border-white/5">
                                             <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Veröffentlichung & Status</h3>
                                             <div className="space-y-2">
-                                                <button onClick={() => togglePublishPlatform('yt_shorts')} className={`w-full py-2 px-3 rounded-xl border flex items-center justify-between transition-all ${activeProject.publishedOn?.includes('yt_shorts') ? 'bg-red-600/20 border-red-500/50 text-white' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}>
+                                                <button onClick={() => togglePublishPlatform('yt_shorts')} className={`w-full py-2 px-3 rounded-xl border flex items-center justify-between transition-all ${activeProject.publishedOn?.includes('yt_shorts') ? 'bg-red-600/20 border-red-500/50 text-white' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`} title="Markiert das Skript als 'veröffentlicht' auf YouTube Shorts">
                                                     <div className="flex items-center gap-3">
                                                         <PlatformIcon type="yt_shorts" active={true} />
                                                         <span className="text-[10px] font-black uppercase">YouTube Shorts</span>
@@ -2536,7 +2565,7 @@ export const App: React.FC = () => {
                                                     <div className={`w-2 h-2 rounded-full ${activeProject.publishedOn?.includes('yt_shorts') ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'bg-white/10'}`} />
                                                 </button>
                                                 
-                                                <button onClick={() => togglePublishPlatform('yt_long')} className={`w-full py-2 px-3 rounded-xl border flex items-center justify-between transition-all ${activeProject.publishedOn?.includes('yt_long') ? 'bg-red-800/20 border-red-700/50 text-white' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}>
+                                                <button onClick={() => togglePublishPlatform('yt_long')} className={`w-full py-2 px-3 rounded-xl border flex items-center justify-between transition-all ${activeProject.publishedOn?.includes('yt_long') ? 'bg-red-800/20 border-red-700/50 text-white' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`} title="Markiert das Skript als 'veröffentlicht' auf YouTube Long">
                                                     <div className="flex items-center gap-3">
                                                         <PlatformIcon type="yt_long" active={true} />
                                                         <span className="text-[10px] font-black uppercase">YouTube Long</span>
@@ -2544,7 +2573,7 @@ export const App: React.FC = () => {
                                                     <div className={`w-2 h-2 rounded-full ${activeProject.publishedOn?.includes('yt_long') ? 'bg-red-700 shadow-[0_0_8px_rgba(185,28,28,0.6)]' : 'bg-white/10'}`} />
                                                 </button>
 
-                                                <button onClick={() => togglePublishPlatform('tiktok')} className={`w-full py-2 px-3 rounded-xl border flex items-center justify-between transition-all ${activeProject.publishedOn?.includes('tiktok') ? 'bg-cyan-900/20 border-cyan-500/30 text-white' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}>
+                                                <button onClick={() => togglePublishPlatform('tiktok')} className={`w-full py-2 px-3 rounded-xl border flex items-center justify-between transition-all ${activeProject.publishedOn?.includes('tiktok') ? 'bg-cyan-900/20 border-cyan-500/30 text-white' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`} title="Markiert das Skript als 'veröffentlicht' auf TikTok">
                                                     <div className="flex items-center gap-3">
                                                         <PlatformIcon type="tiktok" active={true} />
                                                         <span className="text-[10px] font-black uppercase">TikTok</span>
@@ -2555,9 +2584,9 @@ export const App: React.FC = () => {
                                         </div>
 
                                         <div className="space-y-2">
-                                            <button onClick={handleDeepUpgrade} disabled={isZapping} className="w-full py-3 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all">Deep Dive Research</button>
-                                            <button onClick={handleHookZapp} disabled={isZapping} className="w-full py-3 bg-pink-600/20 text-pink-400 border border-pink-500/30 hover:bg-pink-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all">Regenerate Hook (**)</button>
-                                            <button onClick={handleGenerateCTA} disabled={isZapping} className="w-full py-3 bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all">Generiere neuen CTA (Ende)</button>
+                                            <button onClick={handleDeepUpgrade} disabled={isZapping} className="w-full py-3 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all" title="Führt eine tiefe Recherche aus und generiert den Text mit erweiterten Fakten neu">Deep Dive Research</button>
+                                            <button onClick={handleHookZapp} disabled={isZapping} className="w-full py-3 bg-pink-600/20 text-pink-400 border border-pink-500/30 hover:bg-pink-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all" title="Generiert nur den ersten Satz (Hook) neu, ohne den restlichen Text zu verändern">Regenerate Hook (**)</button>
+                                            <button onClick={handleGenerateCTA} disabled={isZapping} className="w-full py-3 bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all" title="Generiert einen Call-to-Action und hängt ihn an das Ende des aktuellen Textes an">Generiere neuen CTA (Ende)</button>
                                         </div>
                                     </>
                                 ) : (
@@ -2625,26 +2654,30 @@ export const App: React.FC = () => {
 
                                     <div className="flex flex-wrap items-center gap-2 justify-end relative z-10">
                                         {activeProject.scriptResult?.model && (
-                                            <span className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-wider shrink-0">
+                                            <span className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-400 text-[10px] font-black uppercase tracking-wider shrink-0" title="Verwendetes Modell für dieses Skript">
                                                 {activeProject.scriptResult.model.replace('gemini-', '').replace('gpt-', '').replace('claude-', '')}
                                             </span>
                                         )}
-                                        <button onClick={handleEmptyEditor} className="px-3 py-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/20 shrink-0" title="Editor leeren">
+                                        <div className="w-px h-6 bg-white/10 mx-1 hidden md:block"></div>
+                                        <button onClick={handleEmptyEditor} className="p-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/20 shrink-0" title="Diesen Text-Slot komplett leeren">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                         </button>
-                                        <button onClick={handleToggleFinal} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border flex items-center gap-2 shrink-0 ${isCurrentFinal ? 'bg-white/10 text-white border-white/20' : 'bg-transparent text-slate-500 border-transparent hover:text-white'}`}>
-                                            {isCurrentFinal ? 'Finalized' : 'Mark as Final'}
+                                        <button onClick={handleToggleEdit} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shrink-0 ${activeProject.isEditing ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'bg-white/5 text-slate-400 hover:text-white border border-white/5 hover:bg-white/10'}`} title="Manuelle Änderungen am Text vornehmen / speichern">
+                                            {activeProject.isEditing ? 'Save Edits' : 'Edit Text'}
+                                        </button>
+                                        <button onClick={handleToggleFinal} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border flex items-center gap-2 shrink-0 ${isCurrentFinal ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:text-white hover:bg-white/10'}`} title="Skript sperren, um versehentliches Überschreiben zu verhindern">
                                             {isCurrentFinal && <span>🔒</span>}
+                                            {isCurrentFinal ? 'Finalized' : 'Mark Final'}
                                         </button>
-                                        <button onClick={handleElevenLabsPrep} disabled={isElevenLabsLoading || !currentText.trim()} className="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 disabled:opacity-40 flex items-center gap-2 shrink-0">
+                                        
+                                        <div className="w-px h-6 bg-white/10 mx-1 hidden md:block"></div>
+                                        
+                                        <button onClick={handlePlatformSafetyCheck} disabled={platformCheckLoadingSlot === currentSlot || !currentText.trim()} className="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 disabled:opacity-40 shrink-0" title="Überprüft das Skript auf Trigger-Wörter für YouTube/TikTok">
+                                            {platformCheckLoadingSlot === currentSlot ? 'Prüft…' : 'Safety Check'}
+                                        </button>
+                                        <button onClick={handleElevenLabsPrep} disabled={isElevenLabsLoading || !currentText.trim()} className="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg shadow-emerald-600/20 disabled:opacity-40 flex items-center gap-2 shrink-0" title="Bereitet das Skript für die Sprachausgabe vor (fügt Emotion-Tags für ElevenLabs V3 hinzu)">
                                             {isElevenLabsLoading ? <span className="animate-spin inline-block">⏳</span> : '🎙️'}
-                                            {isElevenLabsLoading ? 'Bereitet vor...' : 'ElevenLabs Prep'}
-                                        </button>
-                                        <button onClick={handlePlatformSafetyCheck} disabled={platformCheckLoadingSlot === currentSlot || !currentText.trim()} className="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/20 disabled:opacity-40 shrink-0">
-                                            {platformCheckLoadingSlot === currentSlot ? 'Prüft…' : 'Plattform-Check'}
-                                        </button>
-                                        <button onClick={handleToggleEdit} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shrink-0 ${activeProject.isEditing ? 'bg-green-600 text-white' : 'bg-white/5 text-slate-400 hover:text-white'}`}>
-                                            {activeProject.isEditing ? 'Save' : 'Edit'}
+                                            {isElevenLabsLoading ? 'Prep...' : 'Audio Prep'}
                                         </button>
                                     </div>
                                 </div>
@@ -2692,10 +2725,10 @@ export const App: React.FC = () => {
                                                 <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-2">Variante A</div>
                                                 <div className="text-sm text-slate-200 whitespace-pre-wrap">{currentSafetyCheck.variantA}</div>
                                                 <div className="mt-3 flex flex-wrap gap-2">
-                                                    <button onClick={() => handleApplySafetyVariant('variantA')} className="px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-[10px] font-black uppercase text-emerald-200 transition-all">
+                                                    <button onClick={() => handleApplySafetyVariant('variantA')} className="px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-[10px] font-black uppercase text-emerald-200 transition-all" title="Ersetzt den aktuellen Text mit dieser entschärften Variante">
                                                         Variante A übernehmen
                                                     </button>
-                                                    <button onClick={() => handleApplySafetyVariant('variantA', 'new')} className="px-3 py-2 rounded-xl bg-sky-600/20 hover:bg-sky-600/30 border border-sky-500/30 text-[10px] font-black uppercase text-sky-200 transition-all">
+                                                    <button onClick={() => handleApplySafetyVariant('variantA', 'new')} className="px-3 py-2 rounded-xl bg-sky-600/20 hover:bg-sky-600/30 border border-sky-500/30 text-[10px] font-black uppercase text-sky-200 transition-all" title="Kopiert diese entschärfte Variante in einen neuen Slot, um das Original zu behalten">
                                                         In neuen Slot
                                                     </button>
                                                 </div>
@@ -2704,10 +2737,10 @@ export const App: React.FC = () => {
                                                 <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-2">Variante B</div>
                                                 <div className="text-sm text-slate-200 whitespace-pre-wrap">{currentSafetyCheck.variantB}</div>
                                                 <div className="mt-3 flex flex-wrap gap-2">
-                                                    <button onClick={() => handleApplySafetyVariant('variantB')} className="px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-[10px] font-black uppercase text-emerald-200 transition-all">
+                                                    <button onClick={() => handleApplySafetyVariant('variantB')} className="px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-[10px] font-black uppercase text-emerald-200 transition-all" title="Ersetzt den aktuellen Text mit dieser entschärften Variante">
                                                         Variante B übernehmen
                                                     </button>
-                                                    <button onClick={() => handleApplySafetyVariant('variantB', 'new')} className="px-3 py-2 rounded-xl bg-sky-600/20 hover:bg-sky-600/30 border border-sky-500/30 text-[10px] font-black uppercase text-sky-200 transition-all">
+                                                    <button onClick={() => handleApplySafetyVariant('variantB', 'new')} className="px-3 py-2 rounded-xl bg-sky-600/20 hover:bg-sky-600/30 border border-sky-500/30 text-[10px] font-black uppercase text-sky-200 transition-all" title="Kopiert diese entschärfte Variante in einen neuen Slot, um das Original zu behalten">
                                                         In neuen Slot
                                                     </button>
                                                 </div>
@@ -2717,91 +2750,116 @@ export const App: React.FC = () => {
                                 )}
 
                                 {!activeProject.isEditing && activeProject.scriptResult?.sections?.[0]?.elevenLabsPrep?.[currentSlot] && (
-                                    <div className="mt-4 bg-emerald-900/20 border border-emerald-500/20 rounded-2xl p-4 space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400">ElevenLabs V3 Prep</div>
-                                                <div className="text-[10px] text-emerald-500/50">Generiert</div>
-                                                {elevenLabsUsage && (
-                                                    <div className="text-[10px] text-emerald-500/80 bg-emerald-900/40 px-2 py-0.5 rounded-full border border-emerald-500/20" title="ElevenLabs: Verbrauchte Zeichen / Limit">
-                                                        EL Quota: {elevenLabsUsage.used.toLocaleString()} / {elevenLabsUsage.limit.toLocaleString()}
+                                    <div className="mt-8 border-t-2 border-dashed border-emerald-500/20 pt-8 w-full max-w-3xl">
+                                        <h2 className="text-xl font-black italic uppercase text-emerald-500 tracking-tighter mb-4">Post-Production</h2>
+                                        <div className="bg-slate-900 border border-emerald-500/20 rounded-2xl p-4 md:p-6 shadow-2xl shadow-emerald-900/20 space-y-6">
+                                            
+                                            {/* ElevenLabs Prep Section */}
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">1</div>
+                                                        <div>
+                                                            <div className="text-xs font-black uppercase tracking-widest text-emerald-400">ElevenLabs V3 Prompt</div>
+                                                            <div className="text-[10px] text-emerald-500/50 mt-0.5">Generierte Delivery-Tags für die Sprach-KI</div>
+                                                        </div>
                                                     </div>
-                                                )}
-                                                {auphonicQuota && (
-                                                    <div className="text-[10px] text-purple-400/80 bg-purple-900/40 px-2 py-0.5 rounded-full border border-purple-500/20" title="Auphonic: Verbleibende Stunden">
-                                                        Auphonic: {auphonicQuota.credits.toFixed(2)} h übrig
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <button 
-                                                onClick={handleElevenLabsAudio} 
-                                                disabled={isGeneratingAudio}
-                                                className="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 flex items-center gap-2"
-                                            >
-                                                {isGeneratingAudio ? <span className="animate-spin inline-block">⏳</span> : '▶️'}
-                                                {isGeneratingAudio ? 'Generiere Audio...' : 'Audio generieren'}
-                                            </button>
-                                        </div>
-                                        
-                                        <div className="text-sm text-emerald-100/80 whitespace-pre-wrap font-mono p-4 bg-black/40 rounded-xl border border-emerald-500/10">
-                                            {activeProject.scriptResult.sections[0].elevenLabsPrep[currentSlot]}
-                                        </div>
-                                        
-                                        {activeProject.scriptResult.sections[0].elevenLabsCharCount?.[currentSlot] && (
-                                            <div className="text-[10px] text-emerald-500/60 mt-1">
-                                                Kosten für diesen Clip: {activeProject.scriptResult.sections[0].elevenLabsCharCount[currentSlot]} Zeichen
-                                            </div>
-                                        )}
-
-                                        {activeProject.scriptResult.sections[0].elevenLabsAudio?.[currentSlot] && (
-                                            <div className="mt-4 pt-4 border-t border-emerald-500/20">
-                                                <div className="flex items-center justify-between mb-3">
-                                                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Fertiges Audio (ElevenLabs)</div>
-                                                    <div className="flex gap-2">
-                                                        <button
-                                                            onClick={handleAuphonicProcessing}
-                                                            disabled={isGeneratingAuphonic}
-                                                            className="px-3 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-[10px] font-black uppercase text-purple-200 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                                                    
+                                                    <div className="flex items-center gap-2">
+                                                        {elevenLabsUsage && (
+                                                            <div className="text-[10px] text-emerald-500/80 bg-emerald-900/40 px-2 py-1 rounded-md border border-emerald-500/20 font-mono" title="ElevenLabs: Verbrauchte Zeichen / Limit">
+                                                                Quota: {elevenLabsUsage.used.toLocaleString()} / {elevenLabsUsage.limit.toLocaleString()}
+                                                            </div>
+                                                        )}
+                                                        <button 
+                                                            onClick={handleElevenLabsAudio} 
+                                                            disabled={isGeneratingAudio}
+                                                            className="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-emerald-600/20"
+                                                            title="Sendet den vorbereiteten Text an ElevenLabs, um die Audiodatei zu generieren"
                                                         >
-                                                            {isGeneratingAuphonic ? <span className="animate-spin inline-block">⏳</span> : '🎛️'}
-                                                            {isGeneratingAuphonic ? 'Mastering...' : 'An Auphonic senden'}
+                                                            {isGeneratingAudio ? <span className="animate-spin inline-block">⏳</span> : '▶️'}
+                                                            {isGeneratingAudio ? 'Generiere Audio...' : 'Audio generieren'}
                                                         </button>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="text-sm text-emerald-100/80 whitespace-pre-wrap font-mono p-4 bg-black/40 rounded-xl border border-emerald-500/10">
+                                                    {activeProject.scriptResult.sections[0].elevenLabsPrep[currentSlot]}
+                                                </div>
+                                                
+                                                {activeProject.scriptResult.sections[0].elevenLabsCharCount?.[currentSlot] && (
+                                                    <div className="text-[10px] font-mono text-emerald-500/60 text-right">
+                                                        Geschätzte Kosten: {activeProject.scriptResult.sections[0].elevenLabsCharCount[currentSlot]} Zeichen
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* ElevenLabs Audio Result */}
+                                            {activeProject.scriptResult.sections[0].elevenLabsAudio?.[currentSlot] && (
+                                                <div className="pt-6 border-t border-emerald-500/10 space-y-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">2</div>
+                                                            <div className="text-xs font-black uppercase tracking-widest text-emerald-400">Raw Audio</div>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            {auphonicQuota && (
+                                                                <div className="text-[10px] text-purple-400/80 bg-purple-900/40 px-2 py-1 rounded-md border border-purple-500/20 font-mono flex items-center" title="Auphonic: Verbleibende Stunden">
+                                                                    Auphonic: {auphonicQuota.credits.toFixed(2)}h übrig
+                                                                </div>
+                                                            )}
+                                                            <button
+                                                                onClick={handleAuphonicProcessing}
+                                                                disabled={isGeneratingAuphonic}
+                                                                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-[10px] font-black uppercase text-white transition-all flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-purple-600/20"
+                                                                title="Sendet die ElevenLabs Audiodatei an Auphonic für professionelles Mastering und Lautstärken-Anpassung"
+                                                            >
+                                                                {isGeneratingAuphonic ? <span className="animate-spin inline-block">⏳</span> : '🎛️'}
+                                                                {isGeneratingAuphonic ? 'Mastering...' : 'An Auphonic senden'}
+                                                            </button>
+                                                            <a 
+                                                                href={activeProject.scriptResult.sections[0].elevenLabsAudio[currentSlot]} 
+                                                                download={`${activeProject.name || 'Projekt'}_${currentSlot}_raw.mp3`}
+                                                                className="px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-[10px] font-black uppercase text-emerald-200 transition-all flex items-center gap-1.5"
+                                                                title="Lädt die ungemasterte ElevenLabs Audiodatei herunter"
+                                                            >
+                                                                ⬇️ RAW MP3
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                    <audio 
+                                                        controls 
+                                                        className="w-full h-10 rounded-lg outline-none" 
+                                                        src={activeProject.scriptResult.sections[0].elevenLabsAudio[currentSlot]} 
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* Auphonic Audio Result */}
+                                            {activeProject.scriptResult.sections[0].auphonicAudio?.[currentSlot] && (
+                                                <div className="pt-6 border-t border-purple-500/20 space-y-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400">3</div>
+                                                            <div className="text-xs font-black uppercase tracking-widest text-purple-400">Mastered Audio</div>
+                                                        </div>
                                                         <a 
-                                                            href={activeProject.scriptResult.sections[0].elevenLabsAudio[currentSlot]} 
-                                                            download={`${activeProject.name || 'Projekt'}_${currentSlot}_audio.mp3`}
-                                                            className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-[10px] font-black uppercase text-emerald-200 transition-all flex items-center gap-1.5"
+                                                            href={activeProject.scriptResult.sections[0].auphonicAudio[currentSlot]} 
+                                                            download={`${activeProject.name || 'Projekt'}_${currentSlot}_mastered.mp3`}
+                                                            className="px-4 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-[10px] font-black uppercase text-purple-200 transition-all flex items-center gap-2"
+                                                            title="Lädt die fertige, gemasterte Audiodatei herunter"
                                                         >
-                                                            ⬇️ Download MP3
+                                                            ⬇️ Download Master
                                                         </a>
                                                     </div>
+                                                    <audio 
+                                                        controls 
+                                                        className="w-full h-10 rounded-lg outline-none" 
+                                                        src={activeProject.scriptResult.sections[0].auphonicAudio[currentSlot]} 
+                                                    />
                                                 </div>
-                                                <audio 
-                                                    controls 
-                                                    className="w-full h-10 rounded-lg outline-none" 
-                                                    src={activeProject.scriptResult.sections[0].elevenLabsAudio[currentSlot]} 
-                                                />
-                                            </div>
-                                        )}
-
-                                        {activeProject.scriptResult.sections[0].auphonicAudio?.[currentSlot] && (
-                                            <div className="mt-4 pt-4 border-t border-purple-500/20">
-                                                <div className="flex items-center justify-between mb-3">
-                                                    <div className="text-[10px] font-black uppercase tracking-widest text-purple-500">Mastered Audio (Auphonic)</div>
-                                                    <a 
-                                                        href={activeProject.scriptResult.sections[0].auphonicAudio[currentSlot]} 
-                                                        download={`${activeProject.name || 'Projekt'}_${currentSlot}_mastered.mp3`}
-                                                        className="px-3 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-[10px] font-black uppercase text-purple-200 transition-all flex items-center gap-1.5"
-                                                    >
-                                                        ⬇️ Download Master
-                                                    </a>
-                                                </div>
-                                                <audio 
-                                                    controls 
-                                                    className="w-full h-10 rounded-lg outline-none" 
-                                                    src={activeProject.scriptResult.sections[0].auphonicAudio[currentSlot]} 
-                                                />
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                                 
