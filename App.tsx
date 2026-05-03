@@ -2696,7 +2696,9 @@ export const App: React.FC = () => {
                                     {activeProject.isEditing ? (
                                         <textarea className="w-full h-[60vh] bg-transparent outline-none resize-none" value={activeProject.manualEditText} onChange={e => updateActiveProject({ manualEditText: e.target.value })} autoFocus />
                                     ) : (
-                                        <div className="whitespace-pre-wrap">{formatRichText(currentText)}</div>
+                                        <div className="whitespace-pre-wrap">
+                                            {formatRichText(currentText.replace(/\[.*?\]\s*/g, ''))}
+                                        </div>
                                     )}
                                 </div>
                                 {!activeProject.isEditing && currentSafetyCheck && (
