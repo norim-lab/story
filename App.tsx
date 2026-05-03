@@ -331,7 +331,7 @@ const HomeDashboard: React.FC<{
                                             try {
                                                 const title = await generateTitle(text, p.scriptResult?.model || 'gpt-4o');
                                                 if (title) {
-                                                    setProjects(current => current.map(cp => cp.id === p.id ? { ...cp, name: title } : cp));
+                                                    setProjects((current: ProjectSession[]) => current.map((cp: ProjectSession) => cp.id === p.id ? { ...cp, name: title } : cp));
                                                     renamedCount++;
                                                 }
                                             } catch (e) {
