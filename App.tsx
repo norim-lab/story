@@ -291,6 +291,7 @@ const PlatformIcon: React.FC<{ type: PublishPlatform, active: boolean }> = ({ ty
 // --- Home Dashboard Component ---
 const HomeDashboard: React.FC<{ 
     projects: ProjectSession[], 
+    setProjects: React.Dispatch<React.SetStateAction<ProjectSession[]>>,
     onCreate: () => void, 
     onSelect: (id: string) => void, 
     onDelete: (id: string) => void,
@@ -298,7 +299,7 @@ const HomeDashboard: React.FC<{
     isLoading: boolean,
     cloudStatus: CloudStatus,
     onOpenSettings: () => void
-}> = ({ projects, onCreate, onSelect, onDelete, onImport, isLoading, cloudStatus, onOpenSettings }) => {
+}> = ({ projects, setProjects, onCreate, onSelect, onDelete, onImport, isLoading, cloudStatus, onOpenSettings }) => {
     return (
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-16">
             <div className="max-w-6xl mx-auto space-y-8 md:space-y-12">
@@ -1951,6 +1952,7 @@ export const App: React.FC = () => {
         return <>
             <HomeDashboard 
                 projects={projects} 
+                setProjects={setProjects}
                 onCreate={createNewProject} 
                 onSelect={setActiveProjectId} 
                 onDelete={deleteProject}
