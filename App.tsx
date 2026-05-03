@@ -1285,11 +1285,10 @@ export const App: React.FC = () => {
                 segmentVersions: { [MAIN_ID]: targetSlot }
             };
 
-            // Remove project renaming to generatedTitle so it keeps the ID name
-            // if (generatedTitle) {
-            //     actionUpdates.name = generatedTitle;
-            //     addLog(`Titel aktualisiert: ${generatedTitle}`, "success");
-            // }
+            if (generatedTitle) {
+                actionUpdates.name = generatedTitle;
+                addLog(`Titel aktualisiert: ${generatedTitle}`, "success");
+            }
 
             commitAction(`Generiert: ${wordCount} Wörter -> ${targetSlot}`, actionUpdates);
             addLog(`✅ ERFOLG: ${wordCount} Wörter in ${targetSlot}`, "success");
@@ -1354,11 +1353,10 @@ export const App: React.FC = () => {
                 segmentVersions: { [MAIN_ID]: targetSlot }
             };
 
-            // Remove project renaming to generatedTitle so it keeps the ID name
-            // if (generatedTitle) {
-            //     actionUpdates.name = generatedTitle;
-            //     addLog(`Titel aktualisiert: ${generatedTitle}`, "success");
-            // }
+            if (generatedTitle) {
+                actionUpdates.name = generatedTitle;
+                addLog(`Titel aktualisiert: ${generatedTitle}`, "success");
+            }
 
             const wordCount = newsText.split(/\s+/).filter(w => w.length > 0).length;
             commitAction(`News Flash: ${seconds}s (${wordCount} Wörter) -> ${targetSlot}`, actionUpdates);
@@ -2697,7 +2695,11 @@ export const App: React.FC = () => {
                                         <textarea className="w-full h-[60vh] bg-transparent outline-none resize-none" value={activeProject.manualEditText} onChange={e => updateActiveProject({ manualEditText: e.target.value })} autoFocus />
                                     ) : (
                                         <div className="whitespace-pre-wrap">
-                                            {formatRichText(currentText.replace(/\[.*?\]\s*/g, ''))}
+                                            {formatRichText(
+                                                activeProject.scriptResult?.sections?.[0]?.elevenLabsPrep?.[currentSlot] 
+                                                ? currentText.replace(/\[.*?\]\s*/g, '') 
+                                                : currentText
+                                            )}
                                         </div>
                                     )}
                                 </div>
