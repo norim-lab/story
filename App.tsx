@@ -2637,22 +2637,24 @@ export const App: React.FC = () => {
                                     </div>
                                 </div>
                                 
-                                <div className="bg-slate-900/50 border border-white/5 rounded-t-3xl p-3 md:p-4 flex justify-between items-center backdrop-blur-sm sticky top-0 z-10">
-                                    <div className="flex gap-2">
-                                        <button onClick={() => navigateHistory(-1)} disabled={activeProject.historyIndex <= 0} className="px-3 py-1 rounded hover:bg-white/10 text-slate-500 hover:text-white text-xs">Undo</button>
-                                        <button onClick={() => navigateHistory(1)} disabled={activeProject.historyIndex >= activeProject.history.length - 1} className="px-3 py-1 rounded hover:bg-white/10 text-slate-500 hover:text-white text-xs">Redo</button>
-                                        <HistoryMenu history={activeProject.history} currentIndex={activeProject.historyIndex} onSelect={navigateHistory} />
-                                    </div>
-                                    
-                                    {activeProject.scriptResult?.sections[0]?.title && (
-                                        <div className="hidden lg:block absolute left-1/2 -translate-x-1/2 max-w-[40%] text-center">
-                                            <span className="text-xs font-bold text-white/70 truncate block px-4 py-1 bg-white/5 rounded-full border border-white/10">
-                                                {activeProject.scriptResult.sections[0].title}
-                                            </span>
+                                <div className="bg-slate-900/50 border border-white/5 rounded-t-3xl p-3 md:p-4 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 backdrop-blur-sm sticky top-0 z-10">
+                                    <div className="flex flex-wrap items-center gap-4">
+                                        <div className="flex gap-2">
+                                            <button onClick={() => navigateHistory(-1)} disabled={activeProject.historyIndex <= 0} className="px-3 py-1 rounded hover:bg-white/10 text-slate-500 hover:text-white text-xs">Undo</button>
+                                            <button onClick={() => navigateHistory(1)} disabled={activeProject.historyIndex >= activeProject.history.length - 1} className="px-3 py-1 rounded hover:bg-white/10 text-slate-500 hover:text-white text-xs">Redo</button>
+                                            <HistoryMenu history={activeProject.history} currentIndex={activeProject.historyIndex} onSelect={navigateHistory} />
                                         </div>
-                                    )}
+                                        
+                                        {activeProject.scriptResult?.sections[0]?.title && (
+                                            <div className="hidden md:block">
+                                                <span className="text-xs font-bold text-white/70 truncate block px-4 py-1 bg-white/5 rounded-full border border-white/10 max-w-[200px] lg:max-w-[300px]">
+                                                    {activeProject.scriptResult.sections[0].title}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
 
-                                    <div className="flex flex-wrap items-center gap-2 justify-end relative z-10">
+                                    <div className="flex flex-wrap items-center gap-2 justify-start xl:justify-end relative z-10 w-full xl:w-auto">
                                         {activeProject.scriptResult?.model && (
                                             <span className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-400 text-[10px] font-black uppercase tracking-wider shrink-0" title="Verwendetes Modell für dieses Skript">
                                                 {activeProject.scriptResult.model.replace('gemini-', '').replace('gpt-', '').replace('claude-', '')}
