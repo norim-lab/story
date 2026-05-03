@@ -2213,7 +2213,7 @@ export const App: React.FC = () => {
             </div>
 
             <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-                <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#020617] border-t border-white/10 z-[60] flex items-center justify-around px-2 pb-safe">
+                <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#020617] border-t border-white/10 z-[60] flex items-center justify-around px-2 pb-safe shrink-0">
                     <button 
                         onClick={() => setMobileTab('inputs')}
                         className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${mobileTab === 'inputs' ? 'text-emerald-400' : 'text-slate-500'}`}
@@ -2670,8 +2670,8 @@ export const App: React.FC = () => {
                                     </div>
                                 </div>
                                 
-                                <div className="bg-slate-900/50 border border-white/5 rounded-t-3xl p-3 md:p-4 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 backdrop-blur-sm sticky top-0 z-10">
-                                    <div className="flex flex-wrap items-center gap-4">
+                                <div className="bg-slate-900/50 border border-white/5 rounded-t-3xl p-3 md:p-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 backdrop-blur-sm sticky top-0 z-10">
+                                    <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
                                         <div className="flex gap-2">
                                             <button onClick={() => navigateHistory(-1)} disabled={activeProject.historyIndex <= 0} className="px-3 py-1 rounded hover:bg-white/10 text-slate-500 hover:text-white text-xs">Undo</button>
                                             <button onClick={() => navigateHistory(1)} disabled={activeProject.historyIndex >= activeProject.history.length - 1} className="px-3 py-1 rounded hover:bg-white/10 text-slate-500 hover:text-white text-xs">Redo</button>
@@ -2679,7 +2679,14 @@ export const App: React.FC = () => {
                                         </div>
                                         
                                         {activeProject.scriptResult?.sections[0]?.title && (
-                                            <div className="hidden md:block">
+                                            <div className="block lg:hidden w-full mt-2">
+                                                <span className="text-xs font-bold text-white/70 truncate block px-4 py-1 bg-white/5 rounded-full border border-white/10 w-full text-center">
+                                                    {activeProject.scriptResult.sections[0].title}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {activeProject.scriptResult?.sections[0]?.title && (
+                                            <div className="hidden lg:block">
                                                 <span className="text-xs font-bold text-white/70 truncate block px-4 py-1 bg-white/5 rounded-full border border-white/10 max-w-[200px] lg:max-w-[300px]">
                                                     {activeProject.scriptResult.sections[0].title}
                                                 </span>
@@ -2687,13 +2694,13 @@ export const App: React.FC = () => {
                                         )}
                                     </div>
 
-                                    <div className="flex flex-wrap items-center gap-2 justify-start xl:justify-end relative z-10 w-full xl:w-auto">
+                                    <div className="flex flex-wrap items-center gap-2 justify-start lg:justify-end relative z-10 w-full lg:w-auto mt-2 lg:mt-0">
                                         {activeProject.scriptResult?.model && (
                                             <span className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-400 text-[10px] font-black uppercase tracking-wider shrink-0" title="Verwendetes Modell für dieses Skript">
                                                 {activeProject.scriptResult.model.replace('gemini-', '').replace('gpt-', '').replace('claude-', '')}
                                             </span>
                                         )}
-                                        <div className="w-px h-6 bg-white/10 mx-1 hidden md:block"></div>
+                                        <div className="w-full lg:w-px h-px lg:h-6 bg-white/10 mx-0 lg:mx-1 my-1 lg:my-0"></div>
                                         <button onClick={handleEmptyEditor} className="p-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/20 shrink-0" title="Diesen Text-Slot komplett leeren">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                         </button>
@@ -2705,7 +2712,7 @@ export const App: React.FC = () => {
                                             {isCurrentFinal ? 'Finalized' : 'Mark Final'}
                                         </button>
                                         
-                                        <div className="w-px h-6 bg-white/10 mx-1 hidden md:block"></div>
+                                        <div className="w-full lg:w-px h-px lg:h-6 bg-white/10 mx-0 lg:mx-1 my-1 lg:my-0"></div>
                                         
                                         <button onClick={handlePlatformSafetyCheck} disabled={platformCheckLoadingSlot === currentSlot || !currentText.trim()} className="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 disabled:opacity-40 shrink-0" title="Überprüft das Skript auf Trigger-Wörter für YouTube/TikTok">
                                             {platformCheckLoadingSlot === currentSlot ? 'Prüft…' : 'Safety Check'}
@@ -2838,12 +2845,12 @@ export const App: React.FC = () => {
                                             {/* ElevenLabs Audio Result */}
                                             {activeProject.scriptResult.sections[0].elevenLabsAudio?.[currentSlot] && (
                                                 <div className="pt-6 border-t border-emerald-500/10 space-y-4">
-                                                    <div className="flex items-center justify-between">
+                                                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">2</div>
+                                                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">2</div>
                                                             <div className="text-xs font-black uppercase tracking-widest text-emerald-400">Raw Audio</div>
                                                         </div>
-                                                        <div className="flex gap-2">
+                                                        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
                                                             {auphonicQuota && (
                                                                 <div className="text-[10px] text-purple-400/80 bg-purple-900/40 px-2 py-1 rounded-md border border-purple-500/20 font-mono flex items-center" title="Auphonic: Verbleibende Stunden">
                                                                     Auphonic: {auphonicQuota.credits.toFixed(2)}h übrig
@@ -2852,7 +2859,7 @@ export const App: React.FC = () => {
                                                             <button
                                                                 onClick={handleAuphonicProcessing}
                                                                 disabled={isGeneratingAuphonic}
-                                                                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-[10px] font-black uppercase text-white transition-all flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-purple-600/20"
+                                                                className="flex-1 md:flex-none justify-center px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-[10px] font-black uppercase text-white transition-all flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-purple-600/20"
                                                                 title="Sendet die ElevenLabs Audiodatei an Auphonic für professionelles Mastering und Lautstärken-Anpassung"
                                                             >
                                                                 {isGeneratingAuphonic ? <span className="animate-spin inline-block">⏳</span> : '🎛️'}
@@ -2861,7 +2868,7 @@ export const App: React.FC = () => {
                                                             <a 
                                                                 href={activeProject.scriptResult.sections[0].elevenLabsAudio[currentSlot]} 
                                                                 download={`${activeProject.name || 'Projekt'}_${currentSlot}_raw.mp3`}
-                                                                className="px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-[10px] font-black uppercase text-emerald-200 transition-all flex items-center gap-1.5"
+                                                                className="flex-1 md:flex-none justify-center px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-[10px] font-black uppercase text-emerald-200 transition-all flex items-center gap-1.5"
                                                                 title="Lädt die ungemasterte ElevenLabs Audiodatei herunter"
                                                             >
                                                                 ⬇️ RAW MP3
@@ -2879,19 +2886,21 @@ export const App: React.FC = () => {
                                             {/* Auphonic Audio Result */}
                                             {activeProject.scriptResult.sections[0].auphonicAudio?.[currentSlot] && (
                                                 <div className="pt-6 border-t border-purple-500/20 space-y-4">
-                                                    <div className="flex items-center justify-between">
+                                                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400">3</div>
+                                                            <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">3</div>
                                                             <div className="text-xs font-black uppercase tracking-widest text-purple-400">Mastered Audio</div>
                                                         </div>
-                                                        <a 
-                                                            href={activeProject.scriptResult.sections[0].auphonicAudio[currentSlot]} 
-                                                            download={`${activeProject.name || 'Projekt'}_${currentSlot}_mastered.mp3`}
-                                                            className="px-4 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-[10px] font-black uppercase text-purple-200 transition-all flex items-center gap-2"
-                                                            title="Lädt die fertige, gemasterte Audiodatei herunter"
-                                                        >
-                                                            ⬇️ Download Master
-                                                        </a>
+                                                        <div className="flex w-full md:w-auto">
+                                                            <a 
+                                                                href={activeProject.scriptResult.sections[0].auphonicAudio[currentSlot]} 
+                                                                download={`${activeProject.name || 'Projekt'}_${currentSlot}_mastered.mp3`}
+                                                                className="flex-1 md:flex-none justify-center px-4 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-[10px] font-black uppercase text-purple-200 transition-all flex items-center gap-2"
+                                                                title="Lädt die fertige, gemasterte Audiodatei herunter"
+                                                            >
+                                                                ⬇️ Download Master
+                                                            </a>
+                                                        </div>
                                                     </div>
                                                     <audio 
                                                         controls 
