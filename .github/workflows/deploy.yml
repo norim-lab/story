@@ -33,6 +33,7 @@ jobs:
           cp server/track.php dist/track.php
           cp server/debug.php dist/debug.php
           cp server/anthropic.php dist/anthropic.php
+          cp server/proxy.php dist/proxy.php
 
       - name: Ensure deploy directories in dist
         run: |

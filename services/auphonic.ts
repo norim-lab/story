@@ -125,7 +125,9 @@ export const processWithAuphonic = async (base64Audio: string): Promise<string> 
   const downloadUrl = await pollAuphonicStatus(productionUuid, token);
 
   // 3. Fetch the processed file to store it as base64 locally
-  const fileResponse = await fetch(downloadUrl, {
+  // We use our PHP proxy to bypass CORS issues on the redirect to the R2 storage bucket
+  const proxyUrl = `https://story.zeitblytz.media/proxy.php?url=${encodeURIComponent(downloadUrl)}`;
+  const fileResponse = await fetch(proxyUrl, {
     headers: {
       'Authorization': `Bearer ${token}`
     }
