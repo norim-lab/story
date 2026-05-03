@@ -322,8 +322,8 @@ const HomeDashboard: React.FC<{
                                     
                                     let renamedCount = 0;
                                     for (const p of projectsToRename) {
-                                        const text = p.scriptResult?.sections[0].versions['short_1'] 
-                                            || p.scriptResult?.sections[0].versions['long_1'] 
+                                        const text = p.scriptResult?.sections?.[0]?.versions?.['short_1'] 
+                                            || p.scriptResult?.sections?.[0]?.versions?.['long_1'] 
                                             || p.rawInput 
                                             || "";
                                         
@@ -373,8 +373,8 @@ const HomeDashboard: React.FC<{
 
                         {/* Project Cards */}
                         {projects.map(p => {
-                             const finalized = p.scriptResult?.sections[0]?.isFinal 
-                                ? Object.entries(p.scriptResult.sections[0].isFinal).filter(([_, v]) => v).map(([k]) => k)
+                             const finalized = p.scriptResult?.sections?.[0]?.isFinal 
+                                ? Object.entries(p.scriptResult!.sections[0].isFinal!).filter(([_, v]) => v).map(([k]) => k)
                                 : [];
 
                             return (
@@ -1648,7 +1648,7 @@ export const App: React.FC = () => {
         } else {
             // Start
             if (!checkProtection()) return;
-            const text = activeProject.scriptResult?.sections[0].versions[activeProject.segmentVersions[MAIN_ID] || 'short_1'] || "";
+            const text = activeProject.scriptResult?.sections?.[0]?.versions[activeProject.segmentVersions[MAIN_ID] || 'short_1'] || "";
             updateActiveProject({ isEditing: true, manualEditText: text });
         }
     };
@@ -2279,8 +2279,8 @@ export const App: React.FC = () => {
                                         </summary>
                                         <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/5">
                                             {allSlotGroups.shorts.map(v => {
-                                                const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
-                                                const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
+                                                const isFinal = activeProject.scriptResult?.sections?.[0]?.isFinal?.[v];
+                                                const hasContent = ((activeProject.scriptResult?.sections?.[0]?.versions[v]?.trim().length ?? 0) > 0);
                                                 const seriesBadge = getSeriesBadge(v);
                                                 return (
                                                 <div key={v} className="relative flex items-center">
@@ -2309,8 +2309,8 @@ export const App: React.FC = () => {
                                         </summary>
                                         <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/5">
                                             {allSlotGroups.longs.map(v => {
-                                                const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
-                                                const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
+                                                const isFinal = activeProject.scriptResult?.sections?.[0]?.isFinal?.[v];
+                                                const hasContent = ((activeProject.scriptResult?.sections?.[0]?.versions[v]?.trim().length ?? 0) > 0);
                                                 const seriesBadge = getSeriesBadge(v);
                                                 return (
                                                 <div key={v} className="relative flex items-center">
@@ -2338,8 +2338,8 @@ export const App: React.FC = () => {
                                         </summary>
                                         <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/5">
                                             {allSlotGroups.dialogues.map(v => {
-                                                const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
-                                                const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
+                                                const isFinal = activeProject.scriptResult?.sections?.[0]?.isFinal?.[v];
+                                                const hasContent = ((activeProject.scriptResult?.sections?.[0]?.versions[v]?.trim().length ?? 0) > 0);
                                                 const seriesBadge = getSeriesBadge(v);
                                                 return (
                                                 <div key={v} className="relative flex items-center">
@@ -2367,8 +2367,8 @@ export const App: React.FC = () => {
                                         </summary>
                                         <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/5">
                                             {allSlotGroups.instas.map(v => {
-                                                const isFinal = activeProject.scriptResult?.sections[0].isFinal?.[v];
-                                                const hasContent = ((activeProject.scriptResult?.sections[0].versions[v]?.trim().length ?? 0) > 0);
+                                                const isFinal = activeProject.scriptResult?.sections?.[0]?.isFinal?.[v];
+                                                const hasContent = ((activeProject.scriptResult?.sections?.[0]?.versions[v]?.trim().length ?? 0) > 0);
                                                 const seriesBadge = getSeriesBadge(v);
                                                 return (
                                                 <div key={v} className="relative flex items-center">
@@ -2678,17 +2678,17 @@ export const App: React.FC = () => {
                                             <HistoryMenu history={activeProject.history} currentIndex={activeProject.historyIndex} onSelect={navigateHistory} />
                                         </div>
                                         
-                                        {activeProject.scriptResult?.sections[0]?.title && (
+                                        {activeProject.scriptResult?.sections?.[0]?.title && (
                                             <div className="block lg:hidden w-full mt-2">
                                                 <span className="text-xs font-bold text-white/70 truncate block px-4 py-1 bg-white/5 rounded-full border border-white/10 w-full text-center">
-                                                    {activeProject.scriptResult.sections[0].title}
+                                                    {activeProject.scriptResult!.sections[0].title}
                                                 </span>
                                             </div>
                                         )}
-                                        {activeProject.scriptResult?.sections[0]?.title && (
+                                        {activeProject.scriptResult?.sections?.[0]?.title && (
                                             <div className="hidden lg:block">
                                                 <span className="text-xs font-bold text-white/70 truncate block px-4 py-1 bg-white/5 rounded-full border border-white/10 max-w-[200px] lg:max-w-[300px]">
-                                                    {activeProject.scriptResult.sections[0].title}
+                                                    {activeProject.scriptResult!.sections[0].title}
                                                 </span>
                                             </div>
                                         )}
