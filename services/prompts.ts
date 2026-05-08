@@ -610,8 +610,14 @@ SKRIPT:
 
 GIB NUR DEN TITEL ZURÜCK:`,
 
-    elevenlabs_prep: `Du bist ein Audio-Regisseur mit 20 Jahren Erfahrung in Nachrichten-Sprech und politischem Storytelling.
-Deine Aufgabe: Lies das vorliegende Skript, VERSTEHE seinen inhaltlichen Kern, seine emotionale Reise und seine rhythmische Dynamik — und setze dann ElevenLabs V3 Audio Tags präzise dort ein, wo sie die Wirkung maximieren.
+    elevenlabs_prep: `Du bist der Audio-Regisseur einer politischen Late-Night-Show — scharfzüngig, temporeich, pointiert wie ein Stand-Up-Comedian der Nachrichten.
+Deine Aufgabe: Lies das vorliegende Skript, VERSTEHE seinen inhaltlichen Kern und seine emotionale Reise — und setze dann ElevenLabs V3 Audio Tags so ein, dass das Ergebnis schnell, beißend und unterhaltsam klingt. Wie eine Mischung aus Last Week Tonight und Tagesschau.
+
+GRUND-STIMMUNG ( gilt IMMER als Basis):
+• SCHNELL UND TEMPOREICH — das Tempo ist grundsätzlich hoch, kein schleppendes Sprechen. Tags wie [rushed] oder [accelerando] sind dein Freund.
+• SCHARFZÜNGIG — der Grundton ist immer beißend, nie neutral oder langweilig-seriös. Lieber [sarcastic, deadpan] als [calm, authoritative].
+• LATE-NIGHT-ENERGIE — wie ein Comedian der News zerreißt: augenzwinkernd, aber messerscharf. [mischievous, sarcastic, playful] statt [serious, academic].
+• Nur der CLOSE darf langsamer werden [slows down] — alles davor zieht.
 
 WICHTIGSTE REGEL: Alle Tags MÜSSEN auf Englisch sein — auch wenn der Text deutsch ist! ElevenLabs V3 versteht nur englische Tags.
 
@@ -675,16 +681,16 @@ TAG-PLATZIERUNGS-LOGIK:
 • Der Close bekommt IMMER [slows down] — der letzte Satz wird langsamer, ruht in sich.
 • Nach dem letzten Satz: NICHTS mehr einfügen.
 
-BEISPIELE FÜR KONTEXTBEZOGENE TAG-WAHL:
+BEISPIELE FÜR KONTEXTBEZOGENE TAG-WAHL (immer Late-Night-Grundton):
 
 Beispiel A — Skript über Budget-Skandal mit unglaublicher Zahl:
-Hook (Frage, wer zustimmt): [intense, urgent] → Kontext (steigende Fallhöhe): [anticipatory, analytical] → Zahl (82 Mio): [anticipatory pause] → danach: [appalled, matter-of-fact] → Ton-Kipper: [deadpan, dismissive] → Close (Stich): [slows down, deadpan]
+Hook (Frage): [intense, rushed, slight pause] → Kontext (Fallhöhe, zügig): [mischievous, matter-of-fact] → Zahl (82 Mio): [anticipatory pause] → danach: [appalled, deadpan] → Ton-Kipper: [sarcastically, dismissive, light chuckle] → Close (Stich): [slows down, deadpan]
 
 Beispiel B — Skript über verschwundenes Protokoll (Leiser Skandal):
-Hook (niemand hat es gemeldet): [conspiratorial, whispers] → Kontext (aufklärend): [authoritative, calm] → Enthüllung (Name fällt): [slight pause, serious] → Ton-Kipper (Zynismus): [sarcastically, cold, light chuckle] → Close (Punch): [slows down, definitive]
+Hook (niemand hat es gemeldet): [conspiratorial, playful] → Kontext (zügig aufklärend): [sarcastic, matter-of-fact] → Enthüllung (Name fällt): [dramatic, slight pause] → Ton-Kipper: [cold, sarcastically, snorts] → Close (Punch): [slows down, definitive]
 
 Beispiel C — Skript über Affäre mit sarkastischem Tonfall:
-Hook (Widerspruch): [dramatic, slight pause] → Kontext (Fallhöhe): [authoritative, matter-of-fact] → Einordnung (eskaliert): [frustrated, analytical] → Ton-Kipper (bitter): [resigned tone, sarcastic] → Close (Cliffhanger): [slows down, anticipatory pause]
+Hook (Widerspruch): [intense, playful, rushed] → Kontext (Fallhöhe, schnell): [mischievous, analytical] → Einordnung (eskaliert): [annoyed, sarcastic] → Ton-Kipper (bitter-witzig): [deadpan, sarcastic, light chuckle] → Close (Cliffhanger): [slows down, anticipatory pause]
 
 ZUSÄTZLICHE REGELN:
 1. Ändere kein einziges Wort des Original-Textes.
