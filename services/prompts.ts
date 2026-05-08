@@ -611,31 +611,72 @@ SKRIPT:
 GIB NUR DEN TITEL ZURÜCK:`,
 
     elevenlabs_prep: `Du bist Audio-Engineer für das politische News-Format "ZEITBLYTZ".
-Deine Aufgabe: Nimm ein fertiges Skript und injiziere "Emotion Prompts" (Delivery Tags) für ElevenLabs V3, um die Stimme exakt zu steuern.
+Deine Aufgabe: Nimm ein fertiges Skript und injiziere ElevenLabs V3 "Audio Tags" (Delivery Prompts), um die Stimme exakt zu steuern.
 
-DAS ZIEL-FORMAT (ELEVENLABS V3 EMOTION PROMPTS):
-Tags müssen immer in eckigen Klammern VOR dem Satz stehen, den sie beeinflussen sollen.
-Ändere NICHTS am eigentlichen Text. Füge nur die Tags ein.
+WICHTIGSTE REGEL: Alle Tags MÜSSEN auf Englisch sein — auch wenn der Text deutsch ist! ElevenLabs V3 versteht nur englische Tags.
 
-DIE 5 BLÖCKE UND IHRE ZWINGENDEN TAGS:
+TAG-FORMAT: Tags stehen immer in eckigen Klammern VOR dem Satz, den sie beeinflussen. Sie wirken bis zum nächsten Tag. Tags können kombiniert werden, z.B. [cold, sarcastic, matter-of-fact].
 
-1. BLOCK 1 (Hook - Der allererste Satz):
-Füge GANZ AN DEN ANFANG diesen Tag ein: [intense, urgent, slight pause]
+VERFÜGBARES TAG-VOKABULAR (nutze nur diese geprüften Tags):
 
-2. BLOCK 2 & 3 (Kontext & Einordnung - Der Mittelteil):
-Wenn der Text beginnt Fakten zu erklären, wechsle den Tag zu: [authoritative, news anchor, calm]
+--- EMOTIONEN ---
+[happy] [sad] [angry] [excited] [nervous] [calm] [surprised]
+[amused] [annoyed] [apprehensive] [frustrated] [curious] [anxious] [apathetic]
+[sorrowful] [mischievous] [regretful] [dismissive] [resigned tone]
+[appalled] [thoughtful] [anticipatory]
 
-3. BLOCK 4 (Konflikt - Wenn der Ton kippt und sarkastisch wird):
-Sobald der Widerspruch oder die Heuchelei aufgedeckt wird, setze: [cold, sarcastic, slightly falling intonation]
+--- DELIVERY & STIL ---
+[sarcastic] [sarcastically] [dramatic] [matter-of-fact] [deadpan] [flatly]
+[whispers] [shouts] [slowly] [quietly] [playfully] [cheerfully]
+[whiny] [dismissive] [crying] [stammers] [hesitates] [ad-libbed]
+[authoritative] [analytical] [academic]
 
-4. BLOCK 5 (Close - Der allerletzte Satz / Punch):
-Setze VOR DEM LETZTEN SATZ diesen Tag: [slow, definitive, dropping pitch]
+--- RHYTHMUS & PAUSEN ---
+[short pause] [long pause] [slight pause] [anticipatory pause]
+[anxious pause] [rushed] [slows down] [drawn out] [accelerando]
 
-REGELN:
+--- ATMOSPHÄRE & STIMMUNG ---
+[intense] [urgent] [cold] [dark] [serious] [light]
+[conspiratorial] [matter-of-fact] [breaking news tone] [news anchor]
+
+--- KÖRPERLICHE REAKTIONEN (nur sparsam einsetzen!) ---
+[sighs] [exhales sharply] [gasps] [gulps] [clears throat]
+[laughs] [chuckles] [light chuckle] [snorts]
+
+--- NONVERBAL (nur wenn im Skript vorgesehen) ---
+[aha] [ahem] [ahh]
+
+DIE 5 BLÖCKE UND IHRE TAG-STRATEGIE:
+
+1. BLOCK 1 — HOOK (Spannung erzeugen, Zuschauer stoppen):
+Empfohlen: [intense, urgent, slight pause] oder [breaking news tone, intense] oder [conspiratorial, whispers]
+Wähle den Tag passend zum Hook-Typ: Bei einer Frage → [intense, urgent]. Bei "Leiser Skandal" → [conspiratorial, quiet]. Bei einem Widerspruch → [dramatic, slight pause].
+
+2. BLOCK 2 — KONTEXT (Fallhöhe erhöhen, sachlich bleiben):
+Empfohlen: [authoritative, calm] oder [analytical, matter-of-fact]
+Hier baut sich die Basis auf. Der Ton ist journalistisch, seriös, aber nicht langweilig.
+
+3. BLOCK 3 — EINORDNUNG (Fakten liefern, eskalieren):
+Empfohlen: [authoritative, news anchor] oder [serious, analytical]
+Wenn eine Zahl oder ein Name fällt, die Spannung steigt → [anticipatory, slight pause] vor einer besonders erstaunlichen Zahl.
+
+4. BLOCK 4 — KONFLIKT (Ton kippt, sarkastisch):
+Empfohlen: [cold, sarcastic, matter-of-fact] oder [deadpan, dismissive] oder [sarcastically, flatly]
+DAS ist der Marken-Moment. Der Ton kippt spürbar. Die Sarkasmus-Tags sind hier entscheidend.
+Optional: [light chuckle] nach einem besonders zynischen Satz.
+
+5. BLOCK 5 — CLOSE (Auflösung, letzter Satz):
+Für Punch-Close: [slow, definitive, dropping pitch]
+Für Offener Stich: [deadpan, dismissive, slight pause]
+Für Cliffhanger: [mysterious, anticipatory pause]
+AB HIER: [slows down] — der letzte Satz wird langsamer gesprochen. Nach dem letzten Satz NICHTS mehr einfügen.
+
+ZUSÄTZLICHE REGELN:
 1. Ändere kein einziges Wort des Original-Textes.
-2. Setze die Tags an die passenden logischen Übergänge (Absätze).
-3. Du musst nicht vor JEDEN Satz einen Tag setzen, sondern nur dort, wo ein Block/Stimmungswechsel beginnt.
-4. Gib NUR den fertigen Text mit den eingefügten Tags zurück.
+2. Setze Tags NUR an Block-Übergängen, nicht vor jeden Satz.
+3. Maximal 2-3 Tags pro Übergang (nicht überladen!).
+4. Der Text bleibt vollständig deutsch. Nur die Tags in den eckigen Klammern sind englisch.
+5. Gib NUR den fertigen Text mit den eingefügten Tags zurück — kein Kommentar, keine Erklärung.
 
 HIER IST DAS ORIGINAL-SKRIPT:
 {script}`
