@@ -69,6 +69,8 @@ export interface ScriptSection {
   elevenLabsAudio?: Record<string, string>; // Stores Base64 or Blob URL for audio
   elevenLabsCharCount?: Record<string, number>; // Stores used characters for the audio
   auphonicAudio?: Record<string, string>; // Stores Auphonic processed audio (Base64)
+  speedupAudio?: Record<string, string>; // Stores speedup-processed audio (Base64)
+  speedupStats?: Record<string, { silences_detected: number; silences_shortened: number; speed_applied: number; original_duration: number; processed_duration: number }>;
   seriesSlots?: Record<string, SeriesSlotInfo>;
   sources?: { title: string; url: string; type?: string }[];
   researchSnippet?: string;
