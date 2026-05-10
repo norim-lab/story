@@ -29,7 +29,8 @@ import { getSettings, getFastModel, getProModel, saveSettings } from './services
 import { getRandomHistoricalWikiquote } from './services/wikiquote';
 import { getPerplexityLegalCheck } from './services/perplexity';
 import { generateElevenLabsAudio, getElevenLabsUserInfo } from './services/elevenlabs';
-import { processWithAuphonic, getAuphonicUserInfo, applySpeedup } from './services/auphonic';
+import { processWithAuphonic, getAuphonicUserInfo } from './services/auphonic';
+import { applySpeedupClient, SPEEDUP_PRESETS } from './services/speedup';
 
 const MAX_HISTORY_STEPS = 50;
 const MAIN_ID = "main-script";
@@ -1909,12 +1910,6 @@ export const App: React.FC = () => {
         }
     };
 
-    const SPEEDUP_PRESETS: Record<string, { speed: number, silenceThreshold: number, minSilenceDuration: number, targetSilenceDuration: number }> = {
-        zeitblytz_standard: { speed: 1.12, silenceThreshold: -40.0, minSilenceDuration: 0.30, targetSilenceDuration: 0.15 },
-        aggressiv: { speed: 1.18, silenceThreshold: -45.0, minSilenceDuration: 0.22, targetSilenceDuration: 0.08 },
-        voiceover_turbo: { speed: 1.20, silenceThreshold: -43.0, minSilenceDuration: 0.20, targetSilenceDuration: 0.10 },
-    };
-
     const handleSpeedup = async () => {
         if (!activeProject?.scriptResult?.sections?.[0]) return;
         const auphonicAudio = activeProject.scriptResult.sections[0].auphonicAudio?.[currentSlot];
@@ -1925,31 +1920,13 @@ export const App: React.FC = () => {
         setIsProcessingSpeedup(true);
         addLog("Wende Speedup an (Pausen kürzen + beschleunigen)...", "info");
         try {
-            const presetValues = speedupConfig.preset ? SPEEDUP_PRESETS[speedupConfig.preset] : null;
-            const params = presetValues || speedupConfig;
-            const formData = new FormData();
-            formData.append('audio_base64', auphonicAudio);
-            if (speedupConfig.preset && presetValues) {
-                formData.append('preset', speedupConfig.preset);
-            } else {
-                formData.append('speed', params.speed.toString());
-                formData.append('silence_threshold', params.silenceThreshold.toString());
-                formData.append('min_silence_duration', params.minSilenceDuration.toString());
-                formData.append('target_silence_duration', params.targetSilenceDuration.toString());
-            }
-
-            const response = await fetch('https://story.zeitblytz.media/speedup.php', {
-                method: 'POST',
-                body: formData,
+            const result = await applySpeedupClient(auphonicAudio, {
+                preset: speedupConfig.preset !== 'custom' ? speedupConfig.preset : undefined,
+                speed: speedupConfig.speed,
+                silenceThreshold: speedupConfig.silenceThreshold,
+                minSilenceDuration: speedupConfig.minSilenceDuration,
+                targetSilenceDuration: speedupConfig.targetSilenceDuration,
             });
-
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({ error: 'Unbekannter Fehler' }));
-                throw new Error(errData.error || response.statusText);
-            }
-
-            const result = await response.json();
-            if (!result.audio_base64) throw new Error('Keine Audiodaten in der Antwort');
 
             const updatedResult = {
                 ...activeProject.scriptResult,
@@ -1957,7 +1934,7 @@ export const App: React.FC = () => {
                     ...activeProject.scriptResult.sections[0],
                     speedupAudio: {
                         ...(activeProject.scriptResult.sections[0].speedupAudio || {}),
-                        [currentSlot]: result.audio_base64
+                        [currentSlot]: result.audioBase64
                     },
                     speedupStats: {
                         ...(activeProject.scriptResult.sections[0].speedupStats || {}),
