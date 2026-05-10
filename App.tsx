@@ -29,7 +29,7 @@ import { getSettings, getFastModel, getProModel, saveSettings } from './services
 import { getRandomHistoricalWikiquote } from './services/wikiquote';
 import { getPerplexityLegalCheck } from './services/perplexity';
 import { generateElevenLabsAudio, getElevenLabsUserInfo } from './services/elevenlabs';
-import { processWithAuphonic, getAuphonicUserInfo } from './services/auphonic';
+import { processWithAuphonic, getAuphonicUserInfo, applySpeedup } from './services/auphonic';
 
 const MAX_HISTORY_STEPS = 50;
 const MAIN_ID = "main-script";
@@ -457,6 +457,14 @@ export const App: React.FC = () => {
     const [platformCheckLoadingSlot, setPlatformCheckLoadingSlot] = useState<ScriptLength | null>(null);
     const [elevenLabsUsage, setElevenLabsUsage] = useState<{ used: number, limit: number } | null>(null);
     const [auphonicQuota, setAuphonicQuota] = useState<{ credits: number } | null>(null);
+    const [isProcessingSpeedup, setIsProcessingSpeedup] = useState(false);
+    const [speedupConfig, setSpeedupConfig] = useState({
+        preset: 'zeitblytz_standard',
+        speed: 1.12,
+        silenceThreshold: -40.0,
+        minSilenceDuration: 0.30,
+        targetSilenceDuration: 0.15,
+    });
 
     // Fetch ElevenLabs Usage
     const fetchElevenLabsUsage = useCallback(async () => {
@@ -1901,6 +1909,75 @@ export const App: React.FC = () => {
         }
     };
 
+    const SPEEDUP_PRESETS: Record<string, { speed: number, silenceThreshold: number, minSilenceDuration: number, targetSilenceDuration: number }> = {
+        zeitblytz_standard: { speed: 1.12, silenceThreshold: -40.0, minSilenceDuration: 0.30, targetSilenceDuration: 0.15 },
+        aggressiv: { speed: 1.18, silenceThreshold: -45.0, minSilenceDuration: 0.22, targetSilenceDuration: 0.08 },
+        voiceover_turbo: { speed: 1.20, silenceThreshold: -43.0, minSilenceDuration: 0.20, targetSilenceDuration: 0.10 },
+    };
+
+    const handleSpeedup = async () => {
+        if (!activeProject?.scriptResult?.sections?.[0]) return;
+        const auphonicAudio = activeProject.scriptResult.sections[0].auphonicAudio?.[currentSlot];
+        if (!auphonicAudio) {
+            addLog("Kein gemastertes Audio vorhanden. Bitte zuerst Auphonic ausführen.", "error");
+            return;
+        }
+        setIsProcessingSpeedup(true);
+        addLog("Wende Speedup an (Pausen kürzen + beschleunigen)...", "info");
+        try {
+            const presetValues = speedupConfig.preset ? SPEEDUP_PRESETS[speedupConfig.preset] : null;
+            const params = presetValues || speedupConfig;
+            const formData = new FormData();
+            formData.append('audio_base64', auphonicAudio);
+            if (speedupConfig.preset && presetValues) {
+                formData.append('preset', speedupConfig.preset);
+            } else {
+                formData.append('speed', params.speed.toString());
+                formData.append('silence_threshold', params.silenceThreshold.toString());
+                formData.append('min_silence_duration', params.minSilenceDuration.toString());
+                formData.append('target_silence_duration', params.targetSilenceDuration.toString());
+            }
+
+            const response = await fetch('https://story.zeitblytz.media/speedup.php', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({ error: 'Unbekannter Fehler' }));
+                throw new Error(errData.error || response.statusText);
+            }
+
+            const result = await response.json();
+            if (!result.audio_base64) throw new Error('Keine Audiodaten in der Antwort');
+
+            const updatedResult = {
+                ...activeProject.scriptResult,
+                sections: [{
+                    ...activeProject.scriptResult.sections[0],
+                    speedupAudio: {
+                        ...(activeProject.scriptResult.sections[0].speedupAudio || {}),
+                        [currentSlot]: result.audio_base64
+                    },
+                    speedupStats: {
+                        ...(activeProject.scriptResult.sections[0].speedupStats || {}),
+                        [currentSlot]: result.stats
+                    }
+                }]
+            };
+
+            commitAction(`Speedup für ${currentSlot}`, { scriptResult: updatedResult });
+            const stats = result.stats;
+            addLog(`Speedup fertig! ${stats.silences_shortened} Pausen gekürzt, ${stats.speed_applied}x Speed, ${stats.original_duration}s → ${stats.processed_duration}s`, "success");
+        } catch (e: any) {
+            console.error("Speedup Error:", e);
+            addLog(`Fehler bei Speedup: ${e.message}`, "error");
+            alert(`Fehler bei Speedup: ${e.message}`);
+        } finally {
+            setIsProcessingSpeedup(false);
+        }
+    };
+
     const handleGlobalExport = () => {
         const exportData: WorkspaceExport = { version: 1, projects: projects };
         const blob = new Blob([JSON.stringify(exportData)], { type: "application/json" });
@@ -2909,6 +2986,147 @@ export const App: React.FC = () => {
                                                         className="w-full h-10 rounded-lg outline-none" 
                                                         src={activeProject.scriptResult.sections[0].auphonicAudio[currentSlot]} 
                                                     />
+                                                </div>
+                                            )}
+
+                                            {/* Speedup Section - Step 4 */}
+                                            {activeProject.scriptResult.sections[0].auphonicAudio?.[currentSlot] && (
+                                                <div className="pt-6 border-t border-amber-500/20 space-y-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">4</div>
+                                                        <div className="text-xs font-black uppercase tracking-widest text-amber-400">Speedup</div>
+                                                    </div>
+
+                                                    <div className="space-y-3 bg-black/30 rounded-xl p-4 border border-amber-500/10">
+                                                        <div className="space-y-1">
+                                                            <div className="text-[10px] text-slate-400 font-bold uppercase">Preset</div>
+                                                            <div className="flex gap-2">
+                                                                {[
+                                                                    { value: 'zeitblytz_standard', label: 'Standard', desc: '1.12x' },
+                                                                    { value: 'aggressiv', label: 'Aggressiv', desc: '1.18x' },
+                                                                    { value: 'voiceover_turbo', label: 'Turbo', desc: '1.20x' },
+                                                                    { value: 'custom', label: 'Custom', desc: 'Manuell' },
+                                                                ].map(p => (
+                                                                    <button 
+                                                                        key={p.value}
+                                                                        onClick={() => {
+                                                                            if (p.value !== 'custom' && SPEEDUP_PRESETS[p.value]) {
+                                                                                setSpeedupConfig({
+                                                                                    ...SPEEDUP_PRESETS[p.value],
+                                                                                    preset: p.value,
+                                                                                });
+                                                                            } else {
+                                                                                setSpeedupConfig(prev => ({ ...prev, preset: 'custom' }));
+                                                                            }
+                                                                        }}
+                                                                        className={`flex-1 px-2 py-2 rounded-lg border text-center transition-all ${
+                                                                            speedupConfig.preset === p.value 
+                                                                                ? 'bg-amber-600 border-amber-500 text-white' 
+                                                                                : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:border-white/30'
+                                                                        }`}
+                                                                    >
+                                                                        <div className="text-[10px] font-black uppercase">{p.label}</div>
+                                                                        <div className="text-[9px] opacity-70">{p.desc}</div>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-[10px] text-slate-400 font-bold uppercase">Speed</span>
+                                                                <span className="text-lg font-black text-amber-400">{speedupConfig.speed.toFixed(2)}x</span>
+                                                            </div>
+                                                            <input 
+                                                                type="range" 
+                                                                min="1.0" max="2.0" step="0.01" 
+                                                                value={speedupConfig.speed}
+                                                                onChange={e => setSpeedupConfig(prev => ({ ...prev, speed: parseFloat(e.target.value), preset: 'custom' }))}
+                                                                className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                                                                style={{ background: `linear-gradient(to right, #f59e0b ${(speedupConfig.speed - 1) / 1 * 100}%, rgba(255,255,255,0.1) ${(speedupConfig.speed - 1) / 1 * 100}%)` }}
+                                                            />
+                                                            <div className="flex justify-between text-[9px] text-slate-500">
+                                                                <span>1.00x</span>
+                                                                <span>1.50x</span>
+                                                                <span>2.00x</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            <div>
+                                                                <div className="text-[9px] text-slate-500 font-bold uppercase mb-1">Threshold</div>
+                                                                <input 
+                                                                    type="number" 
+                                                                    value={speedupConfig.silenceThreshold}
+                                                                    onChange={e => setSpeedupConfig(prev => ({ ...prev, silenceThreshold: parseFloat(e.target.value) || -40, preset: 'custom' }))}
+                                                                    step="1"
+                                                                    className="w-full bg-black/40 border border-white/10 rounded px-2 py-1.5 text-[11px] text-slate-300"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[9px] text-slate-500 font-bold uppercase mb-1">Min Pause</div>
+                                                                <input 
+                                                                    type="number" 
+                                                                    value={speedupConfig.minSilenceDuration}
+                                                                    onChange={e => setSpeedupConfig(prev => ({ ...prev, minSilenceDuration: parseFloat(e.target.value) || 0.3, preset: 'custom' }))}
+                                                                    step="0.01"
+                                                                    className="w-full bg-black/40 border border-white/10 rounded px-2 py-1.5 text-[11px] text-slate-300"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[9px] text-slate-500 font-bold uppercase mb-1">Ziel Pause</div>
+                                                                <input 
+                                                                    type="number" 
+                                                                    value={speedupConfig.targetSilenceDuration}
+                                                                    onChange={e => setSpeedupConfig(prev => ({ ...prev, targetSilenceDuration: parseFloat(e.target.value) || 0.15, preset: 'custom' }))}
+                                                                    step="0.01"
+                                                                    className="w-full bg-black/40 border border-white/10 rounded px-2 py-1.5 text-[11px] text-slate-300"
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <button 
+                                                            onClick={handleSpeedup}
+                                                            disabled={isProcessingSpeedup}
+                                                            className="w-full px-4 py-3 rounded-xl text-xs font-black uppercase transition-all bg-gradient-to-r from-amber-600 to-orange-600 text-white hover:from-amber-500 hover:to-orange-500 shadow-lg shadow-amber-600/20 disabled:opacity-40 flex items-center justify-center gap-2"
+                                                        >
+                                                            {isProcessingSpeedup ? <span className="animate-spin inline-block">⏳</span> : '⚡'}
+                                                            {isProcessingSpeedup ? 'Verarbeite...' : 'Speedup anwenden'}
+                                                        </button>
+
+                                                        {activeProject.scriptResult.sections[0].speedupStats?.[currentSlot] && (
+                                                            <div className="text-[10px] text-slate-500 bg-black/20 rounded-lg p-2 flex flex-wrap gap-x-4 gap-y-1">
+                                                                <span>🔇 {activeProject.scriptResult.sections[0].speedupStats[currentSlot].silences_shortened} Pausen gekürzt</span>
+                                                                <span>⚡ {activeProject.scriptResult.sections[0].speedupStats[currentSlot].speed_applied}x Speed</span>
+                                                                <span>⏱️ {activeProject.scriptResult.sections[0].speedupStats[currentSlot].original_duration}s → {activeProject.scriptResult.sections[0].speedupStats[currentSlot].processed_duration}s</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {activeProject.scriptResult.sections[0].speedupAudio?.[currentSlot] && (
+                                                        <div className="space-y-3">
+                                                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">✓</div>
+                                                                    <div className="text-xs font-black uppercase tracking-widest text-amber-300">Fertiges Audio</div>
+                                                                </div>
+                                                                <div className="flex w-full md:w-auto gap-2">
+                                                                    <a 
+                                                                        href={activeProject.scriptResult.sections[0].speedupAudio[currentSlot]} 
+                                                                        download={`${activeProject.name || 'Projekt'}_${currentSlot}_final.mp3`}
+                                                                        className="flex-1 md:flex-none justify-center px-4 py-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 text-[10px] font-black uppercase text-amber-200 transition-all flex items-center gap-2"
+                                                                    >
+                                                                        ⬇️ Download Final
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                            <audio 
+                                                                controls 
+                                                                className="w-full h-10 rounded-lg outline-none" 
+                                                                src={activeProject.scriptResult.sections[0].speedupAudio[currentSlot]} 
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

@@ -97,45 +97,6 @@ const SettingsModal: React.FC<Props> = ({ open, onClose }) => {
             />
           </div>
 
-          <div className="space-y-3">
-            <div className="text-[10px] uppercase font-bold text-slate-500">Speedup (Nach Auphonic)</div>
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <input 
-                type="checkbox" 
-                checked={s.speedupEnabled} 
-                onChange={e => setS({...s, speedupEnabled: e.target.checked})} 
-                className="w-4 h-4 rounded accent-emerald-500"
-              />
-              <div>
-                <div className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">Speedup aktivieren</div>
-                <div className="text-[10px] text-slate-500">Pausen kürzen + Audio beschleunigen (nach Auphonic)</div>
-              </div>
-            </label>
-            <div className="space-y-1">
-              <div className="text-[10px] text-slate-400">Preset</div>
-              <div className="flex gap-2">
-                {[
-                  { value: 'zeitblytz_standard', label: 'Standard', desc: '1.12x' },
-                  { value: 'aggressiv', label: 'Aggressiv', desc: '1.18x' },
-                  { value: 'voiceover_turbo', label: 'Turbo', desc: '1.20x' },
-                ].map(p => (
-                  <button 
-                    key={p.value}
-                    onClick={() => setS({...s, speedupPreset: p.value})} 
-                    className={`flex-1 px-2 py-2 rounded border text-center transition-all ${
-                      s.speedupPreset === p.value 
-                        ? 'bg-emerald-600 border-emerald-500 text-white' 
-                        : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:border-white/30'
-                    }`}
-                  >
-                    <div className="text-[10px] font-black uppercase">{p.label}</div>
-                    <div className="text-[9px] opacity-70">{p.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
           <div className="space-y-2">
             <div className="text-[10px] uppercase font-bold text-slate-500">Perplexity (Deep Dive)</div>
             <input 

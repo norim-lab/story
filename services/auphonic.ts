@@ -192,18 +192,10 @@ export const processWithAuphonic = async (base64Audio: string): Promise<string> 
 
   const processedBlob = await fileResponse.blob();
   
-  const auphonicBase64 = await new Promise<string>((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => resolve(reader.result as string);
     reader.onerror = reject;
     reader.readAsDataURL(processedBlob);
   });
-
-  try {
-    const speedupResult = await applySpeedup(auphonicBase64);
-    return speedupResult.audio_base64;
-  } catch (speedupErr) {
-    console.warn('Speedup fehlgeschlagen, verwende Auphonic-Audio direkt:', speedupErr);
-    return auphonicBase64;
-  }
 };
