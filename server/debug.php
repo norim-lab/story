@@ -42,6 +42,32 @@ echo "exec() allowed: " . (function_exists('exec') ? 'YES' : 'NO') . "\n";
 echo "shell_exec() allowed: " . (function_exists('shell_exec') ? 'YES' : 'NO') . "\n";
 $disabled = ini_get('disable_functions');
 echo "Disabled functions: " . ($disabled ?: 'none') . "\n";
+echo "\n--- Alle Exec-Funktionen prüfen ---\n";
+$execFuncs = ['exec', 'shell_exec', 'system', 'passthru', 'popen', 'proc_open', 'pcntl_exec'];
+foreach ($execFuncs as $fn) {
+    $avail = function_exists($fn) && !in_array($fn, explode(',', $disabled));
+    echo "$fn: " . ($avail ? 'AVAILABLE ✅' : 'DISABLED ❌') . "\n";
+}
+echo "\n--- Test: popen mit FFmpeg ---\n";
+$handle = @popen('/usr/bin/ffmpeg -version 2>&1', 'r');
+if ($handle) {
+    $output = fread($handle, 200);
+    pclose($handle);
+    echo "popen output: " . trim($output) . "\n";
+} else {
+    echo "popen fehlgeschlagen\n";
+}
+echo "\n--- Test: proc_open mit FFmpeg ---\n";
+$descriptors = [['pipe','r'], ['pipe','w'], ['pipe','w']];
+$proc = @proc_open('/usr/bin/ffmpeg -version 2>&1', $descriptors, $pipes);
+if (is_resource($proc)) {
+    $output = stream_get_contents($pipes[1]);
+    fclose($pipes[0]); fclose($pipes[1]); fclose($pipes[2]);
+    proc_close($proc);
+    echo "proc_open output: " . trim($output) . "\n";
+} else {
+    echo "proc_open fehlgeschlagen\n";
+}
 
 if (!is_dir($projectDir)) {
     echo "\nAttempting to create directory...\n";
