@@ -29,6 +29,20 @@ if (is_dir($projectDir)) {
 echo "\nPHP Version: " . phpversion() . "\n";
 echo "PHP User: " . get_current_user() . "\n";
 
+echo "\n--- FFmpeg Check ---\n";
+$ffmpegPaths = ['/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/opt/ffmpeg/ffmpeg'];
+foreach ($ffmpegPaths as $p) {
+    echo "Check $p: " . (is_executable($p) ? 'FOUND' : 'not found') . "\n";
+}
+$whichFfmpeg = trim(shell_exec('which ffmpeg 2>/dev/null') ?: '');
+echo "which ffmpeg: " . ($whichFfmpeg ?: 'NOT FOUND') . "\n";
+$ffmpegVersion = trim(shell_exec('ffmpeg -version 2>/dev/null | head -1') ?: '');
+echo "ffmpeg version: " . ($ffmpegVersion ?: 'NOT AVAILABLE') . "\n";
+echo "exec() allowed: " . (function_exists('exec') ? 'YES' : 'NO') . "\n";
+echo "shell_exec() allowed: " . (function_exists('shell_exec') ? 'YES' : 'NO') . "\n";
+$disabled = ini_get('disable_functions');
+echo "Disabled functions: " . ($disabled ?: 'none') . "\n";
+
 if (!is_dir($projectDir)) {
     echo "\nAttempting to create directory...\n";
     $result = mkdir($projectDir, 0777, true);
