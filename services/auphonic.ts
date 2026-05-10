@@ -1,6 +1,7 @@
 import { getAuphonicKey, getAuphonicPresetUuid, getSettings } from './settings';
 
 export interface SpeedupResult {
+  success?: boolean;
   audio_base64: string;
   stats: {
     silences_detected: number;
