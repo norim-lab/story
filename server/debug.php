@@ -10,128 +10,97 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-$projectDir = 'track';
-
-echo "<h2>PHP Debug Info</h2>";
+echo "<h2>FFmpeg & Exec Functions Debug</h2>";
 echo "<pre>";
-echo "Current directory: " . getcwd() . "\n";
-echo "Project directory: " . $projectDir . "\n";
-echo "Is directory: " . (is_dir($projectDir) ? 'YES' : 'NO') . "\n";
-echo "Is writable: " . (is_writable($projectDir) ? 'YES' : 'NO') . "\n";
 
-if (is_dir($projectDir)) {
-    echo "Directory permissions: " . substr(sprintf('%o', fileperms($projectDir)), -4) . "\n";
-    $files = scandir($projectDir);
-    echo "Files in track/: " . count($files) . "\n";
-    echo "Files: " . print_r(array_filter($files, fn($f) => $f !== '.' && $f !== '..'), true);
-}
+echo "PHP Version: " . phpversion() . "\n";
+echo "PHP User: " . get_current_user() . "\n\n";
 
-echo "\nPHP Version: " . phpversion() . "\n";
-echo "PHP User: " . get_current_user() . "\n";
+echo "=== DISABLED FUNCTIONS ===\n";
+$disabled = ini_get('disable_functions');
+echo $disabled ?: 'none';
+echo "\n\n";
 
-echo "\n--- FFmpeg Check ---\n";
+echo "=== FFmpeg PATH CHECK ===\n";
 $ffmpegPaths = ['/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/opt/ffmpeg/ffmpeg'];
 foreach ($ffmpegPaths as $p) {
-    echo "Check $p: " . (is_executable($p) ? 'FOUND' : 'not found') . "\n";
+    $exists = file_exists($p);
+    $isExec = is_executable($p);
+    echo "$p: exists=" . ($exists ? 'YES' : 'NO') . " executable=" . ($isExec ? 'YES' : 'NO') . "\n";
 }
+echo "\n";
 
-$disabled = ini_get('disable_functions');
-echo "Disabled functions: " . ($disabled ?: 'none') . "\n";
-echo "\n--- Alle Exec-Funktionen prüfen ---\n";
+echo "=== EXEC FUNCTION AVAILABILITY ===\n";
 $execFuncs = ['exec', 'shell_exec', 'system', 'passthru', 'popen', 'proc_open', 'pcntl_exec'];
+$disabledList = array_map('trim', explode(',', $disabled ?: ''));
 foreach ($execFuncs as $fn) {
-    $avail = function_exists($fn) && !in_array($fn, array_map('trim', explode(',', $disabled)));
-    echo "$fn: " . ($avail ? 'AVAILABLE ✅' : 'DISABLED ❌') . "\n";
+    $exists = function_exists($fn);
+    $inDisabled = in_array($fn, $disabledList);
+    $avail = $exists && !$inDisabled;
+    echo "$fn: function_exists=" . ($exists ? 'YES' : 'NO') . " in_disabled=" . ($inDisabled ? 'YES' : 'NO') . " => " . ($avail ? 'AVAILABLE ✅' : 'BLOCKED ❌') . "\n";
 }
-echo "\n--- Test: popen mit FFmpeg ---\n";
-if (function_exists('popen')) {
+echo "\n";
+
+echo "=== POPEN TEST ===\n";
+if (function_exists('popen') && !in_array('popen', $disabledList)) {
+    echo "Attempting popen('/usr/bin/ffmpeg -version 2>&1', 'r')...\n";
     $handle = @popen('/usr/bin/ffmpeg -version 2>&1', 'r');
-    if ($handle) {
-        $output = fread($handle, 200);
+    if ($handle !== false) {
+        $output = '';
+        while (!feof($handle)) {
+            $output .= fread($handle, 1024);
+        }
         pclose($handle);
-        echo "popen SUCCESS: " . trim($output) . "\n";
+        echo "popen SUCCESS ✅\n";
+        echo "Output (first 500 chars): " . substr(trim($output), 0, 500) . "\n";
     } else {
-        echo "popen fehlgeschlagen\n";
+        $err = error_get_last();
+        echo "popen FAILED: " . ($err['message'] ?? 'unknown error') . "\n";
     }
 } else {
-    echo "popen nicht verfügbar\n";
+    echo "popen not available, skipping\n";
 }
-echo "\n--- Test: proc_open mit FFmpeg ---\n";
-if (function_exists('proc_open')) {
-    $descriptors = [['pipe','r'], ['pipe','w'], ['pipe','w']];
+echo "\n";
+
+echo "=== PROC_OPEN TEST ===\n";
+if (function_exists('proc_open') && !in_array('proc_open', $disabledList)) {
+    echo "Attempting proc_open('/usr/bin/ffmpeg -version 2>&1')...\n";
+    $descriptors = [
+        0 => ['pipe', 'r'],
+        1 => ['pipe', 'w'],
+        2 => ['pipe', 'w']
+    ];
     $proc = @proc_open('/usr/bin/ffmpeg -version 2>&1', $descriptors, $pipes);
     if (is_resource($proc)) {
-        $output = stream_get_contents($pipes[1]);
-        fclose($pipes[0]); fclose($pipes[1]); fclose($pipes[2]);
+        $stdout = stream_get_contents($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[0]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
         proc_close($proc);
-        echo "proc_open SUCCESS: " . trim($output) . "\n";
+        echo "proc_open SUCCESS ✅\n";
+        echo "STDOUT (first 500 chars): " . substr(trim($stdout), 0, 500) . "\n";
+        if ($stderr) echo "STDERR (first 200 chars): " . substr(trim($stderr), 0, 200) . "\n";
     } else {
-        echo "proc_open fehlgeschlagen\n";
+        $err = error_get_last();
+        echo "proc_open FAILED: " . ($err['message'] ?? 'unknown error') . "\n";
     }
 } else {
-    echo "proc_open nicht verfügbar\n";
+    echo "proc_open not available, skipping\n";
 }
+echo "\n";
 
-if (!is_dir($projectDir)) {
-    echo "\nAttempting to create directory...\n";
-    $result = mkdir($projectDir, 0777, true);
-    echo "mkdir result: " . ($result ? 'SUCCESS' : 'FAILED') . "\n";
-    if (!$result) {
-        $error = error_get_last();
-        echo "Error: " . ($error['message'] ?? 'unknown') . "\n";
-    }
-}
-
-if (is_dir($projectDir)) {
-    $testFile = $projectDir . '/test_' . time() . '.txt';
-    echo "\nAttempting to write test file...\n";
-    $result = file_put_contents($testFile, 'test');
-    echo "file_put_contents result: " . ($result === false ? 'FAILED' : 'SUCCESS (' . $result . ' bytes)') . "\n";
-    if ($result !== false) {
-        echo "Test file created: $testFile\n";
-        unlink($testFile);
-        echo "Test file deleted\n";
+echo "=== POPEN TEST 2: simple echo ===\n";
+if (function_exists('popen') && !in_array('popen', $disabledList)) {
+    $handle = @popen('echo HELLO_FROM_POPEN 2>&1', 'r');
+    if ($handle !== false) {
+        $out = trim(fread($handle, 200));
+        pclose($handle);
+        echo "Result: $out\n";
     } else {
-        $error = error_get_last();
-        echo "Error: " . ($error['message'] ?? 'unknown') . "\n";
+        $err = error_get_last();
+        echo "FAILED: " . ($err['message'] ?? 'unknown') . "\n";
     }
 }
 
 echo "</pre>";
-
-echo "<h2>PHP Error Log Location</h2>";
-echo "<pre>";
-echo "error_log: " . ini_get('error_log') . "\n";
-echo "</pre>";
-
-echo "<h2>Test Save Project</h2>";
-echo "<form method='POST'>";
-echo "<input type='hidden' name='action' value='save'>";
-echo "<input type='text' name='test_id' placeholder='Test ID' required>";
-echo "<button type='submit'>Test Save</button>";
-echo "</form>";
-
-if ($_POST['action'] === 'save' && !empty($_POST['test_id'])) {
-    echo "<pre>";
-    echo "\nTesting save with ID: " . $_POST['test_id'] . "\n";
-    $filepath = $projectDir . '/' . $_POST['test_id'] . '.json';
-    $testData = ['id' => $_POST['test_id'], 'test' => true, 'timestamp' => time()];
-    $json = json_encode($testData);
-    echo "Target: $filepath\n";
-    echo "JSON length: " . strlen($json) . "\n";
-    
-    $result = file_put_contents($filepath, $json);
-    echo "Result: " . ($result === false ? 'FAILED' : 'SUCCESS') . "\n";
-    
-    if ($result !== false) {
-        echo "File saved!\n";
-        $content = file_get_contents($filepath);
-        echo "File content: " . $content . "\n";
-        unlink($filepath);
-        echo "File cleaned up\n";
-    } else {
-        $error = error_get_last();
-        echo "Error: " . ($error['message'] ?? 'unknown') . "\n";
-    }
-    echo "</pre>";
-}
