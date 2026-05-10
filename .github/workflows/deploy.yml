@@ -34,6 +34,7 @@ jobs:
           cp server/debug.php dist/debug.php
           cp server/anthropic.php dist/anthropic.php
           cp server/proxy.php dist/proxy.php
+          cp server/speedup.php dist/speedup.php
 
       - name: Ensure deploy directories in dist
         run: |

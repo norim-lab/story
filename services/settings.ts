@@ -20,6 +20,8 @@ export interface ZBSettings {
   shortRulesEnabled: boolean;
   youtubeShadowbanAvoid: boolean;
   tiktokShadowbanAvoid: boolean;
+  speedupEnabled: boolean;
+  speedupPreset: string;
   activeProvider: Provider;
 }
 
@@ -41,6 +43,8 @@ const defaults: ZBSettings = {
   shortRulesEnabled: true,
   youtubeShadowbanAvoid: false,
   tiktokShadowbanAvoid: false,
+  speedupEnabled: true,
+  speedupPreset: 'zeitblytz_standard',
   activeProvider: 'google'
 };
 

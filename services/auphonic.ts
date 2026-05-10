@@ -1,4 +1,56 @@
-import { getAuphonicKey, getAuphonicPresetUuid } from './settings';
+import { getAuphonicKey, getAuphonicPresetUuid, getSettings } from './settings';
+
+export interface SpeedupResult {
+  audio_base64: string;
+  stats: {
+    silences_detected: number;
+    silences_shortened: number;
+    speed_applied: number;
+    original_duration: number;
+    processed_duration: number;
+  };
+}
+
+export const applySpeedup = async (base64Audio: string): Promise<SpeedupResult> => {
+  const settings = getSettings();
+  const speedupPreset = settings.speedupPreset || 'zeitblytz_standard';
+  const speedupEnabled = settings.speedupEnabled !== false;
+
+  if (!speedupEnabled) {
+    return {
+      audio_base64: base64Audio,
+      stats: {
+        silences_detected: 0,
+        silences_shortened: 0,
+        speed_applied: 1.0,
+        original_duration: 0,
+        processed_duration: 0,
+      },
+    };
+  }
+
+  const speedupUrl = 'https://story.zeitblytz.media/speedup.php';
+  const formData = new FormData();
+  formData.append('audio_base64', base64Audio);
+  formData.append('preset', speedupPreset);
+
+  const response = await fetch(speedupUrl, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({ error: 'Unbekannter Fehler' }));
+    throw new Error(`Speedup Fehler: ${errData.error || response.statusText}`);
+  }
+
+  const result: SpeedupResult = await response.json();
+  if (!result.success && !result.audio_base64) {
+    throw new Error('Speedup: Keine Audiodaten in der Antwort');
+  }
+
+  return result;
+};
 
 export const getAuphonicUserInfo = async (): Promise<{ credits: number }> => {
   const token = getAuphonicKey();
@@ -139,13 +191,18 @@ export const processWithAuphonic = async (base64Audio: string): Promise<string> 
 
   const processedBlob = await fileResponse.blob();
   
-  // Convert back to base64 for local storage
-  return new Promise((resolve, reject) => {
+  const auphonicBase64 = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-    reader.onloadend = () => {
-      resolve(reader.result as string);
-    };
+    reader.onloadend = () => resolve(reader.result as string);
     reader.onerror = reject;
     reader.readAsDataURL(processedBlob);
   });
+
+  try {
+    const speedupResult = await applySpeedup(auphonicBase64);
+    return speedupResult.audio_base64;
+  } catch (speedupErr) {
+    console.warn('Speedup fehlgeschlagen, verwende Auphonic-Audio direkt:', speedupErr);
+    return auphonicBase64;
+  }
 };
