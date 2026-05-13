@@ -2009,14 +2009,31 @@ export const App: React.FC = () => {
                 setProjects={setProjects}
                 onCreate={createNewProject} 
                 onSelect={async (id: string) => {
-                    const existing = projects.find(p => p.id === id);
-                    const hasStripped = existing?.scriptResult?.sections?.[0]?.speedupAudio && 
-                        Object.values(existing.scriptResult.sections[0].speedupAudio).some(v => v === '__STRIPPED__');
-                    if (hasStripped) {
-                        const fullProject = await getProject(id);
-                        if (fullProject) {
-                            setProjects(prev => prev.map(p => p.id === id ? fullProject : p));
-                        }
+                    const fullProject = await getProject(id);
+                    if (fullProject) {
+                        const mergedControls = {
+                            [MAIN_ID]: { 
+                                ...DEFAULT_CONTROLS, 
+                                ...(fullProject?.segmentControls?.[MAIN_ID] || fullProject?.segmentControls || {}) 
+                            }
+                        };
+                        const migrated = {
+                            ...fullProject,
+                            id: fullProject.id || id,
+                            name: fullProject.name || id,
+                            rawInput: fullProject.rawInput || "",
+                            factText: fullProject.factText || "",
+                            scriptResult: fullProject.scriptResult ?? null,
+                            segmentVersions: fullProject.segmentVersions || { [MAIN_ID]: 'short_1' },
+                            segmentControls: mergedControls,
+                            history: Array.isArray(fullProject.history) ? fullProject.history : [],
+                            historyIndex: typeof fullProject.historyIndex === 'number' ? fullProject.historyIndex : -1,
+                            isEditing: !!fullProject.isEditing,
+                            manualEditText: fullProject.manualEditText || "",
+                            selectedModel: fullProject.selectedModel || getSettings().googleFastModel,
+                            publishedOn: fullProject.publishedOn || []
+                        } as ProjectSession;
+                        setProjects(prev => prev.map(p => p.id === id ? migrated : p));
                     }
                     setActiveProjectId(id);
                 }} 

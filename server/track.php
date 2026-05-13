@@ -25,9 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 $projectDir = 'track';
+$indexFile = 'track/index.json';
 $filePattern = '*.json';
-
-$audioFields = ['speedupAudio', 'auphonicAudio', 'elevenLabsAudio', 'audioBase64'];
 
 function sendJson(array $data, int $code = 200): void {
     http_response_code($code);
@@ -43,104 +42,130 @@ function sanitizeId(string $id): string {
     return preg_replace('/[^a-zA-Z0-9\-_]/', '', $id);
 }
 
-function stripAudioData(array $project): array {
-    global $audioFields;
+function readIndex(): array {
+    global $indexFile;
 
-    foreach ($audioFields as $field) {
-        if (isset($project[$field])) {
-            if (is_array($project[$field])) {
-                foreach ($project[$field] as $key => $value) {
-                    if (is_string($value) && strlen($value) > 200) {
-                        $project[$field][$key] = '__STRIPPED__';
-                    }
-                }
-            } elseif (is_string($project[$field]) && strlen($project[$field]) > 200) {
-                $project[$field] = '__STRIPPED__';
-            }
+    if (file_exists($indexFile)) {
+        $content = @file_get_contents($indexFile);
+        if ($content !== false) {
+            $data = json_decode($content, true);
+            if (is_array($data)) return $data;
         }
     }
 
-    if (isset($project['scriptResult']) && is_array($project['scriptResult'])) {
-        if (isset($project['scriptResult']['sections']) && is_array($project['scriptResult']['sections'])) {
-            foreach ($project['scriptResult']['sections'] as $sIdx => $section) {
-                if (!is_array($section)) continue;
-                foreach ($audioFields as $field) {
-                    if (isset($section[$field]) && is_array($section[$field])) {
-                        foreach ($section[$field] as $key => $value) {
-                            if (is_string($value) && strlen($value) > 200) {
-                                $project['scriptResult']['sections'][$sIdx][$field][$key] = '__STRIPPED__';
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    return $project;
+    return rebuildIndex();
 }
 
-function loadProjects(bool $stripAudio = false): array {
-    global $projectDir, $filePattern;
+function rebuildIndex(): array {
+    global $projectDir, $indexFile;
 
-    $projects = [];
-    $loadedIds = [];
+    $index = [];
 
     if (is_dir($projectDir)) {
-        foreach (glob($projectDir . '/' . $filePattern) as $file) {
+        foreach (glob($projectDir . '/*.json') as $file) {
             $basename = basename($file);
-            if ($basename === 'projects.json') continue;
+            if ($basename === 'index.json' || $basename === 'projects.json') continue;
 
-            $content = @file_get_contents($file);
-            if ($content === false) continue;
+            $fp = fopen($file, 'r');
+            if (!$fp) continue;
 
-            $data = json_decode($content, true);
-            if (!is_array($data)) {
-                error_log("track.php: Invalid JSON in {$basename}, skipping");
-                $data = [];
+            $buffer = '';
+            $found = 0;
+            $meta = ['id' => '', 'name' => '', 'lastModified' => 0];
+
+            while (!feof($fp) && $found < 3 && strlen($buffer) < 8192) {
+                $buffer .= fread($fp, 4096);
+                if (preg_match('/"id"\s*:\s*"([^"]+)"/', $buffer, $m)) {
+                    $meta['id'] = $m[1];
+                    $found++;
+                }
+                if (preg_match('/"name"\s*:\s*"([^"]+)"/', $buffer, $m)) {
+                    $meta['name'] = $m[1];
+                    $found++;
+                }
+                if (preg_match('/"lastModified"\s*:\s*(\d+)/', $buffer, $m)) {
+                    $meta['lastModified'] = (int)$m[1];
+                    $found++;
+                }
+            }
+            fclose($fp);
+
+            if (empty($meta['id'])) {
+                $meta['id'] = pathinfo($basename, PATHINFO_FILENAME);
+            }
+            if (empty($meta['name'])) {
+                $meta['name'] = $meta['id'];
+            }
+            if (empty($meta['lastModified'])) {
+                $mtime = @filemtime($file);
+                $meta['lastModified'] = $mtime !== false ? $mtime : time();
             }
 
-            $inferredId = pathinfo($basename, PATHINFO_FILENAME);
-            $data['id'] = isset($data['id']) && $data['id'] !== '' ? sanitizeId($data['id']) : sanitizeId($inferredId);
-
-            if (!isset($loadedIds[$data['id']])) {
-                if (!isset($data['lastModified'])) {
-                    $mtime = @filemtime($file);
-                    $data['lastModified'] = $mtime !== false ? $mtime : time();
-                }
-                if (!isset($data['name']) || $data['name'] === '') {
-                    $data['name'] = $data['id'];
-                }
-                if ($stripAudio) {
-                    $data = stripAudioData($data);
-                }
-                $projects[] = $data;
-                $loadedIds[$data['id']] = true;
-            }
+            $index[] = $meta;
         }
     }
 
     if (file_exists($projectDir . '/projects.json')) {
-        $legacy = @file_get_contents($projectDir . '/projects.json');
-        if ($legacy !== false) {
-            $legacyData = json_decode($legacy, true);
+        $content = @file_get_contents($projectDir . '/projects.json');
+        if ($content !== false) {
+            $legacyData = json_decode($content, true);
             $list = $legacyData['projects'] ?? (is_array($legacyData) ? $legacyData : []);
+            $loadedIds = array_column($index, 'id');
 
             foreach ($list as $p) {
-                if (is_array($p) && isset($p['id']) && !isset($loadedIds[$p['id']])) {
-                    if ($stripAudio) {
-                        $p = stripAudioData($p);
-                    }
-                    $projects[] = $p;
-                    $loadedIds[$p['id']] = true;
+                if (is_array($p) && isset($p['id']) && !in_array($p['id'], $loadedIds)) {
+                    $index[] = [
+                        'id' => $p['id'],
+                        'name' => $p['name'] ?? $p['id'],
+                        'lastModified' => $p['lastModified'] ?? time()
+                    ];
                 }
             }
         }
     }
 
-    usort($projects, fn($a, $b) => ($b['lastModified'] ?? 0) - ($a['lastModified'] ?? 0));
+    usort($index, fn($a, $b) => ($b['lastModified'] ?? 0) - ($a['lastModified'] ?? 0));
 
-    return $projects;
+    @file_put_contents($indexFile, json_encode($index, JSON_UNESCAPED_UNICODE));
+    @chmod($indexFile, 0666);
+
+    return $index;
+}
+
+function updateIndexEntry(string $id, string $name, int $lastModified): void {
+    global $indexFile;
+
+    $index = readIndex();
+    $found = false;
+
+    foreach ($index as &$entry) {
+        if ($entry['id'] === $id) {
+            $entry['name'] = $name;
+            $entry['lastModified'] = $lastModified;
+            $found = true;
+            break;
+        }
+    }
+    unset($entry);
+
+    if (!$found) {
+        $index[] = ['id' => $id, 'name' => $name, 'lastModified' => $lastModified];
+    }
+
+    usort($index, fn($a, $b) => ($b['lastModified'] ?? 0) - ($a['lastModified'] ?? 0));
+
+    @file_put_contents($indexFile, json_encode($index, JSON_UNESCAPED_UNICODE));
+    @chmod($indexFile, 0666);
+}
+
+function removeIndexEntry(string $id): void {
+    global $indexFile;
+
+    $index = readIndex();
+    $index = array_values(array_filter($index, fn($e) => $e['id'] !== $id));
+
+    @file_put_contents($indexFile, json_encode($index, JSON_UNESCAPED_UNICODE));
+    @chmod($indexFile, 0666);
 }
 
 function loadSingleProject(string $id): ?array {
@@ -196,6 +221,12 @@ function saveProject(array $project): void {
     }
 
     chmod($filepath, 0666);
+
+    updateIndexEntry(
+        $project['id'],
+        $project['name'] ?? $project['id'],
+        $project['lastModified'] ?? time()
+    );
 }
 
 function deleteProject(string $id): void {
@@ -208,18 +239,7 @@ function deleteProject(string $id): void {
         unlink($filepath);
     }
 
-    if (file_exists($projectDir . '/projects.json')) {
-        $content = @file_get_contents($projectDir . '/projects.json');
-        if ($content !== false) {
-            $data = json_decode($content, true);
-            $list = $data['projects'] ?? (is_array($data) ? $data : []);
-            $newList = array_filter($list, fn($p) => !isset($p['id']) || $p['id'] !== $id);
-
-            if (count($newList) !== count($list)) {
-                file_put_contents($projectDir . '/projects.json', json_encode(array_values($newList)));
-            }
-        }
-    }
+    removeIndexEntry($id);
 }
 
 $input = file_get_contents('php://input');
@@ -232,7 +252,8 @@ try {
             $count = 0;
             if (is_dir($projectDir)) {
                 foreach (glob($projectDir . '/' . $filePattern) as $f) {
-                    if (basename($f) !== 'projects.json') $count++;
+                    $bn = basename($f);
+                    if ($bn !== 'index.json' && $bn !== 'projects.json') $count++;
                 }
             }
             sendJson([
@@ -243,7 +264,7 @@ try {
             break;
 
         case 'list':
-            sendJson(loadProjects(true));
+            sendJson(readIndex());
             break;
 
         case 'get':
@@ -256,6 +277,10 @@ try {
                 sendError("Projekt nicht gefunden", 404);
             }
             sendJson($project);
+            break;
+
+        case 'reindex':
+            sendJson(['success' => true, 'count' => count(rebuildIndex())]);
             break;
 
         case 'save':
@@ -294,7 +319,7 @@ try {
         default:
             sendJson([
                 'status' => 'ready',
-                'message' => 'API ready. Use ?action=list|get|save|delete|status',
+                'message' => 'API ready. Use ?action=list|get|save|delete|status|reindex',
                 'storage_mode' => 'track_folder'
             ]);
             break;
