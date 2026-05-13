@@ -23,7 +23,7 @@ import {
     generateTitle,
     prepareForElevenLabs
 } from './services/provider';
-import { initStorage, listProjects, saveProject, deleteProject as deleteCloudProject, checkConnection } from './services/storage';
+import { initStorage, listProjects, saveProject, deleteProject as deleteCloudProject, checkConnection, getProject } from './services/storage';
 import SettingsModal from './components/SettingsModal';
 import { getSettings, getFastModel, getProModel, saveSettings } from './services/settings';
 import { getRandomHistoricalWikiquote } from './services/wikiquote';
@@ -2008,7 +2008,18 @@ export const App: React.FC = () => {
                 projects={projects} 
                 setProjects={setProjects}
                 onCreate={createNewProject} 
-                onSelect={setActiveProjectId} 
+                onSelect={async (id: string) => {
+                    const existing = projects.find(p => p.id === id);
+                    const hasStripped = existing?.scriptResult?.sections?.[0]?.speedupAudio && 
+                        Object.values(existing.scriptResult.sections[0].speedupAudio).some(v => v === '__STRIPPED__');
+                    if (hasStripped) {
+                        const fullProject = await getProject(id);
+                        if (fullProject) {
+                            setProjects(prev => prev.map(p => p.id === id ? fullProject : p));
+                        }
+                    }
+                    setActiveProjectId(id);
+                }} 
                 onDelete={deleteProject}
                 onImport={handleImport}
                 isLoading={isCloudLoading}

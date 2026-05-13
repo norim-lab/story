@@ -17,7 +17,7 @@ const SPEEDUP_PRESETS: Record<string, { speed: number; silenceThreshold: number;
     voiceover_turbo: { speed: 1.20, silenceThreshold: -43.0, minSilenceDuration: 0.20, targetSilenceDuration: 0.10 },
 };
 
-function base64ToArrayBuffer(base64: string): ArrayBuffer {
+function base64ToUint8Array(base64: string): Uint8Array {
     const parts = base64.split(',');
     const raw = parts.length > 1 ? parts[1] : parts[0];
     const binaryStr = atob(raw);
@@ -25,11 +25,47 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
     for (let i = 0; i < binaryStr.length; i++) {
         bytes[i] = binaryStr.charCodeAt(i);
     }
-    return bytes.buffer;
+    return bytes;
 }
 
-function arrayBufferToBase64(buffer: ArrayBuffer, mimeType: string): string {
-    const bytes = new Uint8Array(buffer);
+function encodeWAV(samples: Float32Array, sampleRate: number, numChannels: number): Uint8Array {
+    const bytesPerSample = 2;
+    const blockAlign = numChannels * bytesPerSample;
+    const dataLength = samples.length * bytesPerSample;
+    const buffer = new ArrayBuffer(44 + dataLength);
+    const view = new DataView(buffer);
+
+    function writeString(offset: number, str: string) {
+        for (let i = 0; i < str.length; i++) {
+            view.setUint8(offset + i, str.charCodeAt(i));
+        }
+    }
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + dataLength, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * blockAlign, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bytesPerSample * 8, true);
+    writeString(36, 'data');
+    view.setUint32(40, dataLength, true);
+
+    let offset = 44;
+    for (let i = 0; i < samples.length; i++) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        offset += 2;
+    }
+
+    return new Uint8Array(buffer);
+}
+
+function uint8ArrayToBase64(bytes: Uint8Array, mimeType: string): string {
     let binary = '';
     const chunkSize = 8192;
     for (let i = 0; i < bytes.length; i += chunkSize) {
@@ -42,39 +78,41 @@ function arrayBufferToBase64(buffer: ArrayBuffer, mimeType: string): string {
 function detectSilenceRegions(
     channelData: Float32Array,
     sampleRate: number,
-    thresholdDb: number,
+    silenceThresholdDb: number,
     minSilenceDuration: number
 ): { start: number; end: number }[] {
-    const thresholdLinear = Math.pow(10, thresholdDb / 20);
+    const thresholdLinear = Math.pow(10, silenceThresholdDb / 20);
     const minSilenceSamples = Math.floor(minSilenceDuration * sampleRate);
+    const windowSize = Math.floor(sampleRate * 0.02);
     const regions: { start: number; end: number }[] = [];
 
     let silenceStart = -1;
-    for (let i = 0; i < channelData.length; i++) {
-        const amplitude = Math.abs(channelData[i]);
-        if (amplitude < thresholdLinear) {
-            if (silenceStart === -1) silenceStart = i;
-        } else {
-            if (silenceStart !== -1) {
-                const silenceLength = i - silenceStart;
-                if (silenceLength >= minSilenceSamples) {
-                    regions.push({
-                        start: silenceStart / sampleRate,
-                        end: i / sampleRate
-                    });
-                }
-                silenceStart = -1;
+    let silenceSampleCount = 0;
+
+    for (let i = 0; i < channelData.length; i += windowSize) {
+        let rms = 0;
+        const end = Math.min(i + windowSize, channelData.length);
+        for (let j = i; j < end; j++) {
+            rms += channelData[j] * channelData[j];
+        }
+        rms = Math.sqrt(rms / (end - i));
+
+        if (rms < thresholdLinear) {
+            if (silenceStart === -1) {
+                silenceStart = i;
             }
+            silenceSampleCount = end - silenceStart;
+        } else {
+            if (silenceStart !== -1 && silenceSampleCount >= minSilenceSamples) {
+                regions.push({ start: silenceStart, end: i });
+            }
+            silenceStart = -1;
+            silenceSampleCount = 0;
         }
     }
-    if (silenceStart !== -1) {
-        const silenceLength = channelData.length - silenceStart;
-        if (silenceLength >= minSilenceSamples) {
-            regions.push({
-                start: silenceStart / sampleRate,
-                end: channelData.length / sampleRate
-            });
-        }
+
+    if (silenceStart !== -1 && silenceSampleCount >= minSilenceSamples) {
+        regions.push({ start: silenceStart, end: channelData.length });
     }
 
     return regions;
@@ -96,148 +134,153 @@ export async function applySpeedupClient(
     const minSilenceDuration = presetValues?.minSilenceDuration ?? config.minSilenceDuration ?? 0.30;
     const targetSilenceDuration = presetValues?.targetSilenceDuration ?? config.targetSilenceDuration ?? 0.15;
 
-    const audioCtx = new AudioContext();
-    try {
-        const arrayBuffer = base64ToArrayBuffer(base64Audio);
-        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    const audioBytes = base64ToUint8Array(base64Audio);
+    const arrayBuffer = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength) as ArrayBuffer;
+    const audioBuffer = await new AudioContext().decodeAudioData(arrayBuffer);
 
-        const originalDuration = audioBuffer.duration;
-        const sampleRate = audioBuffer.sampleRate;
-        const numChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const numChannels = audioBuffer.numberOfChannels;
+    const originalDuration = audioBuffer.duration;
+    const totalSamples = audioBuffer.length;
 
-        const silenceRegions = detectSilenceRegions(
-            audioBuffer.getChannelData(0),
-            sampleRate,
-            silenceThreshold,
-            minSilenceDuration
-        );
+    const channelData: Float32Array[] = [];
+    for (let ch = 0; ch < numChannels; ch++) {
+        channelData.push(audioBuffer.getChannelData(ch));
+    }
 
-        const segments: { start: number; end: number }[] = [];
-        let lastEnd = 0;
-        let shortenedCount = 0;
+    const silenceRegions = detectSilenceRegions(
+        channelData[0],
+        sampleRate,
+        silenceThreshold,
+        minSilenceDuration
+    );
 
-        for (const region of silenceRegions) {
-            const silenceDuration = region.end - region.start;
-            if (silenceDuration > targetSilenceDuration) {
-                if (region.start > lastEnd + 0.001) {
-                    segments.push({ start: lastEnd, end: region.start });
-                }
-                segments.push({ start: region.start, end: region.start + targetSilenceDuration });
-                lastEnd = region.end;
-                shortenedCount++;
-            }
-        }
-        if (originalDuration > lastEnd + 0.001) {
-            segments.push({ start: lastEnd, end: originalDuration });
-        }
-
-        let totalTrimmedDuration = 0;
-        for (const seg of segments) {
-            totalTrimmedDuration += seg.end - seg.start;
-        }
-
-        const trimmedSampleCount = Math.ceil(totalTrimmedDuration * sampleRate);
-        const trimmedBuffer = audioCtx.createBuffer(numChannels, trimmedSampleCount, sampleRate);
-
-        let writeOffset = 0;
-        for (const seg of segments) {
-            const startSample = Math.floor(seg.start * sampleRate);
-            const endSample = Math.min(Math.ceil(seg.end * sampleRate), audioBuffer.length);
-            const length = endSample - startSample;
-
-            for (let ch = 0; ch < numChannels; ch++) {
-                const sourceData = audioBuffer.getChannelData(ch);
-                const destData = trimmedBuffer.getChannelData(ch);
-                for (let i = 0; i < length; i++) {
-                    destData[writeOffset + i] = sourceData[startSample + i];
-                }
-            }
-            writeOffset += length;
-        }
-
-        const finalSampleCount = Math.ceil(trimmedBuffer.duration / speed);
-        const finalBuffer = audioCtx.createBuffer(numChannels, finalSampleCount, sampleRate);
+    if (silenceRegions.length === 0) {
+        const speedupRatio = 1 / speed;
+        const newLength = Math.floor(totalSamples * speedupRatio);
+        const outputChannels: Float32Array[] = [];
 
         for (let ch = 0; ch < numChannels; ch++) {
-            const sourceData = trimmedBuffer.getChannelData(ch);
-            const destData = finalBuffer.getChannelData(ch);
-            for (let i = 0; i < finalSampleCount; i++) {
-                const sourceIndex = i * speed;
-                const idx1 = Math.floor(sourceIndex);
-                const idx2 = Math.min(idx1 + 1, sourceData.length - 1);
-                const frac = sourceIndex - idx1;
-                destData[i] = sourceData[idx1] * (1 - frac) + sourceData[idx2] * frac;
+            const output = new Float32Array(newLength);
+            for (let i = 0; i < newLength; i++) {
+                const srcIdx = i * speed;
+                const idx0 = Math.floor(srcIdx);
+                const idx1 = Math.min(idx0 + 1, totalSamples - 1);
+                const frac = srcIdx - idx0;
+                output[i] = channelData[ch][idx0] * (1 - frac) + channelData[ch][idx1] * frac;
             }
+            outputChannels.push(output);
         }
 
-        const processedDuration = finalBuffer.duration;
-
-        const wavBuffer = encodeWav(finalBuffer);
-        const resultBase64 = arrayBufferToBase64(wavBuffer, 'audio/wav');
+        const interleaved = interleaveChannels(outputChannels);
+        const wavBytes = encodeWAV(interleaved, sampleRate, numChannels);
+        const processedDuration = newLength / sampleRate;
 
         return {
-            audioBase64: resultBase64,
+            audioBase64: uint8ArrayToBase64(wavBytes, 'audio/wav'),
             stats: {
-                silences_detected: silenceRegions.length,
-                silences_shortened: shortenedCount,
+                silences_detected: 0,
+                silences_shortened: 0,
                 speed_applied: speed,
                 original_duration: Math.round(originalDuration * 100) / 100,
                 processed_duration: Math.round(processedDuration * 100) / 100,
             },
         };
-    } finally {
-        await audioCtx.close();
     }
+
+    const targetSilenceSamples = Math.floor(targetSilenceDuration * sampleRate);
+    let shortenedCount = 0;
+
+    const segmentRanges: { start: number; end: number; isSilence: boolean }[] = [];
+    let lastEnd = 0;
+
+    for (const region of silenceRegions) {
+        if (region.start > lastEnd) {
+            segmentRanges.push({ start: lastEnd, end: region.start, isSilence: false });
+        }
+
+        const silenceSamples = region.end - region.start;
+        if (silenceSamples > targetSilenceSamples) {
+            segmentRanges.push({ start: region.start, end: region.start + targetSilenceSamples, isSilence: true });
+            shortenedCount++;
+        } else {
+            segmentRanges.push({ start: region.start, end: region.end, isSilence: true });
+        }
+        lastEnd = region.end;
+    }
+
+    if (lastEnd < totalSamples) {
+        segmentRanges.push({ start: lastEnd, end: totalSamples, isSilence: false });
+    }
+
+    let totalOutputSamples = 0;
+    for (const seg of segmentRanges) {
+        const segLength = seg.end - seg.start;
+        if (!seg.isSilence) {
+            totalOutputSamples += Math.floor(segLength / speed);
+        } else {
+            totalOutputSamples += segLength;
+        }
+    }
+
+    const outputChannels: Float32Array[] = [];
+    for (let ch = 0; ch < numChannels; ch++) {
+        const output = new Float32Array(totalOutputSamples);
+        let writePos = 0;
+
+        for (const seg of segmentRanges) {
+            const segLength = seg.end - seg.start;
+
+            if (!seg.isSilence) {
+                const outputSegLength = Math.floor(segLength / speed);
+                for (let i = 0; i < outputSegLength; i++) {
+                    const srcIdx = seg.start + i * speed;
+                    const idx0 = Math.floor(srcIdx);
+                    const idx1 = Math.min(idx0 + 1, seg.end - 1);
+                    const frac = srcIdx - idx0;
+                    output[writePos + i] = channelData[ch][idx0] * (1 - frac) + channelData[ch][idx1] * frac;
+                }
+                writePos += outputSegLength;
+            } else {
+                const copyLength = Math.min(segLength, totalOutputSamples - writePos);
+                for (let i = 0; i < copyLength; i++) {
+                    output[writePos + i] = channelData[ch][seg.start + i];
+                }
+                writePos += copyLength;
+            }
+        }
+
+        outputChannels.push(output.subarray(0, writePos));
+    }
+
+    const finalLength = outputChannels[0].length;
+    const interleaved = interleaveChannels(outputChannels);
+    const wavBytes = encodeWAV(interleaved, sampleRate, numChannels);
+    const processedDuration = finalLength / sampleRate;
+
+    return {
+        audioBase64: uint8ArrayToBase64(wavBytes, 'audio/wav'),
+        stats: {
+            silences_detected: silenceRegions.length,
+            silences_shortened: shortenedCount,
+            speed_applied: speed,
+            original_duration: Math.round(originalDuration * 100) / 100,
+            processed_duration: Math.round(processedDuration * 100) / 100,
+        },
+    };
 }
 
-function encodeWav(buffer: AudioBuffer): ArrayBuffer {
-    const numChannels = buffer.numberOfChannels;
-    const sampleRate = buffer.sampleRate;
-    const numSamples = buffer.length;
-    const bytesPerSample = 2;
-    const dataLength = numSamples * numChannels * bytesPerSample;
-    const headerLength = 44;
-    const totalLength = headerLength + dataLength;
-
-    const arrayBuffer = new ArrayBuffer(totalLength);
-    const view = new DataView(arrayBuffer);
-
-    function writeString(offset: number, str: string) {
-        for (let i = 0; i < str.length; i++) {
-            view.setUint8(offset + i, str.charCodeAt(i));
-        }
-    }
-
-    writeString(0, 'RIFF');
-    view.setUint32(4, totalLength - 8, true);
-    writeString(8, 'WAVE');
-    writeString(12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, numChannels, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
-    view.setUint16(32, numChannels * bytesPerSample, true);
-    view.setUint16(34, bytesPerSample * 8, true);
-    writeString(36, 'data');
-    view.setUint32(40, dataLength, true);
-
-    const channels: Float32Array[] = [];
-    for (let ch = 0; ch < numChannels; ch++) {
-        channels.push(buffer.getChannelData(ch));
-    }
-
-    let offset = 44;
-    for (let i = 0; i < numSamples; i++) {
+function interleaveChannels(channels: Float32Array[]): Float32Array {
+    if (channels.length === 1) return channels[0];
+    const length = channels[0].length;
+    const numChannels = channels.length;
+    const result = new Float32Array(length * numChannels);
+    for (let i = 0; i < length; i++) {
         for (let ch = 0; ch < numChannels; ch++) {
-            const sample = Math.max(-1, Math.min(1, channels[ch][i]));
-            const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-            view.setInt16(offset, intSample, true);
-            offset += 2;
+            result[i * numChannels + ch] = channels[ch][i];
         }
     }
-
-    return arrayBuffer;
+    return result;
 }
 
 export { SPEEDUP_PRESETS };

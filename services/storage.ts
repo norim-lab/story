@@ -51,15 +51,25 @@ export const listProjects = async (): Promise<ProjectSession[]> => {
     }
 };
 
-export const saveProject = async (project: ProjectSession): Promise<void> => {
-    console.log("=== SAVE PROJECT AUFGERUFEN ===");
-    console.log("API_URL:", API_URL);
-    console.log("isLocalhost:", isLocalhost);
-    console.log("Project ID:", project.id);
-    console.log("================================");
-    
+export const getProject = async (id: string): Promise<ProjectSession | null> => {
     try {
-        console.log("Sende POST Request...");
+        const response = await fetch(`${API_URL}?action=get&id=${id}`, fetchOptions({
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+        }));
+        if (!response.ok) {
+            if (response.status === 404) return null;
+            throw new Error(`Fehler beim Laden des Projekts: ${response.status}`);
+        }
+        return await response.json();
+    } catch (e) {
+        console.error("Fehler beim Laden des Projekts:", e);
+        return null;
+    }
+};
+
+export const saveProject = async (project: ProjectSession): Promise<void> => {
+    try {
         const response = await fetch(API_URL, fetchOptions({
             method: 'POST',
             headers: {
@@ -71,13 +81,9 @@ export const saveProject = async (project: ProjectSession): Promise<void> => {
                 project: project
             })
         }));
-        
-        console.log("Response Status:", response.status);
-        console.log("Response OK:", response.ok);
-        
+
         if (!response.ok) throw new Error("Speichern fehlgeschlagen");
         const result = await response.json();
-        console.log("Response JSON:", result);
         if (result.error) throw new Error(result.error);
     } catch (e) {
         console.error("Fehler beim Speichern:", e);
@@ -91,7 +97,7 @@ export const deleteProject = async (id: string): Promise<void> => {
             method: 'POST',
             headers: { 'Accept': 'application/json' }
         }));
-        
+
         if (!response.ok) {
             throw new Error(`HTTP Fehler: ${response.status}`);
         }
