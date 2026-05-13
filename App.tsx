@@ -139,6 +139,10 @@ const createSnapshot = (project: ProjectSession): HistoryStateSnapshot => {
     };
 };
 
+const isValidAudioData = (data: string | undefined | null): data is string => {
+    return !!data && data !== '__STRIPPED__' && data.startsWith('data:audio');
+};
+
 // --- Sub Components ---
 
 const CloudStatusIndicator: React.FC<{ status: CloudStatus, lastSaved: Date | null }> = ({ status, lastSaved }) => {
@@ -1913,7 +1917,7 @@ export const App: React.FC = () => {
     const handleSpeedup = async () => {
         if (!activeProject?.scriptResult?.sections?.[0]) return;
         const auphonicAudio = activeProject.scriptResult.sections[0].auphonicAudio?.[currentSlot];
-        if (!auphonicAudio) {
+        if (!auphonicAudio || auphonicAudio === '__STRIPPED__') {
             addLog("Kein gemastertes Audio vorhanden. Bitte zuerst Auphonic ausführen.", "error");
             return;
         }
@@ -2968,7 +2972,7 @@ export const App: React.FC = () => {
                                             )}
 
                                             {/* Auphonic Audio Result */}
-                                            {activeProject.scriptResult.sections[0].auphonicAudio?.[currentSlot] && (
+                                            {isValidAudioData(activeProject.scriptResult.sections[0].auphonicAudio?.[currentSlot]) && (
                                                 <div className="pt-6 border-t border-purple-500/20 space-y-4">
                                                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                                                         <div className="flex items-center gap-3">
@@ -2995,7 +2999,7 @@ export const App: React.FC = () => {
                                             )}
 
                                             {/* Speedup Section - Step 4 */}
-                                            {activeProject.scriptResult.sections[0].auphonicAudio?.[currentSlot] && (
+                                            {isValidAudioData(activeProject.scriptResult.sections[0].auphonicAudio?.[currentSlot]) && (
                                                 <div className="pt-6 border-t border-amber-500/20 space-y-4">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">4</div>
@@ -3108,7 +3112,7 @@ export const App: React.FC = () => {
                                                         )}
                                                     </div>
 
-                                                    {activeProject.scriptResult.sections[0].speedupAudio?.[currentSlot] && (
+                                                    {isValidAudioData(activeProject.scriptResult.sections[0].speedupAudio?.[currentSlot]) && (
                                                         <div className="space-y-3">
                                                             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                                                                 <div className="flex items-center gap-3">

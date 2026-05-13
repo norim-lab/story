@@ -18,9 +18,20 @@ const SPEEDUP_PRESETS: Record<string, { speed: number; silenceThreshold: number;
 };
 
 function base64ToUint8Array(base64: string): Uint8Array {
+    if (!base64 || base64 === '__STRIPPED__' || base64 === 'undefined' || base64 === 'null') {
+        throw new Error('Audio-Daten nicht verfügbar. Bitte zuerst Auphonic (Schritt 3) ausführen, um Audio zu generieren.');
+    }
     const parts = base64.split(',');
     const raw = parts.length > 1 ? parts[1] : parts[0];
-    const binaryStr = atob(raw);
+    if (!raw || raw.length < 10) {
+        throw new Error('Audio-Daten sind leer oder ungültig. Bitte Auphonic (Schritt 3) erneut ausführen.');
+    }
+    let binaryStr: string;
+    try {
+        binaryStr = atob(raw);
+    } catch {
+        throw new Error('Audio-Daten sind beschädigt. Bitte Auphonic (Schritt 3) erneut ausführen, um neues Audio zu generieren.');
+    }
     const bytes = new Uint8Array(binaryStr.length);
     for (let i = 0; i < binaryStr.length; i++) {
         bytes[i] = binaryStr.charCodeAt(i);
