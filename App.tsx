@@ -463,6 +463,8 @@ export const App: React.FC = () => {
     const [elevenLabsUsage, setElevenLabsUsage] = useState<{ used: number, limit: number } | null>(null);
     const [auphonicQuota, setAuphonicQuota] = useState<{ credits: number } | null>(null);
     const [isProcessingSpeedup, setIsProcessingSpeedup] = useState(false);
+    const [isLoadingProject, setIsLoadingProject] = useState(false);
+    const projectCacheRef = useRef<Record<string, ProjectSession>>({});
     const [speedupConfig, setSpeedupConfig] = useState({
         preset: 'zeitblytz_standard',
         speed: 1.12,
@@ -558,6 +560,8 @@ export const App: React.FC = () => {
                 history: newHistory,
                 historyIndex: newHistory.length - 1
             };
+
+            if (activeProjectId) projectCacheRef.current[activeProjectId] = finalProject;
 
             return currentProjects.map(p => p.id === activeProjectId ? finalProject : p);
         });
@@ -2013,33 +2017,44 @@ export const App: React.FC = () => {
                 setProjects={setProjects}
                 onCreate={createNewProject} 
                 onSelect={async (id: string) => {
-                    const fullProject = await getProject(id);
-                    if (fullProject) {
-                        const mergedControls = {
-                            [MAIN_ID]: { 
-                                ...DEFAULT_CONTROLS, 
-                                ...(fullProject?.segmentControls?.[MAIN_ID] || fullProject?.segmentControls || {}) 
-                            }
-                        };
-                        const migrated = {
-                            ...fullProject,
-                            id: fullProject.id || id,
-                            name: fullProject.name || id,
-                            rawInput: fullProject.rawInput || "",
-                            factText: fullProject.factText || "",
-                            scriptResult: fullProject.scriptResult ?? null,
-                            segmentVersions: fullProject.segmentVersions || { [MAIN_ID]: 'short_1' },
-                            segmentControls: mergedControls,
-                            history: Array.isArray(fullProject.history) ? fullProject.history : [],
-                            historyIndex: typeof fullProject.historyIndex === 'number' ? fullProject.historyIndex : -1,
-                            isEditing: !!fullProject.isEditing,
-                            manualEditText: fullProject.manualEditText || "",
-                            selectedModel: fullProject.selectedModel || getSettings().googleFastModel,
-                            publishedOn: fullProject.publishedOn || []
-                        } as ProjectSession;
-                        setProjects(prev => prev.map(p => p.id === id ? migrated : p));
+                    if (projectCacheRef.current[id]) {
+                        setProjects(prev => prev.map(p => p.id === id ? projectCacheRef.current[id] : p));
+                        setActiveProjectId(id);
+                        return;
                     }
-                    setActiveProjectId(id);
+                    setIsLoadingProject(true);
+                    try {
+                        const fullProject = await getProject(id);
+                        if (fullProject) {
+                            const mergedControls = {
+                                [MAIN_ID]: { 
+                                    ...DEFAULT_CONTROLS, 
+                                    ...(fullProject?.segmentControls?.[MAIN_ID] || fullProject?.segmentControls || {}) 
+                                }
+                            };
+                            const migrated = {
+                                ...fullProject,
+                                id: fullProject.id || id,
+                                name: fullProject.name || id,
+                                rawInput: fullProject.rawInput || "",
+                                factText: fullProject.factText || "",
+                                scriptResult: fullProject.scriptResult ?? null,
+                                segmentVersions: fullProject.segmentVersions || { [MAIN_ID]: 'short_1' },
+                                segmentControls: mergedControls,
+                                history: Array.isArray(fullProject.history) ? fullProject.history : [],
+                                historyIndex: typeof fullProject.historyIndex === 'number' ? fullProject.historyIndex : -1,
+                                isEditing: !!fullProject.isEditing,
+                                manualEditText: fullProject.manualEditText || "",
+                                selectedModel: fullProject.selectedModel || getSettings().googleFastModel,
+                                publishedOn: fullProject.publishedOn || []
+                            } as ProjectSession;
+                            projectCacheRef.current[id] = migrated;
+                            setProjects(prev => prev.map(p => p.id === id ? migrated : p));
+                        }
+                        setActiveProjectId(id);
+                    } finally {
+                        setIsLoadingProject(false);
+                    }
                 }} 
                 onDelete={deleteProject}
                 onImport={handleImport}
@@ -2047,6 +2062,15 @@ export const App: React.FC = () => {
                 cloudStatus={cloudStatus}
                 onOpenSettings={() => setSettingsOpen(true)}
             />
+            {isLoadingProject && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 flex flex-col items-center gap-4 shadow-2xl">
+                        <div className="w-10 h-10 border-3 border-slate-600 border-t-amber-400 rounded-full animate-spin" />
+                        <div className="text-sm font-bold text-slate-300">Projekt wird geladen...</div>
+                        <div className="text-[10px] text-slate-500">Audiodaten werden vom Server abgerufen</div>
+                    </div>
+                </div>
+            )}
             <SettingsModal 
                 open={settingsOpen} 
                 onClose={() => { 
