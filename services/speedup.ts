@@ -129,6 +129,91 @@ function detectSilenceRegions(
     return regions;
 }
 
+function wsola(
+    input: Float32Array,
+    speed: number,
+    sampleRate: number
+): Float32Array {
+    if (Math.abs(speed - 1.0) < 0.001) return new Float32Array(input);
+
+    const frameSize = Math.floor(sampleRate * 0.03);
+    const synthHop = Math.floor(frameSize / 2);
+    const analysisHop = Math.floor(synthHop * speed);
+    const halfFrame = Math.floor(frameSize / 2);
+    const searchRange = Math.floor(sampleRate * 0.005);
+
+    const inputLength = input.length;
+    const outputLength = Math.floor(inputLength / speed);
+    const output = new Float32Array(outputLength);
+
+    let inputPos = 0;
+    let outputPos = 0;
+
+    const hannWindow = new Float32Array(frameSize);
+    for (let i = 0; i < frameSize; i++) {
+        hannWindow[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (frameSize - 1)));
+    }
+
+    while (outputPos + frameSize <= outputLength && inputPos + frameSize <= inputLength) {
+        for (let i = 0; i < frameSize; i++) {
+            output[outputPos + i] += input[inputPos + i] * hannWindow[i];
+        }
+
+        const nextInputPos = inputPos + analysisHop;
+        if (nextInputPos + frameSize > inputLength) break;
+
+        const searchCenter = nextInputPos;
+        const searchStart = Math.max(0, searchCenter - searchRange);
+        const searchEnd = Math.min(inputLength - frameSize, searchCenter + searchRange);
+
+        let bestOffset = searchCenter;
+        let bestCorr = -Infinity;
+
+        for (let s = searchStart; s <= searchEnd; s += 2) {
+            let corr = 0;
+            for (let i = 0; i < halfFrame; i++) {
+                corr += input[inputPos + halfFrame + i] * input[s + i];
+            }
+            if (corr > bestCorr) {
+                bestCorr = corr;
+                bestOffset = s;
+            }
+        }
+
+        inputPos = bestOffset;
+        outputPos += synthHop;
+    }
+
+    if (outputPos < outputLength) {
+        const remaining = Math.min(frameSize, outputLength - outputPos, inputLength - inputPos);
+        for (let i = 0; i < remaining; i++) {
+            output[outputPos + i] += input[inputPos + i] * hannWindow[i];
+        }
+    }
+
+    return output;
+}
+
+function speedupSegment(
+    channelData: Float32Array[],
+    start: number,
+    end: number,
+    speed: number,
+    sampleRate: number
+): Float32Array[] {
+    const length = end - start;
+    const segment: Float32Array[] = [];
+    for (let ch = 0; ch < channelData.length; ch++) {
+        segment.push(channelData[ch].subarray(start, end));
+    }
+
+    const stretched: Float32Array[] = [];
+    for (let ch = 0; ch < segment.length; ch++) {
+        stretched.push(wsola(segment[ch], speed, sampleRate));
+    }
+    return stretched;
+}
+
 export async function applySpeedupClient(
     base64Audio: string,
     config: {
@@ -166,39 +251,6 @@ export async function applySpeedupClient(
         minSilenceDuration
     );
 
-    if (silenceRegions.length === 0) {
-        const speedupRatio = 1 / speed;
-        const newLength = Math.floor(totalSamples * speedupRatio);
-        const outputChannels: Float32Array[] = [];
-
-        for (let ch = 0; ch < numChannels; ch++) {
-            const output = new Float32Array(newLength);
-            for (let i = 0; i < newLength; i++) {
-                const srcIdx = i * speed;
-                const idx0 = Math.floor(srcIdx);
-                const idx1 = Math.min(idx0 + 1, totalSamples - 1);
-                const frac = srcIdx - idx0;
-                output[i] = channelData[ch][idx0] * (1 - frac) + channelData[ch][idx1] * frac;
-            }
-            outputChannels.push(output);
-        }
-
-        const interleaved = interleaveChannels(outputChannels);
-        const wavBytes = encodeWAV(interleaved, sampleRate, numChannels);
-        const processedDuration = newLength / sampleRate;
-
-        return {
-            audioBase64: uint8ArrayToBase64(wavBytes, 'audio/wav'),
-            stats: {
-                silences_detected: 0,
-                silences_shortened: 0,
-                speed_applied: speed,
-                original_duration: Math.round(originalDuration * 100) / 100,
-                processed_duration: Math.round(processedDuration * 100) / 100,
-            },
-        };
-    }
-
     const targetSilenceSamples = Math.floor(targetSilenceDuration * sampleRate);
     let shortenedCount = 0;
 
@@ -224,44 +276,34 @@ export async function applySpeedupClient(
         segmentRanges.push({ start: lastEnd, end: totalSamples, isSilence: false });
     }
 
-    let totalOutputSamples = 0;
+    const processedSegments: Float32Array[][] = [];
+
     for (const seg of segmentRanges) {
-        const segLength = seg.end - seg.start;
         if (!seg.isSilence) {
-            totalOutputSamples += Math.floor(segLength / speed);
+            processedSegments.push(speedupSegment(channelData, seg.start, seg.end, speed, sampleRate));
         } else {
-            totalOutputSamples += segLength;
+            const segData: Float32Array[] = [];
+            for (let ch = 0; ch < numChannels; ch++) {
+                segData.push(channelData[ch].subarray(seg.start, seg.end));
+            }
+            processedSegments.push(segData);
         }
+    }
+
+    let totalOutputSamples = 0;
+    for (const seg of processedSegments) {
+        totalOutputSamples += seg[0].length;
     }
 
     const outputChannels: Float32Array[] = [];
     for (let ch = 0; ch < numChannels; ch++) {
         const output = new Float32Array(totalOutputSamples);
         let writePos = 0;
-
-        for (const seg of segmentRanges) {
-            const segLength = seg.end - seg.start;
-
-            if (!seg.isSilence) {
-                const outputSegLength = Math.floor(segLength / speed);
-                for (let i = 0; i < outputSegLength; i++) {
-                    const srcIdx = seg.start + i * speed;
-                    const idx0 = Math.floor(srcIdx);
-                    const idx1 = Math.min(idx0 + 1, seg.end - 1);
-                    const frac = srcIdx - idx0;
-                    output[writePos + i] = channelData[ch][idx0] * (1 - frac) + channelData[ch][idx1] * frac;
-                }
-                writePos += outputSegLength;
-            } else {
-                const copyLength = Math.min(segLength, totalOutputSamples - writePos);
-                for (let i = 0; i < copyLength; i++) {
-                    output[writePos + i] = channelData[ch][seg.start + i];
-                }
-                writePos += copyLength;
-            }
+        for (const seg of processedSegments) {
+            output.set(seg[ch], writePos);
+            writePos += seg[ch].length;
         }
-
-        outputChannels.push(output.subarray(0, writePos));
+        outputChannels.push(output);
     }
 
     const finalLength = outputChannels[0].length;
