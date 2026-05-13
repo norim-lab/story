@@ -142,6 +142,7 @@ try {
         if (preg_match('/silence_end:\s*([\d.]+)/', $line, $m)) $silenceEnds[] = floatval($m[1]);
     }
 
+    $silencePaddingSec = 0.05;
     $numSilences = min(count($silenceStarts), count($silenceEnds));
     $shortenedCount = 0;
     $trimmedFile = $tmpDir . '/trimmed.mp3';
@@ -151,33 +152,50 @@ try {
         $lastEnd = 0.0;
 
         for ($i = 0; $i < $numSilences; $i++) {
-            $silStart = $silenceStarts[$i];
-            $silEnd = $silenceEnds[$i];
+            $rawSilStart = $silenceStarts[$i];
+            $rawSilEnd = $silenceEnds[$i];
+            $silStart = min($rawSilStart + $silencePaddingSec, $rawSilEnd);
+            $silEnd = max($rawSilEnd - $silencePaddingSec, $silStart);
             $silDurSec = $silEnd - $silStart;
-            $silDurMs = $silDurSec * 1000;
-            $targetMs = $targetSilenceDuration * 1000;
 
-            if ($silDurMs > $targetMs) {
+            if ($silDurSec * 1000 > $targetSilenceDuration * 1000) {
                 if ($silStart > $lastEnd + 0.001) {
-                    $segments[] = ['start' => $lastEnd, 'end' => $silStart];
+                    $segments[] = ['start' => $lastEnd, 'end' => $silStart, 'silence' => false];
                 }
-                $segments[] = ['start' => $silStart, 'end' => $silStart + $targetSilenceDuration];
+                $segments[] = ['start' => $silStart, 'end' => $silStart + $targetSilenceDuration, 'silence' => true];
                 $lastEnd = $silEnd;
                 $shortenedCount++;
+            } elseif ($silDurSec > 0.001) {
+                if ($silStart > $lastEnd + 0.001) {
+                    $segments[] = ['start' => $lastEnd, 'end' => $silStart, 'silence' => false];
+                }
+                $segments[] = ['start' => $silStart, 'end' => $silEnd, 'silence' => true];
+                $lastEnd = $silEnd;
             }
         }
 
         if ($originalDuration > $lastEnd + 0.001) {
-            $segments[] = ['start' => $lastEnd, 'end' => $originalDuration + 0.1];
+            $segments[] = ['start' => $lastEnd, 'end' => $originalDuration + 0.1, 'silence' => false];
         }
 
         if (count($segments) > 0) {
             foreach ($segments as $idx => $seg) {
                 $segFile = $tmpDir . '/seg_' . sprintf('%04d', $idx) . '.mp3';
+                $segDur = $seg['end'] - $seg['start'];
+                $audioFilter = '';
+                if (!empty($seg['silence']) && $segDur > 0.01) {
+                    $fadeDur = min(0.005, $segDur / 2);
+                    $fadeOutStart = max(0, $segDur - $fadeDur);
+                    $audioFilter = ' -af ' . escapeshellarg(
+                        'afade=t=in:st=0:d=' . number_format($fadeDur, 4)
+                        . ',afade=t=out:st=' . number_format($fadeOutStart, 4) . ':d=' . number_format($fadeDur, 4)
+                    );
+                }
                 $segCmd = escapeshellcmd($ffmpegPath) . ' -y'
                     . ' -i ' . escapeshellarg($inputFile)
                     . ' -ss ' . escapeshellarg(number_format($seg['start'], 6))
                     . ' -to ' . escapeshellarg(number_format($seg['end'], 6))
+                    . $audioFilter
                     . ' -c:a libmp3lame -b:a 192k '
                     . escapeshellarg($segFile) . ' 2>&1';
                 exec($segCmd);

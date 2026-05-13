@@ -251,6 +251,10 @@ export async function applySpeedupClient(
         minSilenceDuration
     );
 
+    const silencePaddingSec = 0.05;
+    const fadeSec = 0.005;
+    const paddingSamples = Math.floor(silencePaddingSec * sampleRate);
+    const fadeSamples = Math.floor(fadeSec * sampleRate);
     const targetSilenceSamples = Math.floor(targetSilenceDuration * sampleRate);
     let shortenedCount = 0;
 
@@ -258,18 +262,21 @@ export async function applySpeedupClient(
     let lastEnd = 0;
 
     for (const region of silenceRegions) {
-        if (region.start > lastEnd) {
-            segmentRanges.push({ start: lastEnd, end: region.start, isSilence: false });
+        const silStart = Math.min(region.start + paddingSamples, region.end);
+        const silEnd = Math.max(region.end - paddingSamples, silStart);
+
+        if (silStart > lastEnd) {
+            segmentRanges.push({ start: lastEnd, end: silStart, isSilence: false });
         }
 
-        const silenceSamples = region.end - region.start;
+        const silenceSamples = silEnd - silStart;
         if (silenceSamples > targetSilenceSamples) {
-            segmentRanges.push({ start: region.start, end: region.start + targetSilenceSamples, isSilence: true });
+            segmentRanges.push({ start: silStart, end: silStart + targetSilenceSamples, isSilence: true });
             shortenedCount++;
-        } else {
-            segmentRanges.push({ start: region.start, end: region.end, isSilence: true });
+        } else if (silenceSamples > 0) {
+            segmentRanges.push({ start: silStart, end: silEnd, isSilence: true });
         }
-        lastEnd = region.end;
+        lastEnd = silEnd;
     }
 
     if (lastEnd < totalSamples) {
@@ -282,9 +289,18 @@ export async function applySpeedupClient(
         if (!seg.isSilence) {
             processedSegments.push(speedupSegment(channelData, seg.start, seg.end, speed, sampleRate));
         } else {
+            const segLen = seg.end - seg.start;
             const segData: Float32Array[] = [];
             for (let ch = 0; ch < numChannels; ch++) {
-                segData.push(channelData[ch].subarray(seg.start, seg.end));
+                const slice = new Float32Array(channelData[ch].subarray(seg.start, seg.end));
+                const fadeLen = Math.min(fadeSamples, Math.floor(segLen / 2));
+                for (let i = 0; i < fadeLen; i++) {
+                    slice[i] *= i / fadeLen;
+                }
+                for (let i = 0; i < fadeLen; i++) {
+                    slice[segLen - 1 - i] *= i / fadeLen;
+                }
+                segData.push(slice);
             }
             processedSegments.push(segData);
         }
