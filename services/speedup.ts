@@ -145,6 +145,7 @@ function wsola(
     const inputLength = input.length;
     const outputLength = Math.floor(inputLength / speed);
     const output = new Float32Array(outputLength);
+    const winSum = new Float32Array(outputLength);
 
     let inputPos = 0;
     let outputPos = 0;
@@ -157,6 +158,7 @@ function wsola(
     while (outputPos + frameSize <= outputLength && inputPos + frameSize <= inputLength) {
         for (let i = 0; i < frameSize; i++) {
             output[outputPos + i] += input[inputPos + i] * hannWindow[i];
+            winSum[outputPos + i] += hannWindow[i];
         }
 
         const nextInputPos = inputPos + analysisHop;
@@ -169,7 +171,7 @@ function wsola(
         let bestOffset = searchCenter;
         let bestCorr = -Infinity;
 
-        for (let s = searchStart; s <= searchEnd; s += 2) {
+        for (let s = searchStart; s <= searchEnd; s++) {
             let corr = 0;
             for (let i = 0; i < halfFrame; i++) {
                 corr += input[inputPos + halfFrame + i] * input[s + i];
@@ -188,6 +190,13 @@ function wsola(
         const remaining = Math.min(frameSize, outputLength - outputPos, inputLength - inputPos);
         for (let i = 0; i < remaining; i++) {
             output[outputPos + i] += input[inputPos + i] * hannWindow[i];
+            winSum[outputPos + i] += hannWindow[i];
+        }
+    }
+
+    for (let i = 0; i < outputLength; i++) {
+        if (winSum[i] > 0.001) {
+            output[i] /= winSum[i];
         }
     }
 
