@@ -142,7 +142,8 @@ try {
         if (preg_match('/silence_end:\s*([\d.]+)/', $line, $m)) $silenceEnds[] = floatval($m[1]);
     }
 
-    $silencePaddingSec = 0.15;
+    $silencePaddingSec = 0.10;
+    $silenceEdgeSec = 0.03;
     $numSilences = min(count($silenceStarts), count($silenceEnds));
     $shortenedCount = 0;
     $trimmedFile = $tmpDir . '/trimmed.mp3';
@@ -162,7 +163,20 @@ try {
                 if ($silStart > $lastEnd + 0.001) {
                     $segments[] = ['start' => $lastEnd, 'end' => $silStart, 'silence' => false];
                 }
-                $segments[] = ['start' => $silStart, 'end' => $silStart + $targetSilenceDuration, 'silence' => true];
+                $edgeDur = min($silenceEdgeSec, $targetSilenceDuration / 3);
+                $bodyDur = $targetSilenceDuration - 2 * $edgeDur;
+                $center = ($rawSilStart + $rawSilEnd) / 2;
+                $bodyStart = $center - $bodyDur / 2;
+                $segments[] = [
+                    'silence' => true,
+                    'composite' => true,
+                    'head_start' => $rawSilStart,
+                    'head_end' => $rawSilStart + $edgeDur,
+                    'body_start' => $bodyStart,
+                    'body_end' => $bodyStart + $bodyDur,
+                    'tail_start' => $rawSilEnd - $edgeDur,
+                    'tail_end' => $rawSilEnd,
+                ];
                 $lastEnd = $silEnd;
                 $shortenedCount++;
             } elseif ($silDurSec > 0.001) {
@@ -181,24 +195,50 @@ try {
         if (count($segments) > 0) {
             foreach ($segments as $idx => $seg) {
                 $segFile = $tmpDir . '/seg_' . sprintf('%04d', $idx) . '.mp3';
-                $segDur = $seg['end'] - $seg['start'];
-                $audioFilter = '';
-                if (!empty($seg['silence']) && $segDur > 0.01) {
-                    $fadeDur = min(0.005, $segDur / 2);
-                    $fadeOutStart = max(0, $segDur - $fadeDur);
-                    $audioFilter = ' -af ' . escapeshellarg(
-                        'afade=t=in:st=0:d=' . number_format($fadeDur, 4)
-                        . ',afade=t=out:st=' . number_format($fadeOutStart, 4) . ':d=' . number_format($fadeDur, 4)
-                    );
+
+                if (!empty($seg['composite'])) {
+                    $headFile = $tmpDir . '/comp_' . sprintf('%04d', $idx) . '_head.mp3';
+                    $bodyFile = $tmpDir . '/comp_' . sprintf('%04d', $idx) . '_body.mp3';
+                    $tailFile = $tmpDir . '/comp_' . sprintf('%04d', $idx) . '_tail.mp3';
+
+                    $headCmd = escapeshellcmd($ffmpegPath) . ' -y -i ' . escapeshellarg($inputFile)
+                        . ' -ss ' . escapeshellarg(number_format($seg['head_start'], 6))
+                        . ' -to ' . escapeshellarg(number_format($seg['head_end'], 6))
+                        . ' -c:a libmp3lame -b:a 192k ' . escapeshellarg($headFile) . ' 2>&1';
+                    exec($headCmd);
+
+                    $bodyCmd = escapeshellcmd($ffmpegPath) . ' -y -i ' . escapeshellarg($inputFile)
+                        . ' -ss ' . escapeshellarg(number_format($seg['body_start'], 6))
+                        . ' -to ' . escapeshellarg(number_format($seg['body_end'], 6))
+                        . ' -c:a libmp3lame -b:a 192k ' . escapeshellarg($bodyFile) . ' 2>&1';
+                    exec($bodyCmd);
+
+                    $tailCmd = escapeshellcmd($ffmpegPath) . ' -y -i ' . escapeshellarg($inputFile)
+                        . ' -ss ' . escapeshellarg(number_format($seg['tail_start'], 6))
+                        . ' -to ' . escapeshellarg(number_format($seg['tail_end'], 6))
+                        . ' -c:a libmp3lame -b:a 192k ' . escapeshellarg($tailFile) . ' 2>&1';
+                    exec($tailCmd);
+
+                    $compListFile = $tmpDir . '/comp_' . sprintf('%04d', $idx) . '.txt';
+                    $compContent = '';
+                    if (file_exists($headFile) && filesize($headFile) > 0) $compContent .= "file '" . $headFile . "'\n";
+                    if (file_exists($bodyFile) && filesize($bodyFile) > 0) $compContent .= "file '" . $bodyFile . "'\n";
+                    if (file_exists($tailFile) && filesize($tailFile) > 0) $compContent .= "file '" . $tailFile . "'\n";
+                    file_put_contents($compListFile, $compContent);
+
+                    $concatSegCmd = escapeshellcmd($ffmpegPath) . ' -y -f concat -safe 0'
+                        . ' -i ' . escapeshellarg($compListFile)
+                        . ' -c:a libmp3lame -b:a 192k ' . escapeshellarg($segFile) . ' 2>&1';
+                    exec($concatSegCmd);
+                } else {
+                    $segCmd = escapeshellcmd($ffmpegPath) . ' -y'
+                        . ' -i ' . escapeshellarg($inputFile)
+                        . ' -ss ' . escapeshellarg(number_format($seg['start'], 6))
+                        . ' -to ' . escapeshellarg(number_format($seg['end'], 6))
+                        . ' -c:a libmp3lame -b:a 192k '
+                        . escapeshellarg($segFile) . ' 2>&1';
+                    exec($segCmd);
                 }
-                $segCmd = escapeshellcmd($ffmpegPath) . ' -y'
-                    . ' -i ' . escapeshellarg($inputFile)
-                    . ' -ss ' . escapeshellarg(number_format($seg['start'], 6))
-                    . ' -to ' . escapeshellarg(number_format($seg['end'], 6))
-                    . $audioFilter
-                    . ' -c:a libmp3lame -b:a 192k '
-                    . escapeshellarg($segFile) . ' 2>&1';
-                exec($segCmd);
             }
 
             $concatListFile = $tmpDir . '/concat.txt';
