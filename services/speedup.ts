@@ -1,3 +1,6 @@
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { toBlobURL } from '@ffmpeg/util';
+
 interface SpeedupStats {
     silences_detected: number;
     silences_shortened: number;
@@ -16,6 +19,27 @@ const SPEEDUP_PRESETS: Record<string, { speed: number; silenceThreshold: number;
     aggressiv: { speed: 1.18, silenceThreshold: -45.0, minSilenceDuration: 0.22, targetSilenceDuration: 0.08 },
     voiceover_turbo: { speed: 1.20, silenceThreshold: -43.0, minSilenceDuration: 0.20, targetSilenceDuration: 0.10 },
 };
+
+let ffmpegInstance: FFmpeg | null = null;
+let ffmpegLoading: Promise<FFmpeg> | null = null;
+
+async function getFFmpeg(): Promise<FFmpeg> {
+    if (ffmpegInstance && ffmpegInstance.loaded) return ffmpegInstance;
+    if (ffmpegLoading) return ffmpegLoading;
+
+    ffmpegLoading = (async () => {
+        const ff = new FFmpeg();
+        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+        await ff.load({
+            coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+            wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+        });
+        ffmpegInstance = ff;
+        return ff;
+    })();
+
+    return ffmpegLoading;
+}
 
 function base64ToUint8Array(base64: string): Uint8Array {
     if (!base64 || base64 === '__STRIPPED__' || base64 === 'undefined' || base64 === 'null') {
@@ -185,79 +209,6 @@ function shortenSilences(
     return { result, shortenedCount };
 }
 
-function wsola(
-    input: Float32Array,
-    speed: number,
-    sampleRate: number
-): Float32Array {
-    if (Math.abs(speed - 1.0) < 0.001) return new Float32Array(input);
-
-    const frameSize = Math.floor(sampleRate * 0.03);
-    const synthHop = Math.floor(frameSize / 2);
-    const analysisHop = Math.floor(synthHop * speed);
-    const halfFrame = Math.floor(frameSize / 2);
-    const searchRange = Math.floor(sampleRate * 0.005);
-
-    const inputLength = input.length;
-    const outputLength = Math.floor(inputLength / speed);
-    const output = new Float32Array(outputLength);
-
-    let inputPos = 0;
-    let outputPos = 0;
-
-    const hannWindow = new Float32Array(frameSize);
-    for (let i = 0; i < frameSize; i++) {
-        hannWindow[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (frameSize - 1)));
-    }
-
-    while (outputPos + frameSize <= outputLength && inputPos + frameSize <= inputLength) {
-        for (let i = 0; i < frameSize; i++) {
-            output[outputPos + i] += input[inputPos + i] * hannWindow[i];
-        }
-
-        const nextInputPos = inputPos + analysisHop;
-        if (nextInputPos + frameSize > inputLength) break;
-
-        const searchCenter = nextInputPos;
-        const searchStart = Math.max(0, searchCenter - searchRange);
-        const searchEnd = Math.min(inputLength - frameSize, searchCenter + searchRange);
-
-        let bestOffset = searchCenter;
-        let bestCorr = -Infinity;
-
-        for (let s = searchStart; s <= searchEnd; s++) {
-            let corr = 0;
-            for (let i = 0; i < halfFrame; i++) {
-                corr += input[inputPos + halfFrame + i] * input[s + i];
-            }
-            if (corr > bestCorr) {
-                bestCorr = corr;
-                bestOffset = s;
-            }
-        }
-
-        inputPos = bestOffset;
-        outputPos += synthHop;
-    }
-
-    if (outputPos < outputLength) {
-        const remaining = Math.min(frameSize, outputLength - outputPos, inputLength - inputPos);
-        for (let i = 0; i < remaining; i++) {
-            output[outputPos + i] += input[inputPos + i] * hannWindow[i];
-        }
-    }
-
-    return output;
-}
-
-function applySpeed(
-    channelData: Float32Array[],
-    speed: number,
-    sampleRate: number
-): Float32Array[] {
-    return channelData.map(ch => wsola(ch, speed, sampleRate));
-}
-
 function interleaveChannels(channels: Float32Array[]): Float32Array {
     if (channels.length === 1) return channels[0];
     const length = channels[0].length;
@@ -269,6 +220,46 @@ function interleaveChannels(channels: Float32Array[]): Float32Array {
         }
     }
     return result;
+}
+
+function buildAtempoChain(speed: number): string {
+    if (speed <= 2.0) {
+        return `atempo=${speed.toFixed(4)}`;
+    }
+    const parts: string[] = [];
+    let remaining = speed;
+    while (remaining > 2.0) {
+        parts.push('atempo=2.0');
+        remaining /= 2.0;
+    }
+    parts.push(`atempo=${remaining.toFixed(4)}`);
+    return parts.join(',');
+}
+
+async function applyAtempo(
+    wavData: Uint8Array,
+    speed: number
+): Promise<Uint8Array> {
+    if (Math.abs(speed - 1.0) < 0.001) return wavData;
+
+    const ff = await getFFmpeg();
+    await ff.writeFile('input.wav', wavData);
+
+    const atempoFilter = buildAtempoChain(speed);
+
+    await ff.exec([
+        '-y',
+        '-i', 'input.wav',
+        '-filter:a', atempoFilter,
+        '-vn',
+        'output.wav',
+    ]);
+
+    const result = await ff.readFile('output.wav');
+    await ff.deleteFile('input.wav');
+    await ff.deleteFile('output.wav');
+
+    return result as Uint8Array;
 }
 
 export async function applySpeedupClient(
@@ -315,15 +306,15 @@ export async function applySpeedupClient(
         targetSilenceSamples
     );
 
-    const speedApplied = applySpeed(silenceShortened, speed, sampleRate);
-
-    const finalLength = speedApplied[0].length;
-    const interleaved = interleaveChannels(speedApplied);
+    const interleaved = interleaveChannels(silenceShortened);
     const wavBytes = encodeWAV(interleaved, sampleRate, numChannels);
-    const processedDuration = finalLength / sampleRate;
+
+    const processedWav = await applyAtempo(wavBytes, speed);
+
+    const processedDuration = (processedWav.length - 44) / (numChannels * 2 * sampleRate);
 
     return {
-        audioBase64: uint8ArrayToBase64(wavBytes, 'audio/wav'),
+        audioBase64: uint8ArrayToBase64(processedWav, 'audio/wav'),
         stats: {
             silences_detected: silenceRegions.length,
             silences_shortened: shortenedCount,
