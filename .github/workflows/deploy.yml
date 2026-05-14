@@ -42,15 +42,6 @@ jobs:
           mkdir -p dist/data/images
           mkdir -p dist/data/projects
 
-      - name: Create .htaccess for FFmpeg.wasm CORS headers
-        run: |
-          cat > dist/.htaccess << 'HTACCESS'
-          <IfModule mod_headers.c>
-            Header set Cross-Origin-Opener-Policy "same-origin"
-            Header set Cross-Origin-Embedder-Policy "require-corp"
-          </IfModule>
-          HTACCESS
-
       - name: Preflight target path and permissions
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -63,6 +54,7 @@ jobs:
             mkdir -p \"$TARGET/data\"
             mkdir -p \"$TARGET/data/images\"
             mkdir -p \"$TARGET/data/projects\"
+            rm -f \"$TARGET/.htaccess\"
             chmod 0777 \"$TARGET\" \"$TARGET/data\" \"$TARGET/data/images\" \"$TARGET/data/projects\" || true
             touch \"$TARGET/.write_test\"
             rm -f \"$TARGET/.write_test\"
