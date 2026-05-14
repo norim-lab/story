@@ -215,18 +215,9 @@ function speedupSegment(
         segment.push(channelData[ch].subarray(start, end));
     }
 
-    const edgeFade = Math.floor(sampleRate * 0.008);
     const stretched: Float32Array[] = [];
     for (let ch = 0; ch < segment.length; ch++) {
-        const result = wsola(segment[ch], speed, sampleRate);
-        const fadeLen = Math.min(edgeFade, Math.floor(result.length / 2));
-        for (let i = 0; i < fadeLen; i++) {
-            result[i] *= i / fadeLen;
-        }
-        for (let i = 0; i < fadeLen; i++) {
-            result[result.length - 1 - i] *= i / fadeLen;
-        }
-        stretched.push(result);
+        stretched.push(wsola(segment[ch], speed, sampleRate));
     }
     return stretched;
 }
@@ -269,9 +260,7 @@ export async function applySpeedupClient(
     );
 
     const silencePaddingSec = 0.08;
-    const fadeSec = 0.005;
     const paddingSamples = Math.floor(silencePaddingSec * sampleRate);
-    const fadeSamples = Math.floor(fadeSec * sampleRate);
     const targetSilenceSamples = Math.floor(targetSilenceDuration * sampleRate);
     let shortenedCount = 0;
 
@@ -306,35 +295,41 @@ export async function applySpeedupClient(
         if (!seg.isSilence) {
             processedSegments.push(speedupSegment(channelData, seg.start, seg.end, speed, sampleRate));
         } else {
-            const segLen = seg.end - seg.start;
             const segData: Float32Array[] = [];
             for (let ch = 0; ch < numChannels; ch++) {
-                const slice = new Float32Array(channelData[ch].subarray(seg.start, seg.end));
-                const fadeLen = Math.min(fadeSamples, Math.floor(segLen / 2));
-                for (let i = 0; i < fadeLen; i++) {
-                    slice[i] *= i / fadeLen;
-                }
-                for (let i = 0; i < fadeLen; i++) {
-                    slice[segLen - 1 - i] *= i / fadeLen;
-                }
-                segData.push(slice);
+                segData.push(new Float32Array(channelData[ch].subarray(seg.start, seg.end)));
             }
             processedSegments.push(segData);
         }
     }
 
+    const crossfadeSamples = Math.floor(sampleRate * 0.015);
     let totalOutputSamples = 0;
-    for (const seg of processedSegments) {
-        totalOutputSamples += seg[0].length;
+    for (let i = 0; i < processedSegments.length; i++) {
+        totalOutputSamples += processedSegments[i][0].length;
+        if (i > 0) totalOutputSamples -= crossfadeSamples;
     }
 
     const outputChannels: Float32Array[] = [];
     for (let ch = 0; ch < numChannels; ch++) {
         const output = new Float32Array(totalOutputSamples);
         let writePos = 0;
-        for (const seg of processedSegments) {
-            output.set(seg[ch], writePos);
-            writePos += seg[ch].length;
+        for (let i = 0; i < processedSegments.length; i++) {
+            const seg = processedSegments[i][ch];
+            if (i === 0) {
+                output.set(seg, writePos);
+                writePos += seg.length;
+            } else {
+                const overlap = Math.min(crossfadeSamples, seg.length, writePos);
+                for (let j = 0; j < overlap; j++) {
+                    const t = j / overlap;
+                    output[writePos - overlap + j] = output[writePos - overlap + j] * (1 - t) + seg[j] * t;
+                }
+                if (seg.length > overlap) {
+                    output.set(seg.subarray(overlap), writePos);
+                }
+                writePos += seg.length - overlap;
+            }
         }
         outputChannels.push(output);
     }
