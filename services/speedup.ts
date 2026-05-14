@@ -250,7 +250,7 @@ export async function applySpeedupClient(
         minSilenceDuration
     );
 
-    const silencePaddingSec = 0.15;
+    const silencePaddingSec = 0.20;
     const paddingSamples = Math.floor(silencePaddingSec * sampleRate);
     const targetSilenceSamples = Math.floor(targetSilenceDuration * sampleRate);
     let shortenedCount = 0;
@@ -294,10 +294,8 @@ export async function applySpeedupClient(
             const segData: Float32Array[] = [];
             for (let ch = 0; ch < numChannels; ch++) {
                 const out = new Float32Array(segLen);
-                const center = Math.floor((seg.start + seg.end) / 2);
-                const readStart = Math.max(0, center - Math.floor(segLen / 2));
                 for (let i = 0; i < segLen; i++) {
-                    const srcIdx = readStart + i;
+                    const srcIdx = seg.start + i;
                     if (srcIdx < bufLen) {
                         out[i] = channelData[ch][srcIdx];
                     }

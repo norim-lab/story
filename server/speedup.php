@@ -142,7 +142,7 @@ try {
         if (preg_match('/silence_end:\s*([\d.]+)/', $line, $m)) $silenceEnds[] = floatval($m[1]);
     }
 
-    $silencePaddingSec = 0.15;
+    $silencePaddingSec = 0.20;
     $numSilences = min(count($silenceStarts), count($silenceEnds));
     $shortenedCount = 0;
     $trimmedFile = $tmpDir . '/trimmed.mp3';
@@ -162,14 +162,7 @@ try {
                 if ($silStart > $lastEnd + 0.001) {
                     $segments[] = ['start' => $lastEnd, 'end' => $silStart, 'silence' => false];
                 }
-                $center = ($rawSilStart + $rawSilEnd) / 2;
-                $bodyStart = $center - $targetSilenceDuration / 2;
-                $bodyEnd = $bodyStart + $targetSilenceDuration;
-                $segments[] = [
-                    'silence' => true,
-                    'src_start' => $bodyStart,
-                    'src_end' => $bodyEnd,
-                ];
+                $segments[] = ['start' => $silStart, 'end' => $silStart + $targetSilenceDuration, 'silence' => true];
                 $lastEnd = $silEnd;
                 $shortenedCount++;
             } elseif ($silDurSec > 0.001) {
@@ -188,22 +181,12 @@ try {
         if (count($segments) > 0) {
             foreach ($segments as $idx => $seg) {
                 $segFile = $tmpDir . '/seg_' . sprintf('%04d', $idx) . '.mp3';
-
-                if (!empty($seg['src_start'])) {
-                    $segCmd = escapeshellcmd($ffmpegPath) . ' -y'
-                        . ' -i ' . escapeshellarg($inputFile)
-                        . ' -ss ' . escapeshellarg(number_format($seg['src_start'], 6))
-                        . ' -to ' . escapeshellarg(number_format($seg['src_end'], 6))
-                        . ' -c:a libmp3lame -b:a 192k '
-                        . escapeshellarg($segFile) . ' 2>&1';
-                } else {
-                    $segCmd = escapeshellcmd($ffmpegPath) . ' -y'
-                        . ' -i ' . escapeshellarg($inputFile)
-                        . ' -ss ' . escapeshellarg(number_format($seg['start'], 6))
-                        . ' -to ' . escapeshellarg(number_format($seg['end'], 6))
-                        . ' -c:a libmp3lame -b:a 192k '
-                        . escapeshellarg($segFile) . ' 2>&1';
-                }
+                $segCmd = escapeshellcmd($ffmpegPath) . ' -y'
+                    . ' -i ' . escapeshellarg($inputFile)
+                    . ' -ss ' . escapeshellarg(number_format($seg['start'], 6))
+                    . ' -to ' . escapeshellarg(number_format($seg['end'], 6))
+                    . ' -c:a libmp3lame -b:a 192k '
+                    . escapeshellarg($segFile) . ' 2>&1';
                 exec($segCmd);
             }
 
