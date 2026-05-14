@@ -17,11 +17,6 @@ const SPEEDUP_PRESETS: Record<string, { speed: number; silenceThreshold: number;
     voiceover_turbo: { speed: 1.20, silenceThreshold: -43.0, minSilenceDuration: 0.20, targetSilenceDuration: 0.10 },
 };
 
-export const SPEEDUP_DEFAULTS = {
-    padding: 0.05,
-    crossfade: 0.01,
-};
-
 function base64ToUint8Array(base64: string): Uint8Array {
     if (!base64 || base64 === '__STRIPPED__' || base64 === 'undefined' || base64 === 'null') {
         throw new Error('Audio-Daten nicht verfügbar. Bitte zuerst Auphonic (Schritt 3) ausführen, um Audio zu generieren.');
@@ -284,8 +279,6 @@ export async function applySpeedupClient(
         silenceThreshold?: number;
         minSilenceDuration?: number;
         targetSilenceDuration?: number;
-        padding?: number;
-        crossfade?: number;
     }
 ): Promise<SpeedupResult> {
     const presetValues = config.preset ? SPEEDUP_PRESETS[config.preset] : null;
