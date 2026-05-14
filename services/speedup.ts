@@ -17,6 +17,11 @@ const SPEEDUP_PRESETS: Record<string, { speed: number; silenceThreshold: number;
     voiceover_turbo: { speed: 1.20, silenceThreshold: -43.0, minSilenceDuration: 0.20, targetSilenceDuration: 0.10 },
 };
 
+export const SPEEDUP_DEFAULTS = {
+    padding: 0.05,
+    crossfade: 0.01,
+};
+
 function base64ToUint8Array(base64: string): Uint8Array {
     if (!base64 || base64 === '__STRIPPED__' || base64 === 'undefined' || base64 === 'null') {
         throw new Error('Audio-Daten nicht verfügbar. Bitte zuerst Auphonic (Schritt 3) ausführen, um Audio zu generieren.');
@@ -129,6 +134,62 @@ function detectSilenceRegions(
     return regions;
 }
 
+function shortenSilences(
+    channelData: Float32Array[],
+    silenceRegions: { start: number; end: number }[],
+    targetSilenceSamples: number
+): { result: Float32Array[]; shortenedCount: number } {
+    const numChannels = channelData.length;
+    const totalSamples = channelData[0].length;
+
+    if (silenceRegions.length === 0) {
+        return { result: channelData.map(ch => new Float32Array(ch)), shortenedCount: 0 };
+    }
+
+    const pieces: { start: number; end: number }[] = [];
+    let cursor = 0;
+    let shortenedCount = 0;
+
+    for (const region of silenceRegions) {
+        if (region.start > cursor) {
+            pieces.push({ start: cursor, end: region.start });
+        }
+
+        const silenceLength = region.end - region.start;
+        if (silenceLength > targetSilenceSamples) {
+            pieces.push({ start: region.start, end: region.start + targetSilenceSamples });
+            shortenedCount++;
+        } else {
+            pieces.push({ start: region.start, end: region.end });
+        }
+        cursor = region.end;
+    }
+
+    if (cursor < totalSamples) {
+        pieces.push({ start: cursor, end: totalSamples });
+    }
+
+    let rebuiltLength = 0;
+    for (const p of pieces) {
+        rebuiltLength += p.end - p.start;
+    }
+
+    const result: Float32Array[] = [];
+    for (let ch = 0; ch < numChannels; ch++) {
+        const rebuilt = new Float32Array(rebuiltLength);
+        let writePos = 0;
+        for (const p of pieces) {
+            const len = p.end - p.start;
+            const src = channelData[ch].subarray(p.start, p.end);
+            rebuilt.set(src, writePos);
+            writePos += len;
+        }
+        result.push(rebuilt);
+    }
+
+    return { result, shortenedCount };
+}
+
 function wsola(
     input: Float32Array,
     speed: number,
@@ -194,29 +255,26 @@ function wsola(
     return output;
 }
 
-function speedupSegment(
+function applySpeed(
     channelData: Float32Array[],
-    start: number,
-    end: number,
     speed: number,
     sampleRate: number
 ): Float32Array[] {
-    const segment: Float32Array[] = [];
-    for (let ch = 0; ch < channelData.length; ch++) {
-        segment.push(channelData[ch].subarray(start, end));
-    }
-
-    const stretched: Float32Array[] = [];
-    for (let ch = 0; ch < segment.length; ch++) {
-        stretched.push(wsola(segment[ch], speed, sampleRate));
-    }
-    return stretched;
+    return channelData.map(ch => wsola(ch, speed, sampleRate));
 }
 
-export const SPEEDUP_DEFAULTS = {
-    padding: 0.20,
-    crossfade: 0.025,
-};
+function interleaveChannels(channels: Float32Array[]): Float32Array {
+    if (channels.length === 1) return channels[0];
+    const length = channels[0].length;
+    const numChannels = channels.length;
+    const result = new Float32Array(length * numChannels);
+    for (let i = 0; i < length; i++) {
+        for (let ch = 0; ch < numChannels; ch++) {
+            result[i * numChannels + ch] = channels[ch][i];
+        }
+    }
+    return result;
+}
 
 export async function applySpeedupClient(
     base64Audio: string,
@@ -235,8 +293,6 @@ export async function applySpeedupClient(
     const silenceThreshold = presetValues?.silenceThreshold ?? config.silenceThreshold ?? -40.0;
     const minSilenceDuration = presetValues?.minSilenceDuration ?? config.minSilenceDuration ?? 0.30;
     const targetSilenceDuration = presetValues?.targetSilenceDuration ?? config.targetSilenceDuration ?? 0.15;
-    const paddingSec = config.padding ?? SPEEDUP_DEFAULTS.padding;
-    const crossfadeSec = config.crossfade ?? SPEEDUP_DEFAULTS.crossfade;
 
     const audioBytes = base64ToUint8Array(base64Audio);
     const arrayBuffer = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength) as ArrayBuffer;
@@ -245,7 +301,6 @@ export async function applySpeedupClient(
     const sampleRate = audioBuffer.sampleRate;
     const numChannels = audioBuffer.numberOfChannels;
     const originalDuration = audioBuffer.duration;
-    const totalSamples = audioBuffer.length;
 
     const channelData: Float32Array[] = [];
     for (let ch = 0; ch < numChannels; ch++) {
@@ -259,103 +314,18 @@ export async function applySpeedupClient(
         minSilenceDuration
     );
 
-    const silencePaddingSec = paddingSec;
-    const paddingSamples = Math.floor(silencePaddingSec * sampleRate);
     const targetSilenceSamples = Math.floor(targetSilenceDuration * sampleRate);
-    let shortenedCount = 0;
 
-    const segmentRanges: { start: number; end: number; isSilence: boolean }[] = [];
-    let lastEnd = 0;
+    const { result: silenceShortened, shortenedCount } = shortenSilences(
+        channelData,
+        silenceRegions,
+        targetSilenceSamples
+    );
 
-    for (const region of silenceRegions) {
-        const silStart = Math.min(region.start + paddingSamples, region.end);
-        const silEnd = Math.max(region.end - paddingSamples, silStart);
+    const speedApplied = applySpeed(silenceShortened, speed, sampleRate);
 
-        if (silStart > lastEnd) {
-            segmentRanges.push({ start: lastEnd, end: silStart, isSilence: false });
-        }
-
-        const silenceSamples = silEnd - silStart;
-        if (silenceSamples > targetSilenceSamples) {
-            segmentRanges.push({ start: silStart, end: silStart + targetSilenceSamples, isSilence: true });
-            shortenedCount++;
-        } else if (silenceSamples > 0) {
-            segmentRanges.push({ start: silStart, end: silEnd, isSilence: true });
-        }
-        lastEnd = silEnd;
-    }
-
-    if (lastEnd < totalSamples) {
-        segmentRanges.push({ start: lastEnd, end: totalSamples, isSilence: false });
-    }
-
-    const processedSegments: Float32Array[][] = [];
-
-    for (const seg of segmentRanges) {
-        if (!seg.isSilence) {
-            const clampEnd = Math.min(seg.end, channelData[0].length);
-            if (seg.start < clampEnd) {
-                processedSegments.push(speedupSegment(channelData, seg.start, clampEnd, speed, sampleRate));
-            }
-        } else {
-            const segLen = seg.end - seg.start;
-            const bufLen = channelData[0].length;
-            const segData: Float32Array[] = [];
-            for (let ch = 0; ch < numChannels; ch++) {
-                const out = new Float32Array(segLen);
-                for (let i = 0; i < segLen; i++) {
-                    const srcIdx = seg.start + i;
-                    if (srcIdx < bufLen) {
-                        out[i] = channelData[ch][srcIdx];
-                    }
-                }
-                segData.push(out);
-            }
-            processedSegments.push(segData);
-        }
-    }
-
-    const crossfadeSamples = Math.floor(sampleRate * crossfadeSec);
-    let totalOutputSamples = 0;
-    for (let i = 0; i < processedSegments.length; i++) {
-        totalOutputSamples += processedSegments[i][0].length;
-        if (i > 0) totalOutputSamples -= Math.min(crossfadeSamples, processedSegments[i][0].length);
-    }
-    totalOutputSamples = Math.max(totalOutputSamples, 0);
-
-    const outputChannels: Float32Array[] = [];
-    for (let ch = 0; ch < numChannels; ch++) {
-        const output = new Float32Array(totalOutputSamples);
-        let writePos = 0;
-        for (let i = 0; i < processedSegments.length; i++) {
-            const seg = processedSegments[i][ch];
-            if (seg.length === 0) continue;
-            if (i === 0) {
-                const copyLen = Math.min(seg.length, totalOutputSamples - writePos);
-                if (copyLen > 0) output.set(seg.subarray(0, copyLen), writePos);
-                writePos += seg.length;
-            } else {
-                const overlap = Math.min(crossfadeSamples, seg.length, writePos);
-                for (let j = 0; j < overlap; j++) {
-                    const idx = writePos - overlap + j;
-                    if (idx >= 0 && idx < totalOutputSamples) {
-                        const t = j / overlap;
-                        output[idx] = output[idx] * (1 - t) + seg[j] * t;
-                    }
-                }
-                const remainLen = seg.length - overlap;
-                if (remainLen > 0 && writePos < totalOutputSamples) {
-                    const copyLen = Math.min(remainLen, totalOutputSamples - writePos);
-                    output.set(seg.subarray(overlap, overlap + copyLen), writePos);
-                }
-                writePos += seg.length - overlap;
-            }
-        }
-        outputChannels.push(output);
-    }
-
-    const finalLength = outputChannels[0].length;
-    const interleaved = interleaveChannels(outputChannels);
+    const finalLength = speedApplied[0].length;
+    const interleaved = interleaveChannels(speedApplied);
     const wavBytes = encodeWAV(interleaved, sampleRate, numChannels);
     const processedDuration = finalLength / sampleRate;
 
@@ -369,19 +339,6 @@ export async function applySpeedupClient(
             processed_duration: Math.round(processedDuration * 100) / 100,
         },
     };
-}
-
-function interleaveChannels(channels: Float32Array[]): Float32Array {
-    if (channels.length === 1) return channels[0];
-    const length = channels[0].length;
-    const numChannels = channels.length;
-    const result = new Float32Array(length * numChannels);
-    for (let i = 0; i < length; i++) {
-        for (let ch = 0; ch < numChannels; ch++) {
-            result[i * numChannels + ch] = channels[ch][i];
-        }
-    }
-    return result;
 }
 
 export { SPEEDUP_PRESETS };
