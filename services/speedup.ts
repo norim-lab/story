@@ -250,7 +250,7 @@ export async function applySpeedupClient(
         minSilenceDuration
     );
 
-    const silencePaddingSec = 0.10;
+    const silencePaddingSec = 0.12;
     const paddingSamples = Math.floor(silencePaddingSec * sampleRate);
     const targetSilenceSamples = Math.floor(targetSilenceDuration * sampleRate);
     let shortenedCount = 0;
@@ -304,7 +304,7 @@ export async function applySpeedupClient(
         }
     }
 
-    const crossfadeSamples = Math.floor(sampleRate * 0.015);
+    const crossfadeSamples = Math.floor(sampleRate * 0.025);
     let totalOutputSamples = 0;
     for (let i = 0; i < processedSegments.length; i++) {
         totalOutputSamples += processedSegments[i][0].length;
