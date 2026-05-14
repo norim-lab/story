@@ -195,10 +195,8 @@ function wsola(
     }
 
     for (let i = 0; i < outputLength; i++) {
-        if (winSum[i] > 0.5) {
+        if (winSum[i] > 0.1) {
             output[i] /= winSum[i];
-        } else {
-            output[i] = 0;
         }
     }
 
@@ -264,16 +262,9 @@ export async function applySpeedupClient(
     const silencePaddingSec = 0.10;
     const paddingSamples = Math.floor(silencePaddingSec * sampleRate);
     const targetSilenceSamples = Math.floor(targetSilenceDuration * sampleRate);
-    const edgeSamples = Math.min(Math.floor(0.03 * sampleRate), Math.floor(targetSilenceSamples / 3));
     let shortenedCount = 0;
 
-    const segmentRanges: {
-        start: number;
-        end: number;
-        isSilence: boolean;
-        origStart?: number;
-        origEnd?: number;
-    }[] = [];
+    const segmentRanges: { start: number; end: number; isSilence: boolean }[] = [];
     let lastEnd = 0;
 
     for (const region of silenceRegions) {
@@ -286,13 +277,7 @@ export async function applySpeedupClient(
 
         const silenceSamples = silEnd - silStart;
         if (silenceSamples > targetSilenceSamples) {
-            segmentRanges.push({
-                start: silStart,
-                end: silStart + targetSilenceSamples,
-                isSilence: true,
-                origStart: region.start,
-                origEnd: region.end,
-            });
+            segmentRanges.push({ start: silStart, end: silStart + targetSilenceSamples, isSilence: true });
             shortenedCount++;
         } else if (silenceSamples > 0) {
             segmentRanges.push({ start: silStart, end: silEnd, isSilence: true });
@@ -311,51 +296,17 @@ export async function applySpeedupClient(
             processedSegments.push(speedupSegment(channelData, seg.start, seg.end, speed, sampleRate));
         } else {
             const segLen = seg.end - seg.start;
-            const hasOriginal = seg.origStart !== undefined && seg.origEnd !== undefined;
-            const eLen = hasOriginal ? Math.min(edgeSamples, Math.floor(segLen / 3)) : 0;
-            const bodyLen = segLen - 2 * eLen;
             const segData: Float32Array[] = [];
-
             for (let ch = 0; ch < numChannels; ch++) {
                 const out = new Float32Array(segLen);
-                let wp = 0;
-
-                if (hasOriginal && eLen > 0) {
-                    for (let i = 0; i < eLen; i++) {
-                        out[wp++] = channelData[ch][seg.origStart! + i];
+                const center = Math.floor((seg.start + seg.end) / 2);
+                const readStart = center - Math.floor(segLen / 2);
+                for (let i = 0; i < segLen; i++) {
+                    const srcIdx = readStart + i;
+                    if (srcIdx >= 0 && srcIdx < channelData[ch].length) {
+                        out[i] = channelData[ch][srcIdx];
                     }
                 }
-
-                if (hasOriginal && bodyLen > 0) {
-                    const center = Math.floor((seg.origStart! + seg.origEnd!) / 2);
-                    const bodyReadStart = center - Math.floor(bodyLen / 2);
-                    for (let i = 0; i < bodyLen; i++) {
-                        const srcIdx = bodyReadStart + i;
-                        if (srcIdx >= 0 && srcIdx < channelData[ch].length) {
-                            out[wp++] = channelData[ch][srcIdx];
-                        } else {
-                            out[wp++] = 0;
-                        }
-                    }
-                }
-
-                if (hasOriginal && eLen > 0) {
-                    for (let i = 0; i < eLen; i++) {
-                        const srcIdx = seg.origEnd! - eLen + i;
-                        if (srcIdx >= 0 && srcIdx < channelData[ch].length) {
-                            out[wp++] = channelData[ch][srcIdx];
-                        } else {
-                            out[wp++] = 0;
-                        }
-                    }
-                }
-
-                if (wp < segLen) {
-                    for (let i = wp; i < segLen; i++) {
-                        out[i] = channelData[ch][seg.start + (i - (segLen - (seg.end - seg.start)))];
-                    }
-                }
-
                 segData.push(out);
             }
             processedSegments.push(segData);
