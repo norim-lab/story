@@ -31,6 +31,7 @@ import { getPerplexityLegalCheck } from './services/perplexity';
 import { generateElevenLabsAudio, getElevenLabsUserInfo } from './services/elevenlabs';
 import { processWithAuphonic, getAuphonicUserInfo } from './services/auphonic';
 import { applySpeedupClient, SPEEDUP_PRESETS } from './services/speedup';
+import { backupSlotAudio } from './services/audioVersioning';
 
 const MAX_HISTORY_STEPS = 50;
 const MAIN_ID = "main-script";
@@ -1895,6 +1896,11 @@ export const App: React.FC = () => {
         try {
             const masteredAudioBase64 = await processWithAuphonic(elevenLabsAudio);
             
+            const existingAuAudio = activeProject.scriptResult.sections[0].auphonicAudio?.[currentSlot];
+            if (existingAuAudio && activeProject.id) {
+                backupSlotAudio(activeProject.id, currentSlot, 'auphonic', existingAuAudio);
+            }
+
             const updatedResult = {
                 ...activeProject.scriptResult,
                 sections: [{
@@ -1935,6 +1941,11 @@ export const App: React.FC = () => {
                 minSilenceDuration: speedupConfig.minSilenceDuration,
                 targetSilenceDuration: speedupConfig.targetSilenceDuration,
             });
+
+            const existingSpAudio = activeProject.scriptResult.sections[0].speedupAudio?.[currentSlot];
+            if (existingSpAudio && activeProject.id) {
+                backupSlotAudio(activeProject.id, currentSlot, 'speedup', existingSpAudio);
+            }
 
             const updatedResult = {
                 ...activeProject.scriptResult,
@@ -2199,6 +2210,11 @@ export const App: React.FC = () => {
         try {
             const { audioBase64, characterCount } = await generateElevenLabsAudio(prepText);
             
+            const existingElAudio = activeProject.scriptResult!.sections[0].elevenLabsAudio?.[currentSlot];
+            if (existingElAudio && activeProject.id) {
+                backupSlotAudio(activeProject.id, currentSlot, 'elevenlabs', existingElAudio);
+            }
+
             updateActiveProject({
                 scriptResult: {
                     ...activeProject.scriptResult!,
