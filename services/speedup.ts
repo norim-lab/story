@@ -284,17 +284,21 @@ export async function applySpeedupClient(
 
     for (const seg of segmentRanges) {
         if (!seg.isSilence) {
-            processedSegments.push(speedupSegment(channelData, seg.start, seg.end, speed, sampleRate));
+            const clampEnd = Math.min(seg.end, channelData[0].length);
+            if (seg.start < clampEnd) {
+                processedSegments.push(speedupSegment(channelData, seg.start, clampEnd, speed, sampleRate));
+            }
         } else {
             const segLen = seg.end - seg.start;
+            const bufLen = channelData[0].length;
             const segData: Float32Array[] = [];
             for (let ch = 0; ch < numChannels; ch++) {
                 const out = new Float32Array(segLen);
                 const center = Math.floor((seg.start + seg.end) / 2);
-                const readStart = center - Math.floor(segLen / 2);
+                const readStart = Math.max(0, center - Math.floor(segLen / 2));
                 for (let i = 0; i < segLen; i++) {
                     const srcIdx = readStart + i;
-                    if (srcIdx >= 0 && srcIdx < channelData[ch].length) {
+                    if (srcIdx < bufLen) {
                         out[i] = channelData[ch][srcIdx];
                     }
                 }
