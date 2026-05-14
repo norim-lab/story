@@ -250,7 +250,7 @@ export async function applySpeedupClient(
         minSilenceDuration
     );
 
-    const silencePaddingSec = 0.12;
+    const silencePaddingSec = 0.15;
     const paddingSamples = Math.floor(silencePaddingSec * sampleRate);
     const targetSilenceSamples = Math.floor(targetSilenceDuration * sampleRate);
     let shortenedCount = 0;
