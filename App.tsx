@@ -30,7 +30,7 @@ import { getRandomHistoricalWikiquote } from './services/wikiquote';
 import { getPerplexityLegalCheck } from './services/perplexity';
 import { generateElevenLabsAudio, getElevenLabsUserInfo } from './services/elevenlabs';
 import { processWithAuphonic, getAuphonicUserInfo } from './services/auphonic';
-import { applySpeedupClient, SPEEDUP_PRESETS } from './services/speedup';
+import { applySpeedupClient, SPEEDUP_PRESETS, SPEEDUP_DEFAULTS } from './services/speedup';
 import { backupSlotAudio } from './services/audioVersioning';
 
 const MAX_HISTORY_STEPS = 50;
@@ -472,6 +472,8 @@ export const App: React.FC = () => {
         silenceThreshold: -40.0,
         minSilenceDuration: 0.30,
         targetSilenceDuration: 0.15,
+        padding: SPEEDUP_DEFAULTS.padding,
+        crossfade: SPEEDUP_DEFAULTS.crossfade,
     });
 
     // Fetch ElevenLabs Usage
@@ -1940,6 +1942,8 @@ export const App: React.FC = () => {
                 silenceThreshold: speedupConfig.silenceThreshold,
                 minSilenceDuration: speedupConfig.minSilenceDuration,
                 targetSilenceDuration: speedupConfig.targetSilenceDuration,
+                padding: speedupConfig.padding ?? SPEEDUP_DEFAULTS.padding,
+                crossfade: speedupConfig.crossfade ?? SPEEDUP_DEFAULTS.crossfade,
             });
 
             const existingSpAudio = activeProject.scriptResult.sections[0].speedupAudio?.[currentSlot];
@@ -3060,10 +3064,11 @@ export const App: React.FC = () => {
                                                                         key={p.value}
                                                                         onClick={() => {
                                                                             if (p.value !== 'custom' && SPEEDUP_PRESETS[p.value]) {
-                                                                                setSpeedupConfig({
+                                                                                setSpeedupConfig(prev => ({
+                                                                                    ...prev,
                                                                                     ...SPEEDUP_PRESETS[p.value],
                                                                                     preset: p.value,
-                                                                                });
+                                                                                }));
                                                                             } else {
                                                                                 setSpeedupConfig(prev => ({ ...prev, preset: 'custom' }));
                                                                             }
@@ -3088,16 +3093,47 @@ export const App: React.FC = () => {
                                                             </div>
                                                             <input 
                                                                 type="range" 
-                                                                min="1.0" max="2.0" step="0.01" 
+                                                                min="1.0" max="1.2" step="0.01" 
                                                                 value={speedupConfig.speed}
                                                                 onChange={e => setSpeedupConfig(prev => ({ ...prev, speed: parseFloat(e.target.value), preset: 'custom' }))}
                                                                 className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                                                                style={{ background: `linear-gradient(to right, #f59e0b ${(speedupConfig.speed - 1) / 1 * 100}%, rgba(255,255,255,0.1) ${(speedupConfig.speed - 1) / 1 * 100}%)` }}
+                                                                style={{ background: `linear-gradient(to right, #f59e0b ${((speedupConfig.speed - 1) / 0.2) * 100}%, rgba(255,255,255,0.1) ${((speedupConfig.speed - 1) / 0.2) * 100}%)` }}
                                                             />
                                                             <div className="flex justify-between text-[9px] text-slate-500">
                                                                 <span>1.00x</span>
-                                                                <span>1.50x</span>
-                                                                <span>2.00x</span>
+                                                                <span>1.10x</span>
+                                                                <span>1.20x</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <div className="space-y-1">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-[9px] text-slate-500 font-bold uppercase">Padding</span>
+                                                                    <span className="text-[10px] text-slate-400">{(speedupConfig.padding ?? SPEEDUP_DEFAULTS.padding).toFixed(2)}s</span>
+                                                                </div>
+                                                                <input 
+                                                                    type="range" 
+                                                                    min="0.05" max="0.40" step="0.01" 
+                                                                    value={speedupConfig.padding ?? SPEEDUP_DEFAULTS.padding}
+                                                                    onChange={e => setSpeedupConfig(prev => ({ ...prev, padding: parseFloat(e.target.value), preset: 'custom' }))}
+                                                                    className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                                                                    style={{ background: `linear-gradient(to right, #3b82f6 ${(((speedupConfig.padding ?? SPEEDUP_DEFAULTS.padding) - 0.05) / 0.35) * 100}%, rgba(255,255,255,0.1) ${(((speedupConfig.padding ?? SPEEDUP_DEFAULTS.padding) - 0.05) / 0.35) * 100}%)` }}
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-[9px] text-slate-500 font-bold uppercase">Crossfade</span>
+                                                                    <span className="text-[10px] text-slate-400">{((speedupConfig.crossfade ?? SPEEDUP_DEFAULTS.crossfade) * 1000).toFixed(0)}ms</span>
+                                                                </div>
+                                                                <input 
+                                                                    type="range" 
+                                                                    min="0.0" max="0.05" step="0.001" 
+                                                                    value={speedupConfig.crossfade ?? SPEEDUP_DEFAULTS.crossfade}
+                                                                    onChange={e => setSpeedupConfig(prev => ({ ...prev, crossfade: parseFloat(e.target.value), preset: 'custom' }))}
+                                                                    className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                                                                    style={{ background: `linear-gradient(to right, #3b82f6 ${(((speedupConfig.crossfade ?? SPEEDUP_DEFAULTS.crossfade) - 0) / 0.05) * 100}%, rgba(255,255,255,0.1) ${(((speedupConfig.crossfade ?? SPEEDUP_DEFAULTS.crossfade) - 0) / 0.05) * 100}%)` }}
+                                                                />
                                                             </div>
                                                         </div>
 
@@ -3133,6 +3169,21 @@ export const App: React.FC = () => {
                                                                 />
                                                             </div>
                                                         </div>
+
+                                                        <button 
+                                                            onClick={() => setSpeedupConfig({
+                                                                preset: 'zeitblytz_standard',
+                                                                speed: SPEEDUP_PRESETS.zeitblytz_standard.speed,
+                                                                silenceThreshold: SPEEDUP_PRESETS.zeitblytz_standard.silenceThreshold,
+                                                                minSilenceDuration: SPEEDUP_PRESETS.zeitblytz_standard.minSilenceDuration,
+                                                                targetSilenceDuration: SPEEDUP_PRESETS.zeitblytz_standard.targetSilenceDuration,
+                                                                padding: SPEEDUP_DEFAULTS.padding,
+                                                                crossfade: SPEEDUP_DEFAULTS.crossfade,
+                                                            })}
+                                                            className="w-full px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:border-white/30 transition-all"
+                                                        >
+                                                            ↩ Standard wiederherstellen
+                                                        </button>
 
                                                         <button 
                                                             onClick={handleSpeedup}

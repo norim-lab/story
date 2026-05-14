@@ -213,6 +213,11 @@ function speedupSegment(
     return stretched;
 }
 
+export const SPEEDUP_DEFAULTS = {
+    padding: 0.20,
+    crossfade: 0.025,
+};
+
 export async function applySpeedupClient(
     base64Audio: string,
     config: {
@@ -221,6 +226,8 @@ export async function applySpeedupClient(
         silenceThreshold?: number;
         minSilenceDuration?: number;
         targetSilenceDuration?: number;
+        padding?: number;
+        crossfade?: number;
     }
 ): Promise<SpeedupResult> {
     const presetValues = config.preset ? SPEEDUP_PRESETS[config.preset] : null;
@@ -228,6 +235,8 @@ export async function applySpeedupClient(
     const silenceThreshold = presetValues?.silenceThreshold ?? config.silenceThreshold ?? -40.0;
     const minSilenceDuration = presetValues?.minSilenceDuration ?? config.minSilenceDuration ?? 0.30;
     const targetSilenceDuration = presetValues?.targetSilenceDuration ?? config.targetSilenceDuration ?? 0.15;
+    const paddingSec = config.padding ?? SPEEDUP_DEFAULTS.padding;
+    const crossfadeSec = config.crossfade ?? SPEEDUP_DEFAULTS.crossfade;
 
     const audioBytes = base64ToUint8Array(base64Audio);
     const arrayBuffer = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength) as ArrayBuffer;
@@ -250,7 +259,7 @@ export async function applySpeedupClient(
         minSilenceDuration
     );
 
-    const silencePaddingSec = 0.20;
+    const silencePaddingSec = paddingSec;
     const paddingSamples = Math.floor(silencePaddingSec * sampleRate);
     const targetSilenceSamples = Math.floor(targetSilenceDuration * sampleRate);
     let shortenedCount = 0;
@@ -306,7 +315,7 @@ export async function applySpeedupClient(
         }
     }
 
-    const crossfadeSamples = Math.floor(sampleRate * 0.025);
+    const crossfadeSamples = Math.floor(sampleRate * crossfadeSec);
     let totalOutputSamples = 0;
     for (let i = 0; i < processedSegments.length; i++) {
         totalOutputSamples += processedSegments[i][0].length;
