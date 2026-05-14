@@ -195,8 +195,10 @@ function wsola(
     }
 
     for (let i = 0; i < outputLength; i++) {
-        if (winSum[i] > 0.001) {
+        if (winSum[i] > 0.5) {
             output[i] /= winSum[i];
+        } else {
+            output[i] = 0;
         }
     }
 
@@ -259,7 +261,7 @@ export async function applySpeedupClient(
         minSilenceDuration
     );
 
-    const silencePaddingSec = 0.08;
+    const silencePaddingSec = 0.15;
     const paddingSamples = Math.floor(silencePaddingSec * sampleRate);
     const targetSilenceSamples = Math.floor(targetSilenceDuration * sampleRate);
     let shortenedCount = 0;
