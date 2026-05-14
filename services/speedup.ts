@@ -312,8 +312,9 @@ export async function applySpeedupClient(
     let totalOutputSamples = 0;
     for (let i = 0; i < processedSegments.length; i++) {
         totalOutputSamples += processedSegments[i][0].length;
-        if (i > 0) totalOutputSamples -= crossfadeSamples;
+        if (i > 0) totalOutputSamples -= Math.min(crossfadeSamples, processedSegments[i][0].length);
     }
+    totalOutputSamples = Math.max(totalOutputSamples, 0);
 
     const outputChannels: Float32Array[] = [];
     for (let ch = 0; ch < numChannels; ch++) {
@@ -321,17 +322,24 @@ export async function applySpeedupClient(
         let writePos = 0;
         for (let i = 0; i < processedSegments.length; i++) {
             const seg = processedSegments[i][ch];
+            if (seg.length === 0) continue;
             if (i === 0) {
-                output.set(seg, writePos);
+                const copyLen = Math.min(seg.length, totalOutputSamples - writePos);
+                if (copyLen > 0) output.set(seg.subarray(0, copyLen), writePos);
                 writePos += seg.length;
             } else {
                 const overlap = Math.min(crossfadeSamples, seg.length, writePos);
                 for (let j = 0; j < overlap; j++) {
-                    const t = j / overlap;
-                    output[writePos - overlap + j] = output[writePos - overlap + j] * (1 - t) + seg[j] * t;
+                    const idx = writePos - overlap + j;
+                    if (idx >= 0 && idx < totalOutputSamples) {
+                        const t = j / overlap;
+                        output[idx] = output[idx] * (1 - t) + seg[j] * t;
+                    }
                 }
-                if (seg.length > overlap) {
-                    output.set(seg.subarray(overlap), writePos);
+                const remainLen = seg.length - overlap;
+                if (remainLen > 0 && writePos < totalOutputSamples) {
+                    const copyLen = Math.min(remainLen, totalOutputSamples - writePos);
+                    output.set(seg.subarray(overlap, overlap + copyLen), writePos);
                 }
                 writePos += seg.length - overlap;
             }
