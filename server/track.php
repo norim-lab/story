@@ -269,6 +269,18 @@ try {
             sendJson(readIndex());
             break;
 
+        case 'get_size':
+            $id = sanitizeId($_GET['id'] ?? '');
+            if (empty($id)) {
+                sendError("Keine ID angegeben", 400);
+            }
+            $projectFile = __DIR__ . '/data/projects/' . $id . '.json';
+            if (!file_exists($projectFile)) {
+                sendError("Projekt nicht gefunden", 404);
+            }
+            sendJson(['size' => filesize($projectFile), 'id' => $id]);
+            break;
+
         case 'get':
             $id = sanitizeId($_GET['id'] ?? '');
             if (empty($id)) {

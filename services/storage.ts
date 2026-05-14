@@ -62,6 +62,18 @@ export const getProjectWithProgress = async (
     onProgress?: (progress: LoadProgress) => void
 ): Promise<ProjectSession | null> => {
     try {
+        let knownTotal: number | null = null;
+        try {
+            const sizeResp = await fetch(`${API_URL}?action=get_size&id=${id}`, fetchOptions({
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            }));
+            if (sizeResp.ok) {
+                const sizeData = await sizeResp.json();
+                if (sizeData.size) knownTotal = sizeData.size;
+            }
+        } catch {}
+
         const response = await fetch(`${API_URL}?action=get&id=${id}`, fetchOptions({
             method: 'GET',
             headers: { 'Accept': 'application/json' }
@@ -72,7 +84,7 @@ export const getProjectWithProgress = async (
         }
 
         const contentLength = response.headers.get('Content-Length');
-        const total = contentLength ? parseInt(contentLength, 10) : null;
+        const total = knownTotal ?? (contentLength ? parseInt(contentLength, 10) : null);
 
         if (!response.body) {
             if (onProgress && total) {
@@ -94,9 +106,13 @@ export const getProjectWithProgress = async (
                 onProgress({
                     loaded,
                     total,
-                    percent: total ? Math.round((loaded / total) * 100) : 0,
+                    percent: total ? Math.min(99, Math.round((loaded / total) * 100)) : 0,
                 });
             }
+        }
+
+        if (onProgress) {
+            onProgress({ loaded: loaded, total: total ?? loaded, percent: 100 });
         }
 
         const combined = new Uint8Array(loaded);
