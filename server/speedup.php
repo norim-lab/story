@@ -142,7 +142,7 @@ try {
         if (preg_match('/silence_end:\s*([\d.]+)/', $line, $m)) $silenceEnds[] = floatval($m[1]);
     }
 
-    $silencePaddingSec = 0.05;
+    $silencePaddingSec = 0.08;
     $numSilences = min(count($silenceStarts), count($silenceEnds));
     $shortenedCount = 0;
     $trimmedFile = $tmpDir . '/trimmed.mp3';

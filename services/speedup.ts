@@ -210,15 +210,23 @@ function speedupSegment(
     speed: number,
     sampleRate: number
 ): Float32Array[] {
-    const length = end - start;
     const segment: Float32Array[] = [];
     for (let ch = 0; ch < channelData.length; ch++) {
         segment.push(channelData[ch].subarray(start, end));
     }
 
+    const edgeFade = Math.floor(sampleRate * 0.008);
     const stretched: Float32Array[] = [];
     for (let ch = 0; ch < segment.length; ch++) {
-        stretched.push(wsola(segment[ch], speed, sampleRate));
+        const result = wsola(segment[ch], speed, sampleRate);
+        const fadeLen = Math.min(edgeFade, Math.floor(result.length / 2));
+        for (let i = 0; i < fadeLen; i++) {
+            result[i] *= i / fadeLen;
+        }
+        for (let i = 0; i < fadeLen; i++) {
+            result[result.length - 1 - i] *= i / fadeLen;
+        }
+        stretched.push(result);
     }
     return stretched;
 }
@@ -260,7 +268,7 @@ export async function applySpeedupClient(
         minSilenceDuration
     );
 
-    const silencePaddingSec = 0.05;
+    const silencePaddingSec = 0.08;
     const fadeSec = 0.005;
     const paddingSamples = Math.floor(silencePaddingSec * sampleRate);
     const fadeSamples = Math.floor(fadeSec * sampleRate);
