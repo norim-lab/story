@@ -23,7 +23,7 @@ import {
     generateTitle,
     prepareForElevenLabs
 } from './services/provider';
-import { initStorage, listProjects, saveProject, deleteProject as deleteCloudProject, checkConnection, getProject } from './services/storage';
+import { initStorage, listProjects, saveProject, deleteProject as deleteCloudProject, checkConnection, getProjectWithProgress, LoadProgress } from './services/storage';
 import SettingsModal from './components/SettingsModal';
 import { getSettings, getFastModel, getProModel, saveSettings } from './services/settings';
 import { getRandomHistoricalWikiquote } from './services/wikiquote';
@@ -465,6 +465,7 @@ export const App: React.FC = () => {
     const [auphonicQuota, setAuphonicQuota] = useState<{ credits: number } | null>(null);
     const [isProcessingSpeedup, setIsProcessingSpeedup] = useState(false);
     const [isLoadingProject, setIsLoadingProject] = useState(false);
+    const [loadProgress, setLoadProgress] = useState<LoadProgress | null>(null);
     const projectCacheRef = useRef<Record<string, ProjectSession>>({});
     const [speedupConfig, setSpeedupConfig] = useState({
         preset: 'zeitblytz_standard',
@@ -2038,8 +2039,11 @@ export const App: React.FC = () => {
                         return;
                     }
                     setIsLoadingProject(true);
+                    setLoadProgress(null);
                     try {
-                        const fullProject = await getProject(id);
+                        const fullProject = await getProjectWithProgress(id, (progress) => {
+                            setLoadProgress(progress);
+                        });
                         if (fullProject) {
                             const mergedControls = {
                                 [MAIN_ID]: { 
@@ -2069,6 +2073,7 @@ export const App: React.FC = () => {
                         setActiveProjectId(id);
                     } finally {
                         setIsLoadingProject(false);
+                        setLoadProgress(null);
                     }
                 }} 
                 onDelete={deleteProject}
@@ -2079,10 +2084,21 @@ export const App: React.FC = () => {
             />
             {isLoadingProject && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 flex flex-col items-center gap-4 shadow-2xl">
+                    <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 flex flex-col items-center gap-4 shadow-2xl min-w-[320px]">
                         <div className="w-10 h-10 border-3 border-slate-600 border-t-amber-400 rounded-full animate-spin" />
                         <div className="text-sm font-bold text-slate-300">Projekt wird geladen...</div>
-                        <div className="text-[10px] text-slate-500">Audiodaten werden vom Server abgerufen</div>
+                        <div className="w-full bg-black/40 rounded-full h-2.5 overflow-hidden">
+                            <div
+                                className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-200 ease-out"
+                                style={{ width: `${loadProgress?.percent ?? 0}%` }}
+                            />
+                        </div>
+                        <div className="flex justify-between w-full text-[10px] text-slate-500">
+                            <span>{loadProgress?.percent ?? 0}%</span>
+                            <span>
+                                {loadProgress ? `${(loadProgress.loaded / 1024 / 1024).toFixed(1)} MB${loadProgress.total ? ` / ${(loadProgress.total / 1024 / 1024).toFixed(1)} MB` : ''}` : 'Verbinde...'}
+                            </span>
+                        </div>
                     </div>
                 </div>
             )}

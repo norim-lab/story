@@ -51,7 +51,16 @@ export const listProjects = async (): Promise<ProjectSession[]> => {
     }
 };
 
-export const getProject = async (id: string): Promise<ProjectSession | null> => {
+export interface LoadProgress {
+    loaded: number;
+    total: number | null;
+    percent: number;
+}
+
+export const getProjectWithProgress = async (
+    id: string,
+    onProgress?: (progress: LoadProgress) => void
+): Promise<ProjectSession | null> => {
     try {
         const response = await fetch(`${API_URL}?action=get&id=${id}`, fetchOptions({
             method: 'GET',
@@ -61,7 +70,44 @@ export const getProject = async (id: string): Promise<ProjectSession | null> => 
             if (response.status === 404) return null;
             throw new Error(`Fehler beim Laden des Projekts: ${response.status}`);
         }
-        return await response.json();
+
+        const contentLength = response.headers.get('Content-Length');
+        const total = contentLength ? parseInt(contentLength, 10) : null;
+
+        if (!response.body) {
+            if (onProgress && total) {
+                onProgress({ loaded: total, total, percent: 100 });
+            }
+            return await response.json();
+        }
+
+        const reader = response.body.getReader();
+        const chunks: Uint8Array[] = [];
+        let loaded = 0;
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+            loaded += value.length;
+            if (onProgress) {
+                onProgress({
+                    loaded,
+                    total,
+                    percent: total ? Math.round((loaded / total) * 100) : 0,
+                });
+            }
+        }
+
+        const combined = new Uint8Array(loaded);
+        let offset = 0;
+        for (const chunk of chunks) {
+            combined.set(chunk, offset);
+            offset += chunk.length;
+        }
+
+        const text = new TextDecoder().decode(combined);
+        return JSON.parse(text);
     } catch (e) {
         console.error("Fehler beim Laden des Projekts:", e);
         return null;
