@@ -30,7 +30,9 @@ $filePattern = '*.json';
 
 function sendJson(array $data, int $code = 200): void {
     http_response_code($code);
-    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    $json = json_encode($data, JSON_UNESCAPED_UNICODE);
+    header('Content-Length: ' . strlen($json));
+    echo $json;
     exit;
 }
 
