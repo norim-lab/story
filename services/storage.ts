@@ -63,18 +63,29 @@ export const getProjectWithProgress = async (
 ): Promise<ProjectSession | null> => {
     try {
         let knownTotal: number | null = null;
+
         try {
-            const sizeResp = await fetch(`${API_URL}?action=get_size&id=${id}`, fetchOptions({
+            const sizeResp = await fetch(`${API_URL}?action=get_size&id=${id}&_t=${Date.now()}`, fetchOptions({
                 method: 'GET',
                 headers: { 'Accept': 'application/json' }
             }));
+            console.log('[LoadProgress] get_size status:', sizeResp.status);
             if (sizeResp.ok) {
                 const sizeData = await sizeResp.json();
-                if (sizeData.size) knownTotal = sizeData.size;
+                console.log('[LoadProgress] get_size response:', sizeData);
+                if (typeof sizeData.size === 'number' && sizeData.size > 0) {
+                    knownTotal = sizeData.size;
+                }
+            } else {
+                console.warn('[LoadProgress] get_size nicht ok:', sizeResp.status, await sizeResp.text().catch(() => ''));
             }
-        } catch {}
+        } catch (e) {
+            console.warn('[LoadProgress] get_size Fehler:', e);
+        }
 
-        const response = await fetch(`${API_URL}?action=get&id=${id}`, fetchOptions({
+        console.log('[LoadProgress] knownTotal:', knownTotal);
+
+        const response = await fetch(`${API_URL}?action=get&id=${id}&_t=${Date.now()}`, fetchOptions({
             method: 'GET',
             headers: { 'Accept': 'application/json' }
         }));
@@ -84,9 +95,13 @@ export const getProjectWithProgress = async (
         }
 
         const contentLength = response.headers.get('Content-Length');
+        console.log('[LoadProgress] Content-Length header:', contentLength);
+
         const total = knownTotal ?? (contentLength ? parseInt(contentLength, 10) : null);
+        console.log('[LoadProgress] final total:', total, '(knownTotal:', knownTotal, ', contentLength:', contentLength, ')');
 
         if (!response.body) {
+            console.log('[LoadProgress] kein ReadableStream, fallback');
             if (onProgress && total) {
                 onProgress({ loaded: total, total, percent: 100 });
             }

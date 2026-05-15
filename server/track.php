@@ -1,9 +1,13 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 
 ini_set('memory_limit', '512M');
 ini_set('max_execution_time', 60);
 if (function_exists('apache_setenv')) { @apache_setenv('no-gzip', '1'); }
+@ini_set('zlib.output_compression', '0');
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
 $allowedOrigins = [
