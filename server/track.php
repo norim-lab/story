@@ -275,7 +275,7 @@ try {
             if (empty($id)) {
                 sendError("Keine ID angegeben", 400);
             }
-            $projectFile = __DIR__ . '/data/projects/' . $id . '.json';
+            $projectFile = $projectDir . '/' . $id . '.json';
             if (!file_exists($projectFile)) {
                 sendError("Projekt nicht gefunden", 404);
             }
