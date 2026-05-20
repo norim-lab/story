@@ -33,8 +33,8 @@ const defaults: ZBSettings = {
   openaiFastModel: 'gpt-4o-mini',
   openaiProModel: 'gpt-4o',
   anthropicApiKey: '',
-  anthropicFastModel: 'claude-haiku-4-5',
-  anthropicProModel: 'claude-sonnet-4-6',
+  anthropicFastModel: 'anthropic/claude-haiku-4-5',
+  anthropicProModel: 'anthropic/claude-sonnet-4-6',
   perplexityApiKey: '',
   elevenLabsApiKey: '',
   elevenLabsVoiceId: 'JBFqnCBsd6RMkjVDRZzb', // Example default voice ID
@@ -130,6 +130,6 @@ export function getMissingKeyMessage(): string | null {
   const s = getSettings();
   if (s.activeProvider === 'google' && !s.googleApiKey) return 'Google API Key fehlt. Bitte in den Einstellungen hinterlegen.';
   if (s.activeProvider === 'openai' && !s.openaiApiKey) return 'OpenAI API Key fehlt. Bitte in den Einstellungen hinterlegen.';
-  if (s.activeProvider === 'anthropic' && !s.anthropicApiKey) return 'Anthropic API Key fehlt. Bitte in den Einstellungen hinterlegen.';
+  if (s.activeProvider === 'anthropic' && !s.anthropicApiKey) return 'DeepInfra API Key fehlt. Bitte in den Einstellungen hinterlegen.';
   return null;
 }
