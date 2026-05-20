@@ -6,12 +6,32 @@ const DEEPINFRA_BASE = 'https://api.deepinfra.com/v1/openai';
 
 function normalizeModel(model: string): string {
     if (model.startsWith('anthropic/')) return model;
-    const known = ['claude-haiku-4-5', 'claude-sonnet-4-6', 'claude-opus-4-7', 'claude-opus-4-6'];
-    for (const k of known) {
-        if (model.includes(k)) return `anthropic/${k}`;
+    const stripped = model.replace(/-\d{8,}$/, '');
+    const mapping: Record<string, string> = {
+        'claude-haiku-4-5': 'anthropic/claude-haiku-4-5',
+        'claude-haiku-3': 'anthropic/claude-haiku-4-5',
+        'claude-sonnet-4-6': 'anthropic/claude-sonnet-4-6',
+        'claude-sonnet-4-5': 'anthropic/claude-sonnet-4-6',
+        'claude-sonnet-4-0': 'anthropic/claude-sonnet-4-6',
+        'claude-sonnet-4': 'anthropic/claude-sonnet-4-6',
+        'claude-opus-4-7': 'anthropic/claude-opus-4-7',
+        'claude-opus-4-6': 'anthropic/claude-opus-4-6',
+        'claude-opus-4-5': 'anthropic/claude-opus-4-7',
+        'claude-opus-4-1': 'anthropic/claude-opus-4-7',
+        'claude-opus-4-0': 'anthropic/claude-opus-4-7',
+        'claude-opus-4': 'anthropic/claude-opus-4-7',
+        'claude-3-7-sonnet': 'anthropic/claude-sonnet-4-6',
+        'claude-3-5-sonnet': 'anthropic/claude-sonnet-4-6',
+        'claude-3-haiku': 'anthropic/claude-haiku-4-5',
+    };
+    if (mapping[stripped]) return mapping[stripped];
+    for (const [key, value] of Object.entries(mapping)) {
+        if (stripped.includes(key)) return value;
     }
-    if (model.startsWith('claude-')) return `anthropic/${model}`;
-    return model;
+    if (stripped.includes('haiku')) return 'anthropic/claude-haiku-4-5';
+    if (stripped.includes('opus')) return 'anthropic/claude-opus-4-7';
+    if (stripped.includes('sonnet')) return 'anthropic/claude-sonnet-4-6';
+    return 'anthropic/claude-sonnet-4-6';
 }
 
 function safeReplace(template: string, key: string, value: string): string {
