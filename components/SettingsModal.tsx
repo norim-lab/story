@@ -62,7 +62,7 @@ const SettingsModal: React.FC<Props> = ({ open, onClose }) => {
         
         <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
           {renderProviderSection('google', 'Google AI Studio', s.googleApiKey, v => setS({...s, googleApiKey: v}))}
-          {renderProviderSection('anthropic', 'Anthropic (Claude)', s.anthropicApiKey, v => setS({...s, anthropicApiKey: v}))}
+          {renderProviderSection('anthropic', 'DeepInfra (Claude)', s.anthropicApiKey, v => setS({...s, anthropicApiKey: v}))}
           {renderProviderSection('openai', 'OpenAI (GPT)', s.openaiApiKey, v => setS({...s, openaiApiKey: v}))}
           
           <div className="space-y-2">

@@ -2,8 +2,7 @@ import { PlatformSafetyCheck, SegmentControls } from "../types";
 import { getAnthropicKey } from "./settings";
 import { applyShortRules, loadPrompt, getStyleInstruction, getMetaphorInstruction, getFactInstruction, appendStyleEnforcement } from "./prompts";
 
-const anthropicMessagesUrl = import.meta.env.DEV ? '/anthropic' : '/anthropic.php';
-const anthropicProxyMode = import.meta.env.DEV ? 'direct' : 'wrapped';
+const DEEPINFRA_BASE = 'https://api.deepinfra.com/v1/openai';
 
 function safeReplace(template: string, key: string, value: string): string {
     return template.split(key).join(value);
@@ -13,83 +12,59 @@ function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function postAnthropic(apiKey: string, anthropicVersion: string, payload: any): Promise<Response> {
+async function postDeepInfra(apiKey: string, model: string, systemPrompt: string, userPrompt: string, maxTokens: number): Promise<string> {
     const maxAttempts = 4;
-    const retryableStatuses = new Set([429, 503, 529]);
+    const retryableStatuses = new Set([429, 503, 529, 500]);
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {
-            const response = await fetch(anthropicMessagesUrl, anthropicProxyMode === 'direct' ? {
+            const response = await fetch(`${DEEPINFRA_BASE}/chat/completions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-api-key': apiKey,
-                    'anthropic-version': anthropicVersion
-                },
-                body: JSON.stringify(payload)
-            } : {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${apiKey}`
                 },
                 body: JSON.stringify({
-                    apiKey,
-                    anthropicVersion,
-                    payload
+                    model,
+                    max_tokens: maxTokens,
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: userPrompt }
+                    ]
                 })
             });
 
-            if (!retryableStatuses.has(response.status) || attempt === maxAttempts - 1) {
-                return response;
+            if (!response.ok) {
+                if (retryableStatuses.has(response.status) && attempt < maxAttempts - 1) {
+                    const base = 600 * Math.pow(2, attempt);
+                    const jitter = Math.floor(Math.random() * 250);
+                    await sleep(base + jitter);
+                    continue;
+                }
+                let errMsg = `DeepInfra Error ${response.status}`;
+                try {
+                    const errData = await response.json();
+                    errMsg = errData?.error?.message || errData?.detail || errMsg;
+                } catch {}
+                throw new Error(errMsg);
             }
+
+            const data = await response.json();
+            return data.choices?.[0]?.message?.content || "";
         } catch (e) {
             if (attempt === maxAttempts - 1) throw e;
-        }
-
-        const base = 600 * Math.pow(2, attempt);
-        const jitter = Math.floor(Math.random() * 250);
-        await sleep(base + jitter);
-    }
-
-    return fetch(anthropicMessagesUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey, anthropicVersion, payload })
-    });
-}
-
-async function getErrorMessage(response: Response): Promise<string> {
-    const base = `Anthropic Error: ${response.status}`;
-    try {
-        const data: any = await response.json();
-        const msg = data?.error?.message || data?.message || data?.error || data?.details;
-        return typeof msg === 'string' && msg.trim() ? msg : base;
-    } catch {
-        try {
-            const txt = await response.text();
-            const clean = txt.replace(/\s+/g, ' ').trim();
-            return clean ? `${base} · ${clean.slice(0, 300)}` : base;
-        } catch {
-            return base;
+            const base = 600 * Math.pow(2, attempt);
+            const jitter = Math.floor(Math.random() * 250);
+            await sleep(base + jitter);
         }
     }
+    throw new Error("DeepInfra: Max Retry erreicht");
 }
 
 async function handleApiCall<T>(call: () => Promise<T>): Promise<T> {
     const key = getAnthropicKey();
-    console.log("[Anthropic] API Call starting, Key present:", !!key);
-    if (!key) {
-        console.error("[Anthropic] API Key missing!");
-        throw new Error("Anthropic API Key fehlt. Bitte in den Einstellungen hinterlegen.");
-    }
-    try { 
-        const result = await call();
-        console.log("[Anthropic] API Call success");
-        return result; 
-    } catch (err: any) { 
-        console.error("Anthropic API Error:", err); 
-        throw err; 
-    }
+    if (!key) throw new Error("DeepInfra API Key fehlt. Bitte in den Einstellungen hinterlegen.");
+    return call();
 }
 
 export const generateScriptWithControls = async (dossier: string, facts: string, controls: SegmentControls, model: string): Promise<string> => {
@@ -114,24 +89,8 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
         promptTemplate = appendStyleEnforcement(promptTemplate, controls.style, controls.metaphor, controls.fact_intensity);
         const systemInstruction = applyShortRules("Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Skript.");
 
-        const response = await postAnthropic(apiKey, '2023-06-01', {
-            model: model,
-            max_tokens: 4096,
-            system: systemInstruction,
-            messages: [
-                { role: 'user', content: promptTemplate }
-            ]
-        });
-
-        if (!response.ok) throw new Error(await getErrorMessage(response));
-
-        const data = await response.json();
-        const result = data.content?.[0]?.text || "";
-        
-        if (!result) {
-            throw new Error("Kein Text generiert. Die API hat eine leere Antwort zurückgegeben.");
-        }
-
+        const result = await postDeepInfra(apiKey, model, systemInstruction, promptTemplate, 4096);
+        if (!result) throw new Error("Kein Text generiert.");
         return result;
     });
 };
@@ -139,48 +98,20 @@ export const generateScriptWithControls = async (dossier: string, facts: string,
 export const generateTitle = async (script: string, model: string): Promise<string> => {
     return handleApiCall(async () => {
         const apiKey = getAnthropicKey();
-        
         let promptTemplate = loadPrompt('script_generation', 'title_generation');
         promptTemplate = safeReplace(promptTemplate, '{script}', script);
-
-        const response = await postAnthropic(apiKey, '2023-06-01', {
-            model: model,
-            max_tokens: 150,
-            system: 'Du bist ein Experte für klickstarke YouTube-Titel.',
-            messages: [
-                { role: 'user', content: promptTemplate }
-            ]
-        });
-
-        if (!response.ok) throw new Error(await getErrorMessage(response));
-
-        const data = await response.json();
-        let result = data.content?.[0]?.text?.trim() || "";
-        result = result.replace(/^["']|["']$/g, '');
-        return result;
+        const result = await postDeepInfra(apiKey, model, 'Du bist ein Experte für klickstarke YouTube-Titel.', promptTemplate, 150);
+        return result.replace(/^["']|["']$/g, '');
     });
 };
 
 export const prepareForElevenLabs = async (script: string, model: string): Promise<string> => {
     return handleApiCall(async () => {
         const apiKey = getAnthropicKey();
-        
         let promptTemplate = loadPrompt('script_generation', 'elevenlabs_prep');
         promptTemplate = safeReplace(promptTemplate, '{script}', script);
-
-        const response = await postAnthropic(apiKey, '2023-06-01', {
-            model: model,
-            max_tokens: 4096,
-            system: 'Du bist Audio-Engineer für ZEITBLYTZ. Antworte NUR mit dem getaggten Skript.',
-            messages: [
-                { role: 'user', content: promptTemplate }
-            ]
-        });
-
-        if (!response.ok) throw new Error(await getErrorMessage(response));
-
-        const data = await response.json();
-        return data.content?.[0]?.text?.trim() || script;
+        const result = await postDeepInfra(apiKey, model, 'Du bist Audio-Engineer für ZEITBLYTZ. Antworte NUR mit dem getaggten Skript.', promptTemplate, 4096);
+        return result?.trim() || script;
     });
 };
 
@@ -203,20 +134,8 @@ export const generateNewsFlash = async (dossier: string, facts: string, controls
         promptTemplate = appendStyleEnforcement(promptTemplate, controls.style, controls.metaphor, controls.fact_intensity);
         const systemInstruction = applyShortRules("Du bist ein erfahrener Redakteur für das Format 'ZEITBLITZ'. Antworte nur mit dem Text.");
 
-        const response = await postAnthropic(apiKey, '2023-06-01', {
-            model: model,
-            max_tokens: 2048,
-            system: systemInstruction,
-            messages: [
-                { role: 'user', content: promptTemplate }
-            ]
-        });
-
-        if (!response.ok) throw new Error(await getErrorMessage(response));
-
-        const data = await response.json();
-        const result = data.content?.[0]?.text || "";
-        if (!result) throw new Error("Kein Text generiert. Die API hat eine leere Antwort zurückgegeben.");
+        const result = await postDeepInfra(apiKey, model, systemInstruction, promptTemplate, 2048);
+        if (!result) throw new Error("Kein Text generiert.");
         return result;
     });
 };
@@ -237,20 +156,8 @@ export const generateInstagramWisdom = async (quote: string, author: string, dea
         promptTemplate = applyShortRules(promptTemplate);
         const systemInstruction = applyShortRules("Du bist ein Scriptwriter. Antworte exakt im gewünschten Format.");
 
-        const response = await postAnthropic(apiKey, '2023-06-01', {
-            model: model,
-            max_tokens: 2048,
-            system: systemInstruction,
-            messages: [
-                { role: 'user', content: promptTemplate }
-            ]
-        });
-
-        if (!response.ok) throw new Error(await getErrorMessage(response));
-
-        const data = await response.json();
-        const result = data.content?.[0]?.text || "";
-        if (!result) throw new Error("Kein Text generiert. Die API hat eine leere Antwort zurückgegeben.");
+        const result = await postDeepInfra(apiKey, model, systemInstruction, promptTemplate, 2048);
+        if (!result) throw new Error("Kein Text generiert.");
         return result;
     });
 };
@@ -269,20 +176,7 @@ export const generateDialogue = async (rawText: string, factText: string, contro
         systemInstruction = applyShortRules(systemInstruction);
 
         const fullContext = `DOSSIER:\n${rawText}\n\nZUSÄTZLICHE FAKTEN:\n${factText}`;
-
-        const response = await postAnthropic(apiKey, '2023-06-01', {
-            model: model,
-            max_tokens: 4096,
-            system: systemInstruction,
-            messages: [
-                { role: 'user', content: fullContext }
-            ]
-        });
-
-        if (!response.ok) throw new Error(await getErrorMessage(response));
-
-        const data = await response.json();
-        return data.content?.[0]?.text || "";
+        return await postDeepInfra(apiKey, model, systemInstruction, fullContext, 4096);
     });
 };
 
@@ -297,19 +191,8 @@ export const regenerateHook = async (text: string, controls: SegmentControls, mo
         systemInstruction = safeReplace(systemInstruction, '{context}', context);
         systemInstruction = applyShortRules(systemInstruction);
 
-        const response = await postAnthropic(apiKey, '2023-06-01', {
-            model: model,
-            max_tokens: 1024,
-            system: systemInstruction,
-            messages: [
-                { role: 'user', content: "Generiere den Hook jetzt." }
-            ]
-        });
-
-        if (!response.ok) throw new Error(await getErrorMessage(response));
-
-        const data = await response.json();
-        return data.content?.[0]?.text?.trim() || text;
+        const result = await postDeepInfra(apiKey, model, systemInstruction, "Generiere den Hook jetzt.", 1024);
+        return result?.trim() || text;
     });
 };
 
@@ -333,50 +216,24 @@ export const generateCTA = async (text: string, controls: SegmentControls, model
         systemInstruction = safeReplace(systemInstruction, '{targetWords}', targetWords);
         systemInstruction = applyShortRules(systemInstruction);
 
-        const response = await postAnthropic(apiKey, '2023-06-01', {
-            model: model,
-            max_tokens: 512,
-            system: systemInstruction,
-            messages: [
-                { role: 'user', content: "Generiere jetzt den Abschluss." }
-            ]
-        });
-
-        if (!response.ok) throw new Error(await getErrorMessage(response));
-
-        const data = await response.json();
-        return data.content?.[0]?.text || "";
+        return await postDeepInfra(apiKey, model, systemInstruction, "Generiere jetzt den Abschluss.", 512);
     });
 };
 
 export const rewriteSelectionWithTone = async (text: string, tone: string, model: string): Promise<string> => {
     return handleApiCall(async () => {
         const apiKey = getAnthropicKey();
-        
         let systemInstruction = loadPrompt('script_generation', 'tone_transformation');
         systemInstruction = safeReplace(systemInstruction, '{toneKey}', tone);
         systemInstruction = applyShortRules(systemInstruction);
-
-        const response = await postAnthropic(apiKey, '2023-06-01', {
-            model: model,
-            max_tokens: 2048,
-            system: systemInstruction,
-            messages: [
-                { role: 'user', content: text }
-            ]
-        });
-
-        if (!response.ok) throw new Error(await getErrorMessage(response));
-
-        const data = await response.json();
-        return data.content?.[0]?.text || text;
+        const result = await postDeepInfra(apiKey, model, systemInstruction, text, 2048);
+        return result || text;
     });
 };
 
 export const improveExistingScript = async (existingText: string, controls: SegmentControls, model: string): Promise<string> => {
     return handleApiCall(async () => {
         const apiKey = getAnthropicKey();
-        
         const seconds = controls.target_seconds || 60;
         const targetWords = Math.round((seconds / 45) * 100);
 
@@ -391,12 +248,12 @@ HUMAN-VOICE (WICHTIG FÜR SPRECHTEXTE):
 - Meist 7–14 Wörter pro Satz. Keine Sätze über 18 Wörter.
 - Rhythmus vor Grammatik-Perfektion: gern fragmentiert, wie gesprochen.
 - Nach 2–3 Sätzen ein Rhythmusbruch: ein ultrakurzer Satz. Oder ein Gedankenstrich — als Pause.
-- Gesprochene Übergänge (sparsam, aber regelmäßig): „Und jetzt wird’s interessant.“ „Aber es kommt noch was dazu.“ „Und genau hier wird’s spannend.“
-- Gedankliche Sprünge: Erst A. Dann plötzlich B. Und jetzt wird’s kompliziert.
-- Emotionale Peaks: „Und jetzt kommt der Punkt.“ „Das ist entscheidend.“ „Das verändert alles.“
+- Gesprochene Übergänge (sparsam, aber regelmäßig): „Und jetzt wird's interessant." „Aber es kommt noch was dazu." „Und genau hier wird's spannend."
+- Gedankliche Sprünge: Erst A. Dann plötzlich B. Und jetzt wird's kompliziert.
+- Emotionale Peaks: „Und jetzt kommt der Punkt." „Das ist entscheidend." „Das verändert alles."
 - Variiere Satzanfänge. Keine Satzanfang-Ketten.
-- Konkrete Bilder statt Abstrakta. Erlaubte Wiederholungen für Betonung: „Genau das.“ „Genau das ist das Problem.“
-- Vermeide KI-Floskeln: „Zusammenfassend“, „Darüber hinaus“, „Nicht zuletzt“.
+- Konkrete Bilder statt Abstrakta. Erlaubte Wiederholungen für Betonung: „Genau das." „Genau das ist das Problem."
+- Vermeide KI-Floskeln: „Zusammenfassend", „Darüber hinaus", „Nicht zuletzt".
 
 ZEITBLITZ-STIL:
 - Punch (Rhetoric Punch): ${controls.style}/10 (Late-Night: gewitzt, sarkastisch, intelligent, aber leicht verständlich; wenige Fremdwörter)
@@ -411,19 +268,8 @@ LÄNGENVORGABE (STRIKT):
 
 Antworte NUR mit dem verbesserten Skript, keine Erklärungen.`);
 
-        const response = await postAnthropic(apiKey, '2023-06-01', {
-            model: model,
-            max_tokens: 4096,
-            system: systemInstruction,
-            messages: [
-                { role: 'user', content: `Verbessere und entwickle diesen Skriptentwurf weiter:\n\n${existingText}` }
-            ]
-        });
-
-        if (!response.ok) throw new Error(await getErrorMessage(response));
-
-        const data = await response.json();
-        return data.content?.[0]?.text || existingText;
+        const result = await postDeepInfra(apiKey, model, systemInstruction, `Verbessere und entwickle diesen Skriptentwurf weiter:\n\n${existingText}`, 4096);
+        return result || existingText;
     });
 };
 
@@ -456,19 +302,7 @@ Regeln:
 Text:
 ${text}`;
 
-        const response = await postAnthropic(apiKey, '2023-06-01', {
-            model,
-            max_tokens: 4096,
-            system: 'Du bist ein strenger Safety-Editor für plattformfreundliche Formulierungen. Antworte nur mit JSON.',
-            messages: [
-                { role: 'user', content: prompt }
-            ]
-        });
-
-        if (!response.ok) throw new Error(await getErrorMessage(response));
-
-        const data = await response.json();
-        const raw = data.content?.[0]?.text || "";
+        const raw = await postDeepInfra(apiKey, model, 'Du bist ein strenger Safety-Editor für plattformfreundliche Formulierungen. Antworte nur mit JSON.', prompt, 4096);
         const start = raw.indexOf('{');
         const end = raw.lastIndexOf('}');
         if (start === -1 || end === -1 || end <= start) throw new Error("Ungültige Safety-Analyse.");
