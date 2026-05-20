@@ -4,6 +4,16 @@ import { applyShortRules, loadPrompt, getStyleInstruction, getMetaphorInstructio
 
 const DEEPINFRA_BASE = 'https://api.deepinfra.com/v1/openai';
 
+function normalizeModel(model: string): string {
+    if (model.startsWith('anthropic/')) return model;
+    const known = ['claude-haiku-4-5', 'claude-sonnet-4-6', 'claude-opus-4-7', 'claude-opus-4-6'];
+    for (const k of known) {
+        if (model.includes(k)) return `anthropic/${k}`;
+    }
+    if (model.startsWith('claude-')) return `anthropic/${model}`;
+    return model;
+}
+
 function safeReplace(template: string, key: string, value: string): string {
     return template.split(key).join(value);
 }
@@ -13,6 +23,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 async function postDeepInfra(apiKey: string, model: string, systemPrompt: string, userPrompt: string, maxTokens: number): Promise<string> {
+    const normalizedModel = normalizeModel(model);
     const maxAttempts = 4;
     const retryableStatuses = new Set([429, 503, 529, 500]);
 
@@ -25,7 +36,7 @@ async function postDeepInfra(apiKey: string, model: string, systemPrompt: string
                     'Authorization': `Bearer ${apiKey}`
                 },
                 body: JSON.stringify({
-                    model,
+                    model: normalizedModel,
                     max_tokens: maxTokens,
                     messages: [
                         { role: 'system', content: systemPrompt },
