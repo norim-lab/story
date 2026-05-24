@@ -32,6 +32,8 @@ import { generateElevenLabsAudio, getElevenLabsUserInfo } from './services/eleve
 import { processWithAuphonic, getAuphonicUserInfo } from './services/auphonic';
 import { applySpeedupClient, SPEEDUP_PRESETS } from './services/speedup';
 import { backupSlotAudio } from './services/audioVersioning';
+import { PauseEditor } from './components/PauseEditor';
+import type { PauseMarker } from './components/PauseEditor';
 
 const MAX_HISTORY_STEPS = 50;
 const MAIN_ID = "main-script";
@@ -474,6 +476,7 @@ export const App: React.FC = () => {
         minSilenceDuration: 0.30,
         targetSilenceDuration: 0.15,
     });
+    const [pauseMarkers, setPauseMarkers] = useState<PauseMarker[]>([]);
 
     // Fetch ElevenLabs Usage
     const fetchElevenLabsUsage = useCallback(async () => {
@@ -1933,14 +1936,20 @@ export const App: React.FC = () => {
             return;
         }
         setIsProcessingSpeedup(true);
-        addLog("Wende Speedup an (Pausen kürzen + beschleunigen)...", "info");
+        const hasPauses = pauseMarkers.length > 0;
+        addLog(hasPauses
+            ? `Wende Speedup an (${pauseMarkers.length} Pause${pauseMarkers.length > 1 ? 'n' : ''} eingefügt + Pausen kürzen + beschleunigen)...`
+            : "Wende Speedup an (Pausen kürzen + beschleunigen)...", "info");
         try {
+            const scriptText = (activeProject.scriptResult.sections[0].versions as any)?.[currentSlot] || '';
             const result = await applySpeedupClient(auphonicAudio, {
                 preset: speedupConfig.preset !== 'custom' ? speedupConfig.preset : undefined,
                 speed: speedupConfig.speed,
                 silenceThreshold: speedupConfig.silenceThreshold,
                 minSilenceDuration: speedupConfig.minSilenceDuration,
                 targetSilenceDuration: speedupConfig.targetSilenceDuration,
+                pauseMarkers,
+                scriptText,
             });
 
             const existingSpAudio = activeProject.scriptResult.sections[0].speedupAudio?.[currentSlot];
@@ -1965,7 +1974,8 @@ export const App: React.FC = () => {
 
             commitAction(`Speedup für ${currentSlot}`, { scriptResult: updatedResult });
             const stats = result.stats;
-            addLog(`Speedup fertig! ${stats.silences_shortened} Pausen gekürzt, ${stats.speed_applied}x Speed, ${stats.original_duration}s → ${stats.processed_duration}s`, "success");
+            const pauseInfo = stats.pauses_inserted ? ` · ${stats.pauses_inserted} Pause${(stats.pauses_inserted || 0) > 1 ? 'n' : ''} (+${stats.pause_time_inserted}s)` : '';
+            addLog(`Speedup fertig! ${stats.silences_shortened} Pausen gekürzt${pauseInfo}, ${stats.speed_applied}x Speed, ${stats.original_duration}s → ${stats.processed_duration}s`, "success");
         } catch (e: any) {
             console.error("Speedup Error:", e);
             addLog(`Fehler bei Speedup: ${e.message}`, "error");
@@ -3062,6 +3072,12 @@ export const App: React.FC = () => {
                                                         <div className="text-xs font-black uppercase tracking-widest text-amber-400">Speedup</div>
                                                     </div>
 
+                                                    <PauseEditor
+                                                        text={currentText}
+                                                        markers={pauseMarkers}
+                                                        onChange={setPauseMarkers}
+                                                    />
+
                                                     <div className="space-y-3 bg-black/30 rounded-xl p-4 border border-amber-500/10">
                                                         <div className="space-y-1">
                                                             <div className="text-[10px] text-slate-400 font-bold uppercase">Preset</div>
@@ -3176,6 +3192,9 @@ export const App: React.FC = () => {
                                                         {activeProject.scriptResult.sections[0].speedupStats?.[currentSlot] && (
                                                             <div className="text-[10px] text-slate-500 bg-black/20 rounded-lg p-2 flex flex-wrap gap-x-4 gap-y-1">
                                                                 <span>🔇 {activeProject.scriptResult.sections[0].speedupStats[currentSlot].silences_shortened} Pausen gekürzt</span>
+                                                                {activeProject.scriptResult.sections[0].speedupStats[currentSlot].pauses_inserted && activeProject.scriptResult.sections[0].speedupStats[currentSlot].pauses_inserted! > 0 && (
+                                                                    <span>⏸ {activeProject.scriptResult.sections[0].speedupStats[currentSlot].pauses_inserted} Pause{activeProject.scriptResult.sections[0].speedupStats[currentSlot].pauses_inserted! > 1 ? 'n' : ''} eingefügt (+{activeProject.scriptResult.sections[0].speedupStats[currentSlot].pause_time_inserted}s)</span>
+                                                                )}
                                                                 <span>⚡ {activeProject.scriptResult.sections[0].speedupStats[currentSlot].speed_applied}x Speed</span>
                                                                 <span>⏱️ {activeProject.scriptResult.sections[0].speedupStats[currentSlot].original_duration}s → {activeProject.scriptResult.sections[0].speedupStats[currentSlot].processed_duration}s</span>
                                                             </div>

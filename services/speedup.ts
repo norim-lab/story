@@ -1,5 +1,6 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { toBlobURL } from '@ffmpeg/util';
+import type { PauseMarker } from '../components/PauseEditor';
 
 interface SpeedupStats {
     silences_detected: number;
@@ -7,6 +8,8 @@ interface SpeedupStats {
     speed_applied: number;
     original_duration: number;
     processed_duration: number;
+    pauses_inserted?: number;
+    pause_time_inserted?: number;
 }
 
 interface SpeedupResult {
@@ -262,6 +265,74 @@ async function applyAtempo(
     return result as Uint8Array;
 }
 
+function splitIntoSegments(text: string): string[] {
+    if (!text || !text.trim()) return [];
+    return text.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
+}
+
+function insertSilences(
+    channelData: Float32Array[],
+    sampleRate: number,
+    pauseMarkers: PauseMarker[],
+    scriptText: string
+): { result: Float32Array[]; totalInserted: number } {
+    if (!pauseMarkers || pauseMarkers.length === 0 || !scriptText) {
+        return { result: channelData.map(ch => new Float32Array(ch)), totalInserted: 0 };
+    }
+
+    const segments = splitIntoSegments(scriptText);
+    if (segments.length === 0) {
+        return { result: channelData.map(ch => new Float32Array(ch)), totalInserted: 0 };
+    }
+
+    const totalChars = segments.reduce((sum, s) => sum + s.length, 0);
+    const totalSamples = channelData[0].length;
+
+    const insertions: { samplePosition: number; silenceSamples: number }[] = [];
+    let cumulativeChars = 0;
+
+    for (let i = 0; i < segments.length && i < segments.length; i++) {
+        cumulativeChars += segments[i].length;
+        const marker = pauseMarkers.find(m => m.gapIndex === i);
+        if (marker) {
+            const position = Math.min(
+                Math.floor((cumulativeChars / totalChars) * totalSamples),
+                totalSamples - 1
+            );
+            insertions.push({
+                samplePosition: position,
+                silenceSamples: Math.floor(marker.duration * sampleRate),
+            });
+        }
+    }
+
+    if (insertions.length === 0) {
+        return { result: channelData.map(ch => new Float32Array(ch)), totalInserted: 0 };
+    }
+
+    insertions.sort((a, b) => b.samplePosition - a.samplePosition);
+
+    const numChannels = channelData.length;
+    let result: Float32Array[] = channelData.map(ch => new Float32Array(ch));
+
+    for (const { samplePosition, silenceSamples } of insertions) {
+        const currentLength = result[0].length;
+        const newLength = currentLength + silenceSamples;
+        const newChannels: Float32Array[] = [];
+
+        for (let ch = 0; ch < numChannels; ch++) {
+            const newCh = new Float32Array(newLength);
+            newCh.set(result[ch].subarray(0, samplePosition), 0);
+            newCh.set(result[ch].subarray(samplePosition), samplePosition + silenceSamples);
+            newChannels.push(newCh);
+        }
+        result = newChannels;
+    }
+
+    const totalInserted = insertions.reduce((sum, ins) => sum + ins.silenceSamples / sampleRate, 0);
+    return { result, totalInserted };
+}
+
 export async function applySpeedupClient(
     base64Audio: string,
     config: {
@@ -270,6 +341,8 @@ export async function applySpeedupClient(
         silenceThreshold?: number;
         minSilenceDuration?: number;
         targetSilenceDuration?: number;
+        pauseMarkers?: PauseMarker[];
+        scriptText?: string;
     }
 ): Promise<SpeedupResult> {
     const presetValues = config.preset ? SPEEDUP_PRESETS[config.preset] : null;
@@ -277,6 +350,8 @@ export async function applySpeedupClient(
     const silenceThreshold = presetValues?.silenceThreshold ?? config.silenceThreshold ?? -40.0;
     const minSilenceDuration = presetValues?.minSilenceDuration ?? config.minSilenceDuration ?? 0.30;
     const targetSilenceDuration = presetValues?.targetSilenceDuration ?? config.targetSilenceDuration ?? 0.15;
+    const pauseMarkers = config.pauseMarkers || [];
+    const scriptText = config.scriptText || '';
 
     const audioBytes = base64ToUint8Array(base64Audio);
     const arrayBuffer = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength) as ArrayBuffer;
@@ -306,7 +381,14 @@ export async function applySpeedupClient(
         targetSilenceSamples
     );
 
-    const interleaved = interleaveChannels(silenceShortened);
+    const { result: withPauses, totalInserted } = insertSilences(
+        silenceShortened,
+        sampleRate,
+        pauseMarkers,
+        scriptText
+    );
+
+    const interleaved = interleaveChannels(withPauses);
     const wavBytes = encodeWAV(interleaved, sampleRate, numChannels);
 
     const processedWav = await applyAtempo(wavBytes, speed);
@@ -321,6 +403,8 @@ export async function applySpeedupClient(
             speed_applied: speed,
             original_duration: Math.round(originalDuration * 100) / 100,
             processed_duration: Math.round(processedDuration * 100) / 100,
+            pauses_inserted: pauseMarkers.length,
+            pause_time_inserted: Math.round(totalInserted * 100) / 100,
         },
     };
 }
