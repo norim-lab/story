@@ -71,6 +71,8 @@ export interface ScriptSection {
   auphonicAudio?: Record<string, string>; // Stores Auphonic processed audio (Base64)
   speedupAudio?: Record<string, string>; // Stores speedup-processed audio (Base64)
   speedupStats?: Record<string, { silences_detected: number; silences_shortened: number; speed_applied: number; original_duration: number; processed_duration: number; pauses_inserted?: number; pause_time_inserted?: number }>;
+  polishedAudio?: Record<string, string>;
+  polishedStats?: Record<string, { preset: string; loudness_lufs: number; true_peak_db: number; loudness_range: number }>;
   seriesSlots?: Record<string, SeriesSlotInfo>;
   sources?: { title: string; url: string; type?: string }[];
   researchSnippet?: string;

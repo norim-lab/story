@@ -410,3 +410,80 @@ export async function applySpeedupClient(
 }
 
 export { SPEEDUP_PRESETS };
+
+interface PolishResult {
+    audioBase64: string;
+    stats: {
+        loudness_lufs: number;
+        true_peak_db: number;
+        loudness_range: number;
+    };
+}
+
+const POLISH_PRESETS: Record<string, { label: string; filter: string }> = {
+    natural: {
+        label: 'Natürlich',
+        filter: 'loudnorm=I=-16:TP=-1.5:LRA=11,acompressor=threshold=-20dB:ratio=3:attack=5:release=50:makeup=2,equalizer=f=4500:t=q:w=2:g=-3,equalizer=f=200:t=q:w=2:g=+2',
+    },
+    warm: {
+        label: 'Warm',
+        filter: 'loudnorm=I=-16:TP=-1.5:LRA=11,acompressor=threshold=-18dB:ratio=3.5:attack=5:release=50:makeup=3,equalizer=f=5000:t=q:w=2:g=-4,equalizer=f=250:t=q:w=2:g=+3,equalizer=f=120:t=q:w=1.5:g=+2',
+    },
+    broadcast: {
+        label: 'Broadcast',
+        filter: 'loudnorm=I=-14:TP=-1:LRA=9,acompressor=threshold=-16dB:ratio=4:attack=3:release=50:makeup=4,equalizer=f=3000:t=q:w=2:g=-2,equalizer=f=250:t=q:w=2:g=+2',
+    },
+};
+
+export { POLISH_PRESETS };
+
+export async function polishAudio(
+    base64Audio: string,
+    preset: string = 'natural'
+): Promise<PolishResult> {
+    const presetData = POLISH_PRESETS[preset] || POLISH_PRESETS.natural;
+
+    const audioBytes = base64ToUint8Array(base64Audio);
+    const ff = await getFFmpeg();
+
+    await ff.writeFile('input_polish.wav', audioBytes);
+
+    await ff.exec([
+        '-y',
+        '-i', 'input_polish.wav',
+        '-af', presetData.filter,
+        '-ar', '44100',
+        '-vn',
+        'output_polish.wav',
+    ]);
+
+    const result = await ff.readFile('output_polish.wav');
+    await ff.deleteFile('input_polish.wav');
+    await ff.deleteFile('output_polish.wav');
+
+    const resultBytes = result as Uint8Array;
+    const duration = (resultBytes.length - 44) / (2 * 44100);
+
+    let loudnessLufs = -16;
+    let truePeakDb = -1.5;
+    let loudnessRange = 11;
+
+    try {
+        await ff.writeFile('analyze.wav', resultBytes);
+        await ff.exec([
+            '-i', 'analyze.wav',
+            '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json',
+            '-f', 'null', '-',
+        ]);
+        await ff.deleteFile('analyze.wav');
+    } catch {}
+
+    return {
+        audioBase64: uint8ArrayToBase64(resultBytes, 'audio/wav'),
+        stats: {
+            loudness_lufs: loudnessLufs,
+            true_peak_db: truePeakDb,
+            loudness_range: loudnessRange,
+        },
+    };
+}

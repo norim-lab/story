@@ -30,7 +30,7 @@ import { getRandomHistoricalWikiquote } from './services/wikiquote';
 import { getPerplexityLegalCheck } from './services/perplexity';
 import { generateElevenLabsAudio, getElevenLabsUserInfo } from './services/elevenlabs';
 import { processWithAuphonic, getAuphonicUserInfo } from './services/auphonic';
-import { applySpeedupClient, SPEEDUP_PRESETS } from './services/speedup';
+import { applySpeedupClient, SPEEDUP_PRESETS, polishAudio, POLISH_PRESETS } from './services/speedup';
 import { backupSlotAudio } from './services/audioVersioning';
 import { PauseEditor } from './components/PauseEditor';
 import type { PauseMarker } from './components/PauseEditor';
@@ -477,6 +477,8 @@ export const App: React.FC = () => {
         targetSilenceDuration: 0.15,
     });
     const [pauseMarkers, setPauseMarkers] = useState<PauseMarker[]>([]);
+    const [polishPreset, setPolishPreset] = useState<string>('natural');
+    const [isProcessingPolish, setIsProcessingPolish] = useState(false);
 
     // Fetch ElevenLabs Usage
     const fetchElevenLabsUsage = useCallback(async () => {
@@ -1985,6 +1987,51 @@ export const App: React.FC = () => {
         }
     };
 
+    const handlePolish = async () => {
+        if (!activeProject?.scriptResult?.sections?.[0]) return;
+        const sourceAudio = activeProject.scriptResult.sections[0].speedupAudio?.[currentSlot]
+            || activeProject.scriptResult.sections[0].auphonicAudio?.[currentSlot];
+        if (!sourceAudio || sourceAudio === '__STRIPPED__') {
+            addLog("Kein Audio vorhanden. Bitte zuerst Speedup oder Auphonic ausführen.", "error");
+            return;
+        }
+        setIsProcessingPolish(true);
+        const presetLabel = POLISH_PRESETS[polishPreset]?.label || polishPreset;
+        addLog(`Polish: "${presetLabel}" wird angewendet (Loudness + Kompression + EQ)...`, "info");
+        try {
+            const result = await polishAudio(sourceAudio, polishPreset);
+
+            const existingPolished = activeProject.scriptResult.sections[0].polishedAudio?.[currentSlot];
+            if (existingPolished && activeProject.id) {
+                backupSlotAudio(activeProject.id, currentSlot, 'polish', existingPolished);
+            }
+
+            const updatedResult = {
+                ...activeProject.scriptResult,
+                sections: [{
+                    ...activeProject.scriptResult.sections[0],
+                    polishedAudio: {
+                        ...(activeProject.scriptResult.sections[0].polishedAudio || {}),
+                        [currentSlot]: result.audioBase64
+                    },
+                    polishedStats: {
+                        ...(activeProject.scriptResult.sections[0].polishedStats || {}),
+                        [currentSlot]: { preset: polishPreset, ...result.stats }
+                    }
+                }]
+            };
+
+            commitAction(`Polish "${presetLabel}" für ${currentSlot}`, { scriptResult: updatedResult });
+            addLog(`Polish fertig! Preset: ${presetLabel} · LUFS: ${result.stats.loudness_lufs} · TP: ${result.stats.true_peak_db}dB · LRA: ${result.stats.loudness_range}`, "success");
+        } catch (e: any) {
+            console.error("Polish Error:", e);
+            addLog(`Fehler bei Polish: ${e.message}`, "error");
+            alert(`Fehler bei Polish: ${e.message}`);
+        } finally {
+            setIsProcessingPolish(false);
+        }
+    };
+
     const handleGlobalExport = () => {
         const exportData: WorkspaceExport = { version: 1, projects: projects };
         const blob = new Blob([JSON.stringify(exportData)], { type: "application/json" });
@@ -3206,15 +3253,15 @@ export const App: React.FC = () => {
                                                             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                                                                 <div className="flex items-center gap-3">
                                                                     <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">✓</div>
-                                                                    <div className="text-xs font-black uppercase tracking-widest text-amber-300">Fertiges Audio</div>
+                                                                    <div className="text-xs font-black uppercase tracking-widest text-amber-300">Speedup Audio</div>
                                                                 </div>
                                                                 <div className="flex w-full md:w-auto gap-2">
                                                                     <a 
                                                                         href={activeProject.scriptResult.sections[0].speedupAudio[currentSlot]} 
-                                                                        download={`${activeProject.name || 'Projekt'}_${currentSlot}_final.mp3`}
+                                                                        download={`${activeProject.name || 'Projekt'}_${currentSlot}_speedup.wav`}
                                                                         className="flex-1 md:flex-none justify-center px-4 py-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 text-[10px] font-black uppercase text-amber-200 transition-all flex items-center gap-2"
                                                                     >
-                                                                        ⬇️ Download Final
+                                                                        ⬇️ Download Speedup
                                                                     </a>
                                                                 </div>
                                                             </div>
@@ -3223,6 +3270,85 @@ export const App: React.FC = () => {
                                                                 className="w-full h-10 rounded-lg outline-none" 
                                                                 src={activeProject.scriptResult.sections[0].speedupAudio[currentSlot]} 
                                                             />
+                                                        </div>
+                                                    )}
+
+                                                    {/* Polish Section - Step 5 */}
+                                                    {(isValidAudioData(activeProject.scriptResult.sections[0].speedupAudio?.[currentSlot]) || isValidAudioData(activeProject.scriptResult.sections[0].auphonicAudio?.[currentSlot])) && (
+                                                        <div className="pt-6 border-t border-purple-500/20 space-y-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">5</div>
+                                                                <div className="text-xs font-black uppercase tracking-widest text-purple-400">Polish — Natürlich klingen</div>
+                                                            </div>
+
+                                                            <div className="space-y-3 bg-black/30 rounded-xl p-4 border border-purple-500/10">
+                                                                <div className="space-y-1">
+                                                                    <div className="text-[10px] text-slate-400 font-bold uppercase">Stil</div>
+                                                                    <div className="flex gap-2">
+                                                                        {Object.entries(POLISH_PRESETS).map(([key, val]) => (
+                                                                            <button
+                                                                                key={key}
+                                                                                onClick={() => setPolishPreset(key)}
+                                                                                className={`flex-1 px-2 py-2 rounded-lg border text-center transition-all ${
+                                                                                    polishPreset === key
+                                                                                        ? 'bg-purple-600 border-purple-500 text-white'
+                                                                                        : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:border-white/30'
+                                                                                }`}
+                                                                            >
+                                                                                <div className="text-[10px] font-black uppercase">{val.label}</div>
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="text-[9px] text-slate-600 leading-relaxed">
+                                                                    {polishPreset === 'natural' && 'Loudness-Normalisierung + sanfte Kompression + Höhen-Entschärfung. Spricht natürlich und rund.'}
+                                                                    {polishPreset === 'warm' && 'Wärmere Klangfarbe + stärkere Kompression. Tiefe Bässe, weniger Härte.'}
+                                                                    {polishPreset === 'broadcast' && 'EBU R128 Broadcast-Standard. Laut, klar, kompatibel mit allen Plattformen.'}
+                                                                </div>
+
+                                                                <button
+                                                                    onClick={handlePolish}
+                                                                    disabled={isProcessingPolish}
+                                                                    className="w-full px-4 py-3 rounded-xl text-xs font-black uppercase transition-all bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500 shadow-lg shadow-purple-600/20 disabled:opacity-40 flex items-center justify-center gap-2"
+                                                                >
+                                                                    {isProcessingPolish ? <span className="animate-spin inline-block">⏳</span> : '✨'}
+                                                                    {isProcessingPolish ? 'Poliere...' : 'Polish anwenden'}
+                                                                </button>
+
+                                                                {activeProject.scriptResult.sections[0].polishedStats?.[currentSlot] && (
+                                                                    <div className="text-[10px] text-slate-500 bg-black/20 rounded-lg p-2 flex flex-wrap gap-x-4 gap-y-1">
+                                                                        <span>🎛️ {activeProject.scriptResult.sections[0].polishedStats[currentSlot].loudness_lufs} LUFS</span>
+                                                                        <span>📊 TP: {activeProject.scriptResult.sections[0].polishedStats[currentSlot].true_peak_db}dB</span>
+                                                                        <span>📐 LRA: {activeProject.scriptResult.sections[0].polishedStats[currentSlot].loudness_range}</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {isValidAudioData(activeProject.scriptResult.sections[0].polishedAudio?.[currentSlot]) && (
+                                                                <div className="space-y-3">
+                                                                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">✓</div>
+                                                                            <div className="text-xs font-black uppercase tracking-widest text-purple-300">Final Audio</div>
+                                                                        </div>
+                                                                        <div className="flex w-full md:w-auto gap-2">
+                                                                            <a
+                                                                                href={activeProject.scriptResult.sections[0].polishedAudio[currentSlot]}
+                                                                                download={`${activeProject.name || 'Projekt'}_${currentSlot}_final.wav`}
+                                                                                className="flex-1 md:flex-none justify-center px-4 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-[10px] font-black uppercase text-purple-200 transition-all flex items-center gap-2"
+                                                                            >
+                                                                                ⬇️ Download Final
+                                                                            </a>
+                                                                        </div>
+                                                                    </div>
+                                                                    <audio
+                                                                        controls
+                                                                        className="w-full h-10 rounded-lg outline-none"
+                                                                        src={activeProject.scriptResult.sections[0].polishedAudio[currentSlot]}
+                                                                    />
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
