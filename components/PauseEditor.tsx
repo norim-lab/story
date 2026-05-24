@@ -12,7 +12,10 @@ interface PauseEditorProps {
     onChange: (markers: PauseMarker[]) => void;
 }
 
-const PAUSE_PRESETS = [0.5, 1.0, 1.5, 2.0, 3.0, 5.0];
+const PAUSE_PRESETS = [0.3, 0.5, 0.8, 1.0, 1.5, 2.0, 3.0, 5.0];
+const STEP = 0.1;
+const MIN_DUR = 0.1;
+const MAX_DUR = 10;
 
 function splitIntoSegments(text: string): string[] {
     if (!text || !text.trim()) return [];
@@ -21,7 +24,7 @@ function splitIntoSegments(text: string): string[] {
 }
 
 function formatDuration(d: number): string {
-    if (d < 1) return `${Math.round(d * 10) / 10}s`;
+    if (d < 1) return `${d.toFixed(1)}s`;
     if (d === Math.floor(d)) return `${d}s`;
     return `${d.toFixed(1)}s`;
 }
@@ -50,19 +53,26 @@ const GapZone: React.FC<{
                     className="flex items-center gap-0.5"
                     onWheel={(e) => {
                         e.preventDefault();
-                        const delta = e.deltaY > 0 ? -0.5 : 0.5;
-                        onUpdateDuration(Math.max(0.5, Math.min(10, marker.duration + delta)));
+                        const delta = e.deltaY > 0 ? -STEP : STEP;
+                        const next = Math.round((marker.duration + delta) * 10) / 10;
+                        onUpdateDuration(Math.max(MIN_DUR, Math.min(MAX_DUR, next)));
                     }}
                 >
                     <button
-                        onClick={() => onUpdateDuration(Math.max(0.5, marker.duration - 0.5))}
+                        onClick={() => {
+                            const next = Math.round((marker.duration - STEP) * 10) / 10;
+                            onUpdateDuration(Math.max(MIN_DUR, next));
+                        }}
                         className="w-4 h-4 rounded bg-white/5 hover:bg-white/10 text-[9px] text-slate-400 flex items-center justify-center"
                     >−</button>
                     <span className="text-[10px] font-black text-cyan-300 min-w-[32px] text-center tabular-nums">
                         {formatDuration(marker.duration)}
                     </span>
                     <button
-                        onClick={() => onUpdateDuration(Math.min(10, marker.duration + 0.5))}
+                        onClick={() => {
+                            const next = Math.round((marker.duration + STEP) * 10) / 10;
+                            onUpdateDuration(Math.min(MAX_DUR, next));
+                        }}
                         className="w-4 h-4 rounded bg-white/5 hover:bg-white/10 text-[9px] text-slate-400 flex items-center justify-center"
                     >+</button>
                 </div>
@@ -79,7 +89,7 @@ const GapZone: React.FC<{
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
-            onClick={() => onAdd(1.0)}
+            onClick={() => onAdd(0.5)}
             className={`my-1 h-4 flex items-center justify-center rounded transition-all cursor-pointer ${
                 isDragOver
                     ? 'bg-cyan-500/20 border border-dashed border-cyan-500/50'
@@ -106,7 +116,7 @@ export const PauseEditor: React.FC<PauseEditorProps> = ({ text, markers, onChang
         );
     }
 
-    const addMarker = (gapIndex: number, duration: number = 1.0) => {
+    const addMarker = (gapIndex: number, duration: number = 0.5) => {
         const existing = markers.find(m => m.gapIndex === gapIndex);
         if (existing) {
             onChange(markers.map(m => m.gapIndex === gapIndex ? { ...m, duration } : m));
@@ -128,7 +138,7 @@ export const PauseEditor: React.FC<PauseEditorProps> = ({ text, markers, onChang
         if (!dragItem) { setDragOverGap(null); return; }
 
         if (dragItem.type === 'new') {
-            addMarker(gapIndex, dragItem.duration || 1.0);
+            addMarker(gapIndex, dragItem.duration || 0.5);
         } else if (dragItem.type === 'existing' && dragItem.markerId) {
             const existing = markers.find(m => m.id === dragItem.markerId);
             if (existing && existing.gapIndex !== gapIndex) {

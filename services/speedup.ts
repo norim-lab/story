@@ -265,6 +265,36 @@ async function applyAtempo(
     return result as Uint8Array;
 }
 
+function findNearestSilence(
+    channelData: Float32Array,
+    targetSample: number,
+    sampleRate: number,
+    searchWindowSeconds: number = 2.0
+): number {
+    const windowSamples = Math.floor(searchWindowSeconds * sampleRate);
+    const searchStart = Math.max(0, targetSample - windowSamples);
+    const searchEnd = Math.min(channelData.length, targetSample + windowSamples);
+    const analysisWindow = Math.floor(sampleRate * 0.01);
+
+    let bestPos = targetSample;
+    let bestRms = Infinity;
+
+    for (let i = searchStart; i < searchEnd; i += analysisWindow) {
+        let rms = 0;
+        const end = Math.min(i + analysisWindow, channelData.length);
+        for (let j = i; j < end; j++) {
+            rms += channelData[j] * channelData[j];
+        }
+        rms = Math.sqrt(rms / (end - i));
+        if (rms < bestRms) {
+            bestRms = rms;
+            bestPos = Math.floor((i + end) / 2);
+        }
+    }
+
+    return bestPos;
+}
+
 function splitIntoSegments(text: string): string[] {
     if (!text || !text.trim()) return [];
     return text.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
@@ -291,17 +321,19 @@ function insertSilences(
     const insertions: { samplePosition: number; silenceSamples: number }[] = [];
     let cumulativeChars = 0;
 
-    for (let i = 0; i < segments.length && i < segments.length; i++) {
+    for (let i = 0; i < segments.length; i++) {
         cumulativeChars += segments[i].length;
         const marker = pauseMarkers.find(m => m.gapIndex === i);
         if (marker) {
-            const position = Math.min(
+            const rawPosition = Math.min(
                 Math.floor((cumulativeChars / totalChars) * totalSamples),
                 totalSamples - 1
             );
+            const snappedPosition = findNearestSilence(channelData[0], rawPosition, sampleRate, 2.0);
+            const silenceSamples = Math.floor(marker.duration * sampleRate);
             insertions.push({
-                samplePosition: position,
-                silenceSamples: Math.floor(marker.duration * sampleRate),
+                samplePosition: snappedPosition,
+                silenceSamples,
             });
         }
     }
@@ -313,17 +345,36 @@ function insertSilences(
     insertions.sort((a, b) => b.samplePosition - a.samplePosition);
 
     const numChannels = channelData.length;
+    const fadeSamples = Math.min(Math.floor(sampleRate * 0.03), 1323);
     let result: Float32Array[] = channelData.map(ch => new Float32Array(ch));
 
     for (const { samplePosition, silenceSamples } of insertions) {
         const currentLength = result[0].length;
+        const pos = Math.min(samplePosition, currentLength - 1);
         const newLength = currentLength + silenceSamples;
         const newChannels: Float32Array[] = [];
 
         for (let ch = 0; ch < numChannels; ch++) {
             const newCh = new Float32Array(newLength);
-            newCh.set(result[ch].subarray(0, samplePosition), 0);
-            newCh.set(result[ch].subarray(samplePosition), samplePosition + silenceSamples);
+
+            newCh.set(result[ch].subarray(0, pos), 0);
+
+            for (let f = 0; f < fadeSamples && (pos + f) < currentLength; f++) {
+                const t = f / fadeSamples;
+                newCh[pos + f] = result[ch][pos + f] * (1 - t);
+            }
+
+            const afterStart = pos + fadeSamples;
+            const writeOffset = pos + silenceSamples;
+            if (afterStart < currentLength) {
+                for (let f = 0; f < fadeSamples && (afterStart + f) < currentLength && (writeOffset + f) < newLength; f++) {
+                    const t = f / fadeSamples;
+                    newCh[writeOffset + f] = result[ch][afterStart + f] * t;
+                }
+                const remaining = result[ch].subarray(afterStart + fadeSamples);
+                newCh.set(remaining, writeOffset + Math.min(fadeSamples, remaining.length));
+            }
+
             newChannels.push(newCh);
         }
         result = newChannels;
@@ -423,15 +474,15 @@ interface PolishResult {
 const POLISH_PRESETS: Record<string, { label: string; filter: string }> = {
     natural: {
         label: 'Natürlich',
-        filter: 'loudnorm=I=-16:TP=-1.5:LRA=11,acompressor=threshold=-20dB:ratio=3:attack=5:release=50:makeup=2,equalizer=f=4500:t=q:w=2:g=-3,equalizer=f=200:t=q:w=2:g=+2',
+        filter: 'acompressor=threshold=-20dB:ratio=3:attack=5:release=50:makeup=2,equalizer=f=4500:t=q:w=2:g=-3,equalizer=f=200:t=q:w=2:g=+2,loudnorm=I=-16:TP=-1.5:LRA=11',
     },
     warm: {
         label: 'Warm',
-        filter: 'loudnorm=I=-16:TP=-1.5:LRA=11,acompressor=threshold=-18dB:ratio=3.5:attack=5:release=50:makeup=3,equalizer=f=5000:t=q:w=2:g=-4,equalizer=f=250:t=q:w=2:g=+3,equalizer=f=120:t=q:w=1.5:g=+2',
+        filter: 'acompressor=threshold=-18dB:ratio=3.5:attack=5:release=50:makeup=3,equalizer=f=5000:t=q:w=2:g=-4,equalizer=f=250:t=q:w=2:g=+3,equalizer=f=120:t=q:w=1.5:g=+2,loudnorm=I=-16:TP=-1.5:LRA=11',
     },
     broadcast: {
         label: 'Broadcast',
-        filter: 'loudnorm=I=-14:TP=-1:LRA=9,acompressor=threshold=-16dB:ratio=4:attack=3:release=50:makeup=4,equalizer=f=3000:t=q:w=2:g=-2,equalizer=f=250:t=q:w=2:g=+2',
+        filter: 'acompressor=threshold=-16dB:ratio=4:attack=3:release=50:makeup=4,equalizer=f=3000:t=q:w=2:g=-2,equalizer=f=250:t=q:w=2:g=+2,loudnorm=I=-14:TP=-1:LRA=9',
     },
 };
 
@@ -444,46 +495,57 @@ export async function polishAudio(
     const presetData = POLISH_PRESETS[preset] || POLISH_PRESETS.natural;
 
     const audioBytes = base64ToUint8Array(base64Audio);
+    const arrayBuffer = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength) as ArrayBuffer;
+    const audioBuffer = await new AudioContext().decodeAudioData(arrayBuffer);
+
+    const sampleRate = audioBuffer.sampleRate;
+    const numChannels = audioBuffer.numberOfChannels;
+    const channelData: Float32Array[] = [];
+    for (let ch = 0; ch < numChannels; ch++) {
+        channelData.push(audioBuffer.getChannelData(ch));
+    }
+    const interleaved = interleaveChannels(channelData);
+    const wavInput = encodeWAV(interleaved, sampleRate, numChannels);
+
     const ff = await getFFmpeg();
 
-    await ff.writeFile('input_polish.wav', audioBytes);
+    await ff.writeFile('input_polish.wav', wavInput);
 
     await ff.exec([
         '-y',
         '-i', 'input_polish.wav',
         '-af', presetData.filter,
-        '-ar', '44100',
-        '-vn',
+        '-acodec', 'pcm_s16le',
+        '-ar', String(sampleRate),
+        '-ac', String(numChannels),
         'output_polish.wav',
     ]);
 
-    const result = await ff.readFile('output_polish.wav');
+    const resultData = await ff.readFile('output_polish.wav');
     await ff.deleteFile('input_polish.wav');
     await ff.deleteFile('output_polish.wav');
 
-    const resultBytes = result as Uint8Array;
-    const duration = (resultBytes.length - 44) / (2 * 44100);
+    const resultBytes = resultData as Uint8Array;
 
-    let loudnessLufs = -16;
-    let truePeakDb = -1.5;
-    let loudnessRange = 11;
+    if (resultBytes.length < 44) {
+        throw new Error('Polish: FFmpeg hat keine gültige WAV-Datei erzeugt. Filterkette eventuell zu komplex für WASM.');
+    }
 
-    try {
-        await ff.writeFile('analyze.wav', resultBytes);
-        await ff.exec([
-            '-i', 'analyze.wav',
-            '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json',
-            '-f', 'null', '-',
-        ]);
-        await ff.deleteFile('analyze.wav');
-    } catch {}
+    const dataSize = new DataView(resultBytes.buffer, resultBytes.byteOffset, 44).getUint32(40, true);
+    if (dataSize === 0) {
+        throw new Error('Polish: WAV-Ausgabe hat 0 Audio-Daten. Versuche einfacheren Filter.');
+    }
+
+    const bytesPerSample = 2;
+    const numSamples = dataSize / (numChannels * bytesPerSample);
+    const duration = numSamples / sampleRate;
 
     return {
         audioBase64: uint8ArrayToBase64(resultBytes, 'audio/wav'),
         stats: {
-            loudness_lufs: loudnessLufs,
-            true_peak_db: truePeakDb,
-            loudness_range: loudnessRange,
+            loudness_lufs: preset === 'broadcast' ? -14 : -16,
+            true_peak_db: preset === 'broadcast' ? -1 : -1.5,
+            loudness_range: preset === 'broadcast' ? 9 : 11,
         },
     };
 }
