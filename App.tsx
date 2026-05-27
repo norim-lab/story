@@ -3032,8 +3032,92 @@ export const App: React.FC = () => {
                                                     </div>
                                                 </div>
                                                 
-                                                <div className="text-sm text-emerald-100/80 whitespace-pre-wrap font-mono p-4 bg-black/40 rounded-xl border border-emerald-500/10">
-                                                    {activeProject.scriptResult.sections[0].elevenLabsPrep[currentSlot]}
+                                                <textarea
+                                                    value={activeProject.scriptResult.sections[0].elevenLabsPrep[currentSlot]}
+                                                    onChange={(e) => {
+                                                        updateActiveProject({
+                                                            scriptResult: {
+                                                                ...activeProject.scriptResult!,
+                                                                sections: [{
+                                                                    ...activeProject.scriptResult!.sections[0],
+                                                                    elevenLabsPrep: {
+                                                                        ...(activeProject.scriptResult!.sections[0].elevenLabsPrep || {}),
+                                                                        [currentSlot]: e.target.value
+                                                                    }
+                                                                }]
+                                                            }
+                                                        });
+                                                    }}
+                                                    className="w-full text-sm text-emerald-100/80 whitespace-pre-wrap font-mono p-4 bg-black/40 rounded-xl border border-emerald-500/10 outline-none focus:border-emerald-500/30 resize-y min-h-[120px] max-h-[400px]"
+                                                    rows={8}
+                                                />
+
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="text-[8px] text-emerald-500/60 uppercase font-bold">Tags einfügen:</span>
+                                                        {[
+                                                            '[pause]', '[laughs]', '[sighs]', '[gasps]', '[coughs]',
+                                                            '[excited]', '[sarcastic]', '[whispers]', '[shouts]',
+                                                            '[serious]', '[deadpan]', '[anticipatory pause]',
+                                                            '[breath]', '[chuckle]', '[groan]', '[hesitant pause]',
+                                                        ].map(tag => (
+                                                            <button
+                                                                key={tag}
+                                                                onClick={() => {
+                                                                    const key = `elevenLabsPrep_${currentSlot}` as any;
+                                                                    const current = activeProject.scriptResult!.sections[0].elevenLabsPrep?.[currentSlot] || '';
+                                                                    const updated = current + ' ' + tag;
+                                                                    updateActiveProject({
+                                                                        scriptResult: {
+                                                                            ...activeProject.scriptResult!,
+                                                                            sections: [{
+                                                                                ...activeProject.scriptResult!.sections[0],
+                                                                                elevenLabsPrep: {
+                                                                                    ...(activeProject.scriptResult!.sections[0].elevenLabsPrep || {}),
+                                                                                    [currentSlot]: updated
+                                                                                }
+                                                                            }]
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                className="px-1.5 py-0.5 rounded bg-emerald-600/15 border border-emerald-500/25 text-emerald-300 text-[8px] font-mono cursor-pointer hover:bg-emerald-600/30 transition-all"
+                                                            >
+                                                                {tag}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            id="custom-tag-input"
+                                                            type="text"
+                                                            placeholder="Eigener Tag, z.B. [mein tag]"
+                                                            className="flex-1 px-3 py-1.5 rounded-lg bg-black/30 border border-emerald-500/20 text-[10px] text-emerald-200 font-mono placeholder:text-emerald-500/30 outline-none focus:border-emerald-500/50"
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    const input = e.currentTarget;
+                                                                    const tag = input.value.trim();
+                                                                    if (tag) {
+                                                                        const current = activeProject.scriptResult!.sections[0].elevenLabsPrep?.[currentSlot] || '';
+                                                                        const tagStr = tag.startsWith('[') ? tag : `[${tag}]`;
+                                                                        const updated = current + ' ' + tagStr;
+                                                                        updateActiveProject({
+                                                                            scriptResult: {
+                                                                                ...activeProject.scriptResult!,
+                                                                                sections: [{
+                                                                                    ...activeProject.scriptResult!.sections[0],
+                                                                                    elevenLabsPrep: {
+                                                                                        ...(activeProject.scriptResult!.sections[0].elevenLabsPrep || {}),
+                                                                                        [currentSlot]: updated
+                                                                                    }
+                                                                                }]
+                                                                            }
+                                                                        });
+                                                                        input.value = '';
+                                                                    }
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
                                                 </div>
                                                 
                                                 {activeProject.scriptResult.sections[0].elevenLabsCharCount?.[currentSlot] && (

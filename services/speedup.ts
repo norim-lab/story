@@ -310,32 +310,44 @@ function insertSilences(
         return { result: channelData.map(ch => new Float32Array(ch)), totalInserted: 0 };
     }
 
-    const segments = splitIntoSegments(scriptText);
-    if (segments.length === 0) {
-        return { result: channelData.map(ch => new Float32Array(ch)), totalInserted: 0 };
-    }
+    const sentenceSegments = scriptText.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
+    const wordSegments = scriptText.split(/\s+/).filter(s => s.trim().length > 0);
 
-    const totalChars = segments.reduce((sum, s) => sum + s.length, 0);
+    const totalChars = scriptText.replace(/\s+/g, ' ').trim().length;
     const totalSamples = channelData[0].length;
 
     const insertions: { samplePosition: number; silenceSamples: number }[] = [];
-    let cumulativeChars = 0;
 
-    for (let i = 0; i < segments.length; i++) {
-        cumulativeChars += segments[i].length;
-        const marker = pauseMarkers.find(m => m.gapIndex === i);
-        if (marker) {
-            const rawPosition = Math.min(
-                Math.floor((cumulativeChars / totalChars) * totalSamples),
-                totalSamples - 1
-            );
-            const snappedPosition = findNearestSilence(channelData[0], rawPosition, sampleRate, 2.0);
-            const silenceSamples = Math.floor(marker.duration * sampleRate);
-            insertions.push({
-                samplePosition: snappedPosition,
-                silenceSamples,
-            });
+    for (const marker of pauseMarkers) {
+        let charPosition = 0;
+
+        if (marker.mode === 'word') {
+            let chars = 0;
+            for (let i = 0; i <= Math.min(marker.gapIndex, wordSegments.length - 1); i++) {
+                chars += wordSegments[i].length;
+                if (i < marker.gapIndex) chars += 1;
+            }
+            charPosition = chars;
+        } else {
+            let chars = 0;
+            for (let i = 0; i <= Math.min(marker.gapIndex, sentenceSegments.length - 1); i++) {
+                chars += sentenceSegments[i].length;
+                if (i < marker.gapIndex) chars += 1;
+            }
+            charPosition = chars;
         }
+
+        const rawPosition = Math.min(
+            Math.floor((charPosition / totalChars) * totalSamples),
+            totalSamples - 1
+        );
+        const searchWindow = marker.mode === 'word' ? 1.0 : 2.0;
+        const snappedPosition = findNearestSilence(channelData[0], rawPosition, sampleRate, searchWindow);
+        const silenceSamples = Math.floor(marker.duration * sampleRate);
+        insertions.push({
+            samplePosition: snappedPosition,
+            silenceSamples,
+        });
     }
 
     if (insertions.length === 0) {
