@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 
 export interface PauseMarker {
     id: string;
@@ -34,69 +34,26 @@ function formatDuration(d: number): string {
     return `${d.toFixed(1)}s`;
 }
 
-const MiniGap: React.FC<{
-    gapIndex: number;
-    mode: 'sentence' | 'word';
-    marker: PauseMarker | undefined;
-    isDragOver: boolean;
-    onDragOver: (e: React.DragEvent) => void;
-    onDragLeave: () => void;
-    onDrop: () => void;
-    onAdd: (duration: number) => void;
+function MarkerControls({ marker, onUpdate, onRemove }: {
+    marker: PauseMarker;
+    onUpdate: (d: number) => void;
     onRemove: () => void;
-    onUpdateDuration: (d: number) => void;
-    onDragStartMarker: () => void;
-}> = ({ gapIndex, mode, marker, isDragOver, onDragOver, onDragLeave, onDrop, onAdd, onRemove, onUpdateDuration, onDragStartMarker }) => {
-    if (marker) {
-        return (
-            <span
-                draggable
-                onDragStart={onDragStartMarker}
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-0.5 mx-0.5 px-1 py-0 rounded bg-cyan-600/20 border border-cyan-500/30 cursor-grab active:cursor-grabbing group relative"
-            >
-                <span className="text-cyan-400 text-[8px]">⏸</span>
-                <span className="text-[8px] font-black text-cyan-300 tabular-nums">{formatDuration(marker.duration)}</span>
-                <button
-                    onClick={(e) => { e.stopPropagation(); onUpdateDuration(Math.max(MIN_DUR, Math.round((marker.duration - STEP) * 10) / 10)); }}
-                    className="text-[7px] text-slate-400 hover:text-white px-0"
-                >−</button>
-                <button
-                    onClick={(e) => { e.stopPropagation(); onUpdateDuration(Math.min(MAX_DUR, Math.round((marker.duration + STEP) * 10) / 10)); }}
-                    className="text-[7px] text-slate-400 hover:text-white px-0"
-                >+</button>
-                <button
-                    onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                    className="text-[7px] text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 ml-0"
-                >×</button>
-            </span>
-        );
-    }
-
+}) {
     return (
-        <span
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-            onClick={(e) => { e.stopPropagation(); onAdd(0.5); }}
-            className={`inline-block mx-px rounded transition-all cursor-pointer select-none ${
-                isDragOver
-                    ? 'bg-cyan-500/30 border border-dashed border-cyan-500/50 px-1'
-                    : 'hover:bg-white/10 px-0.5'
-            }`}
-            style={{ minWidth: isDragOver ? '12px' : '4px', height: '14px', verticalAlign: 'middle' }}
-        >
-            {isDragOver && <span className="text-[7px] text-cyan-400">+</span>}
-        </span>
+        <div className="inline-flex items-center gap-0.5 mx-0.5 px-1 rounded bg-cyan-600/20 border border-cyan-500/30 group relative">
+            <span className="text-cyan-400 text-[8px]">⏸</span>
+            <span className="text-[8px] font-black text-cyan-300 tabular-nums">{formatDuration(marker.duration)}</span>
+            <button onClick={() => onUpdate(Math.max(MIN_DUR, Math.round((marker.duration - STEP) * 10) / 10))} className="text-[7px] text-slate-400 hover:text-white">−</button>
+            <button onClick={() => onUpdate(Math.min(MAX_DUR, Math.round((marker.duration + STEP) * 10) / 10))} className="text-[7px] text-slate-400 hover:text-white">+</button>
+            <button onClick={onRemove} className="text-[7px] text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100">×</button>
+        </div>
     );
-};
+}
 
 export const PauseEditor: React.FC<PauseEditorProps> = ({ text, markers, onChange }) => {
     const [displayMode, setDisplayMode] = useState<'sentence' | 'word'>('sentence');
     const [dragOverGap, setDragOverGap] = useState<number | null>(null);
-    const [isDragNew, setIsDragNew] = useState(false);
     const dragRef = useRef<{ type: 'new' | 'existing'; duration?: number; markerId?: string } | null>(null);
-    const scrollRef = useRef<HTMLDivElement>(null);
 
     const sentences = splitIntoSentences(text);
     const words = splitIntoWords(text);
@@ -109,37 +66,41 @@ export const PauseEditor: React.FC<PauseEditorProps> = ({ text, markers, onChang
         );
     }
 
-    const filteredMarkers = markers.filter(m => m.mode === displayMode);
-
     const addMarker = (gapIndex: number, duration: number = 0.5) => {
-        const existing = markers.find(m => m.gapIndex === gapIndex && m.mode === displayMode);
+        const mode = displayMode;
+        const existing = markers.find(m => m.gapIndex === gapIndex && m.mode === mode);
         if (existing) {
-            onChange(markers.map(m => (m.gapIndex === gapIndex && m.mode === displayMode) ? { ...m, duration } : m));
+            onChange(markers.map(m => (m.gapIndex === gapIndex && m.mode === mode) ? { ...m, duration } : m));
         } else {
-            onChange([...markers, { id: `pause_${Date.now()}_${displayMode}_${gapIndex}`, gapIndex, duration, mode: displayMode }]);
+            onChange([...markers, { id: `pause_${Date.now()}_${mode}_${gapIndex}`, gapIndex, duration, mode }]);
         }
     };
 
     const removeMarker = (gapIndex: number) => {
-        onChange(markers.filter(m => !(m.gapIndex === gapIndex && m.mode === displayMode)));
+        const mode = displayMode;
+        onChange(markers.filter(m => !(m.gapIndex === gapIndex && m.mode === mode)));
     };
 
     const updateDuration = (gapIndex: number, duration: number) => {
-        onChange(markers.map(m => (m.gapIndex === gapIndex && m.mode === displayMode) ? { ...m, duration } : m));
+        const mode = displayMode;
+        onChange(markers.map(m => (m.gapIndex === gapIndex && m.mode === mode) ? { ...m, duration } : m));
     };
 
     const handleDrop = (gapIndex: number) => {
         const dragItem = dragRef.current;
         if (!dragItem) { setDragOverGap(null); return; }
-
+        const mode = displayMode;
         if (dragItem.type === 'new') {
-            addMarker(gapIndex, dragItem.duration || 0.5);
+            const existing = markers.find(m => m.gapIndex === gapIndex && m.mode === mode);
+            if (existing) {
+                onChange(markers.map(m => (m.gapIndex === gapIndex && m.mode === mode) ? { ...m, duration: dragItem.duration || 0.5 } : m));
+            } else {
+                onChange([...markers, { id: `pause_${Date.now()}_${mode}_${gapIndex}`, gapIndex, duration: dragItem.duration || 0.5, mode }]);
+            }
         } else if (dragItem.type === 'existing' && dragItem.markerId) {
             const existing = markers.find(m => m.id === dragItem.markerId);
-            if (existing && (existing.gapIndex !== gapIndex || existing.mode !== displayMode)) {
-                onChange(markers.map(m =>
-                    m.id === dragItem.markerId ? { ...m, gapIndex, mode: displayMode } : m
-                ));
+            if (existing && (existing.gapIndex !== gapIndex || existing.mode !== mode)) {
+                onChange(markers.map(m => m.id === dragItem.markerId ? { ...m, gapIndex, mode } : m));
             }
         }
         setDragOverGap(null);
@@ -149,27 +110,34 @@ export const PauseEditor: React.FC<PauseEditorProps> = ({ text, markers, onChang
     const totalPauseTime = markers.reduce((sum, m) => sum + m.duration, 0);
 
     const renderSentenceMode = () => (
-        <div className="bg-black/20 rounded-lg p-3 max-h-[280px] overflow-y-auto border border-white/5 space-y-0">
+        <div className="bg-black/20 rounded-lg p-3 max-h-[280px] overflow-y-auto border border-white/5">
             {sentences.map((segment, i) => (
                 <React.Fragment key={`s_${i}`}>
                     <div className="text-[11px] text-slate-300 leading-relaxed py-0.5">{segment}</div>
                     {i < sentences.length - 1 && (
-                        <MiniGap
-                            gapIndex={i}
-                            mode="sentence"
-                            marker={markers.find(m => m.gapIndex === i && m.mode === 'sentence')}
-                            isDragOver={dragOverGap === i}
+                        <div
+                            onClick={() => addMarker(i, 0.5)}
                             onDragOver={(e) => { e.preventDefault(); setDragOverGap(i); }}
                             onDragLeave={() => setDragOverGap(null)}
                             onDrop={() => handleDrop(i)}
-                            onAdd={(d) => addMarker(i, d)}
-                            onRemove={() => removeMarker(i)}
-                            onUpdateDuration={(d) => updateDuration(i, d)}
-                            onDragStartMarker={() => {
-                                const m = markers.find(m => m.gapIndex === i && m.mode === 'sentence');
-                                if (m) dragRef.current = { type: 'existing', markerId: m.id };
-                            }}
-                        />
+                            className={`my-1 h-6 flex items-center justify-center rounded transition-all cursor-pointer ${
+                                dragOverGap === i
+                                    ? 'bg-cyan-500/20 border border-dashed border-cyan-500/50'
+                                    : 'hover:bg-white/5 border border-transparent'
+                            }`}
+                        >
+                            {markers.find(m => m.gapIndex === i && m.mode === 'sentence') ? (
+                                <MarkerControls
+                                    marker={markers.find(m => m.gapIndex === i && m.mode === 'sentence')!}
+                                    onUpdate={(d) => updateDuration(i, d)}
+                                    onRemove={() => removeMarker(i)}
+                                />
+                            ) : (
+                                <span className={`text-[9px] ${dragOverGap === i ? 'opacity-100 text-cyan-400' : 'opacity-0 hover:opacity-40 text-slate-500'}`}>
+                                    + Pause
+                                </span>
+                            )}
+                        </div>
                     )}
                 </React.Fragment>
             ))}
@@ -177,28 +145,38 @@ export const PauseEditor: React.FC<PauseEditorProps> = ({ text, markers, onChang
     );
 
     const renderWordMode = () => (
-        <div ref={scrollRef} className="bg-black/20 rounded-lg p-3 max-h-[280px] overflow-y-auto border border-white/5 leading-6">
+        <div className="bg-black/20 rounded-lg p-3 max-h-[280px] overflow-y-auto border border-white/5 leading-7">
             {words.map((word, i) => (
                 <React.Fragment key={`w_${i}`}>
                     <span className="text-[11px] text-slate-300">{word}</span>
-                    {i < words.length - 1 && (
-                        <MiniGap
-                            gapIndex={i}
-                            mode="word"
-                            marker={markers.find(m => m.gapIndex === i && m.mode === 'word')}
-                            isDragOver={dragOverGap === i}
-                            onDragOver={(e) => { e.preventDefault(); setDragOverGap(i); }}
-                            onDragLeave={() => setDragOverGap(null)}
-                            onDrop={() => handleDrop(i)}
-                            onAdd={(d) => addMarker(i, d)}
-                            onRemove={() => removeMarker(i)}
-                            onUpdateDuration={(d) => updateDuration(i, d)}
-                            onDragStartMarker={() => {
-                                const mk = markers.find(x => x.gapIndex === i && x.mode === 'word');
-                                if (mk) dragRef.current = { type: 'existing', markerId: mk.id };
-                            }}
-                        />
-                    )}
+                    {i < words.length - 1 && (() => {
+                        const marker = markers.find(m => m.gapIndex === i && m.mode === 'word');
+                        if (marker) {
+                            return (
+                                <MarkerControls
+                                    marker={marker}
+                                    onUpdate={(d) => updateDuration(i, d)}
+                                    onRemove={() => removeMarker(i)}
+                                />
+                            );
+                        }
+                        return (
+                            <span
+                                onClick={() => addMarker(i, 0.5)}
+                                onDragOver={(e) => { e.preventDefault(); setDragOverGap(i); }}
+                                onDragLeave={() => setDragOverGap(null)}
+                                onDrop={() => handleDrop(i)}
+                                className={`inline-block rounded transition-all cursor-pointer select-none ${
+                                    dragOverGap === i
+                                        ? 'bg-cyan-500/30 border border-dashed border-cyan-500/50 px-1'
+                                        : 'hover:bg-white/10'
+                                }`}
+                                style={{ minWidth: dragOverGap === i ? '12px' : '6px' }}
+                            >
+                                {dragOverGap === i && <span className="text-[7px] text-cyan-400">+</span>}
+                            </span>
+                        );
+                    })()}
                 </React.Fragment>
             ))}
         </div>
@@ -237,8 +215,8 @@ export const PauseEditor: React.FC<PauseEditorProps> = ({ text, markers, onChang
                     <div
                         key={d}
                         draggable
-                        onDragStart={() => { dragRef.current = { type: 'new', duration: d }; setIsDragNew(true); }}
-                        onDragEnd={() => { dragRef.current = null; setDragOverGap(null); setIsDragNew(false); }}
+                        onDragStart={() => { dragRef.current = { type: 'new', duration: d }; }}
+                        onDragEnd={() => { dragRef.current = null; setDragOverGap(null); }}
                         className="px-1.5 py-0.5 rounded bg-cyan-600/15 border border-cyan-500/25 text-cyan-300 text-[9px] font-bold cursor-grab active:cursor-grabbing hover:bg-cyan-600/25 transition-all select-none"
                     >
                         ⏸ {formatDuration(d)}
