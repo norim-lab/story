@@ -40,12 +40,12 @@ function MarkerControls({ marker, onUpdate, onRemove }: {
     onRemove: () => void;
 }) {
     return (
-        <div className="inline-flex items-center gap-0.5 mx-0.5 px-1 rounded bg-cyan-600/20 border border-cyan-500/30 group relative">
+        <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); }} className="inline-flex items-center gap-0.5 mx-0.5 px-1 rounded bg-cyan-600/20 border border-cyan-500/30 group relative">
             <span className="text-cyan-400 text-[8px]">⏸</span>
             <span className="text-[8px] font-black text-cyan-300 tabular-nums">{formatDuration(marker.duration)}</span>
-            <button onClick={() => onUpdate(Math.max(MIN_DUR, Math.round((marker.duration - STEP) * 10) / 10))} className="text-[7px] text-slate-400 hover:text-white">−</button>
-            <button onClick={() => onUpdate(Math.min(MAX_DUR, Math.round((marker.duration + STEP) * 10) / 10))} className="text-[7px] text-slate-400 hover:text-white">+</button>
-            <button onClick={onRemove} className="text-[7px] text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100">×</button>
+            <button onClick={(e) => { e.stopPropagation(); onUpdate(Math.max(MIN_DUR, Math.round((marker.duration - STEP) * 10) / 10)); }} className="text-[7px] text-slate-400 hover:text-white">−</button>
+            <button onClick={(e) => { e.stopPropagation(); onUpdate(Math.min(MAX_DUR, Math.round((marker.duration + STEP) * 10) / 10)); }} className="text-[7px] text-slate-400 hover:text-white">+</button>
+            <button onClick={(e) => { e.stopPropagation(); onRemove(); }} className="text-[7px] text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100">×</button>
         </div>
     );
 }

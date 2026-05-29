@@ -357,7 +357,7 @@ function insertSilences(
     insertions.sort((a, b) => b.samplePosition - a.samplePosition);
 
     const numChannels = channelData.length;
-    const fadeSamples = Math.min(Math.floor(sampleRate * 0.03), 1323);
+    const fadeSamples = Math.min(Math.floor(sampleRate * 0.02), 882);
     let result: Float32Array[] = channelData.map(ch => new Float32Array(ch));
 
     for (const { samplePosition, silenceSamples } of insertions) {
@@ -367,27 +367,30 @@ function insertSilences(
         const newChannels: Float32Array[] = [];
 
         for (let ch = 0; ch < numChannels; ch++) {
-            const newCh = new Float32Array(newLength);
+            const src = result[ch];
+            const dst = new Float32Array(newLength);
 
-            newCh.set(result[ch].subarray(0, pos), 0);
+            dst.set(src.subarray(0, pos), 0);
 
             for (let f = 0; f < fadeSamples && (pos + f) < currentLength; f++) {
                 const t = f / fadeSamples;
-                newCh[pos + f] = result[ch][pos + f] * (1 - t);
+                dst[pos + f] = src[pos + f] * (1 - t);
             }
 
-            const afterStart = pos + fadeSamples;
-            const writeOffset = pos + silenceSamples;
-            if (afterStart < currentLength) {
-                for (let f = 0; f < fadeSamples && (afterStart + f) < currentLength && (writeOffset + f) < newLength; f++) {
-                    const t = f / fadeSamples;
-                    newCh[writeOffset + f] = result[ch][afterStart + f] * t;
-                }
-                const remaining = result[ch].subarray(afterStart + fadeSamples);
-                newCh.set(remaining, writeOffset + Math.min(fadeSamples, remaining.length));
+            const resumePos = Math.min(pos + fadeSamples, currentLength);
+            const writePos = pos + silenceSamples;
+
+            for (let f = 0; f < fadeSamples && (resumePos + f) < currentLength && (writePos + f) < newLength; f++) {
+                const t = f / fadeSamples;
+                dst[writePos + f] = src[resumePos + f] * t;
             }
 
-            newChannels.push(newCh);
+            const tailStart = resumePos + fadeSamples;
+            if (tailStart < currentLength) {
+                dst.set(src.subarray(tailStart), writePos + fadeSamples);
+            }
+
+            newChannels.push(dst);
         }
         result = newChannels;
     }
