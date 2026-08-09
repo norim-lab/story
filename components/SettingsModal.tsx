@@ -70,7 +70,7 @@ const SettingsModal: React.FC<Props> = ({ open, onClose }) => {
             <input 
               value={s.elevenLabsApiKey} 
               onChange={e => setS({...s, elevenLabsApiKey: e.target.value})} 
-              placeholder="API Key" 
+              placeholder="API Key (muss mit sk_ beginnen)" 
               className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm" 
             />
             <input 

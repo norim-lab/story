@@ -32,6 +32,9 @@ export const generateElevenLabsAudio = async (text: string): Promise<{ audioBase
   if (!apiKey) {
     throw new Error('ElevenLabs API Key fehlt in den Einstellungen.');
   }
+  if (!apiKey.startsWith('sk_')) {
+    throw new Error('Ungültiger ElevenLabs API Key. Du hast versehentlich die "API Key ID" kopiert. Ein echter API Key muss zwingend mit "sk_" beginnen.');
+  }
   if (!voiceId) {
     throw new Error('ElevenLabs Voice ID fehlt in den Einstellungen.');
   }
