@@ -29,21 +29,18 @@ export const generateElevenLabsAudio = async (text: string): Promise<{ audioBase
   const apiKey = getElevenLabsKey();
   const voiceId = getElevenLabsVoiceId();
 
-  if (!apiKey || !voiceId) {
-    throw new Error('ElevenLabs API Key oder Voice ID fehlt in den Einstellungen.');
+  if (!apiKey) {
+    throw new Error('ElevenLabs API Key fehlt in den Einstellungen.');
+  }
+  if (!voiceId) {
+    throw new Error('ElevenLabs Voice ID fehlt in den Einstellungen.');
   }
 
-  // ElevenLabs V3 requires the v1/text-to-speech/{voice_id} endpoint
-  // with model_id = "eleven_multilingual_v2" or "eleven_turbo_v2" (or v3 if available, usually v2.5 or v3 via api, let's use 'eleven_multilingual_v2' or what user prefers. User said "ElevenLabs V3", so model_id: 'eleven_multilingual_v2' is typical, or we can use whatever is standard. Actually, for V3 the model is 'eleven_turbo_v2_5' or 'eleven_multilingual_v2'. Wait, there is a new model 'eleven_multilingual_v2' or 'eleven_turbo_v2' or 'eleven_turbo_v2_5'. I will use 'eleven_turbo_v2_5' or 'eleven_multilingual_v2'. Let's use 'eleven_turbo_v2_5'.)
-  // Or 'eleven_multilingual_v2' is safe.
-  
-  // Clean text from ElevenLabs emotion tags before sending
-  // V3 uses the tags for prompting but we need to ensure the format is exact
-  // If the prompt instructions don't work, ElevenLabs V3 actually supports text-to-speech prompting via text, 
-  // but if it reads them aloud, the model isn't interpreting them as instructions. 
-  // For V3, the model_id MUST be 'eleven_multilingual_v3' or 'eleven_v3'. 
-  // We'll set it to eleven_multilingual_v3. If it fails, it means the account doesn't have access.
-  const cleanText = text.replace(/\[.*?\]/g, '').trim();
+  // V3 hat ein Zeichenlimit von 5000 Zeichen pro Request
+  const V3_CHAR_LIMIT = 5000;
+  if (text.length > V3_CHAR_LIMIT) {
+    throw new Error(`Text ist zu lang für ElevenLabs V3 (${text.length} Zeichen). Maximum: ${V3_CHAR_LIMIT}. Bitte kürze den Text.`);
+  }
 
   const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
     method: 'POST',
@@ -53,9 +50,8 @@ export const generateElevenLabsAudio = async (text: string): Promise<{ audioBase
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      text: text, // Bei V3 lassen wir die Tags drin, da V3 sie als Prompt-Anweisungen verstehen sollte.
-      model_id: 'eleven_v3', // Das offizielle V3 Modell (Muss eleven_v3 heißen)
-      apply_text_normalization: "auto",
+      text: text,
+      model_id: 'eleven_v3',
       voice_settings: {
         stability: 0.5,
         similarity_boost: 0.75,
@@ -66,19 +62,37 @@ export const generateElevenLabsAudio = async (text: string): Promise<{ audioBase
   });
 
   if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`ElevenLabs API Fehler: ${response.status} ${errText}`);
+    let errDetail = response.statusText;
+    let errHint = '';
+    try {
+      const errData = await response.json();
+      errDetail = errData?.detail?.message || errData?.detail || errData?.message || JSON.stringify(errData);
+      if (typeof errDetail === 'object') errDetail = JSON.stringify(errDetail);
+    } catch {
+      try { errDetail = await response.text(); } catch {}
+    }
+
+    if (response.status === 401) errHint = ' (API Key ungültig oder abgelaufen)';
+    else if (response.status === 404) errHint = ' (Voice ID nicht gefunden - prüfe die Einstellungen)';
+    else if (response.status === 422) errHint = ' (Text/Parameter ungültig für V3)';
+    else if (response.status === 429) errHint = ' (Rate-Limit erreicht - warte kurz)';
+    else if (response.status === 400 && /quota|limit|character/i.test(String(errDetail))) errHint = ' (Kontingent erschöpft)';
+
+    throw new Error(`ElevenLabs ${response.status}: ${errDetail}${errHint}`);
   }
 
-  // Extract character count from headers
   const charCountHeader = response.headers.get("x-character-count");
   const characterCount = charCountHeader ? parseInt(charCountHeader, 10) : 0;
 
   const blob = await response.blob();
+  if (blob.size === 0) {
+    throw new Error('ElevenLabs hat leeres Audio zurückgegeben (0 Bytes).');
+  }
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
-      resolve({ audioBase64: reader.result as string, characterCount }); // Returns Base64 data URL and character count
+      resolve({ audioBase64: reader.result as string, characterCount });
     };
     reader.onerror = reject;
     reader.readAsDataURL(blob);
