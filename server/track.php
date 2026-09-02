@@ -49,6 +49,55 @@ function sanitizeId(string $id): string {
     return preg_replace('/[^a-zA-Z0-9\-_]/', '', $id);
 }
 
+function stripAudioPayloadMap($value) {
+    if (!is_array($value)) return $value;
+
+    $stripped = [];
+    foreach ($value as $key => $_unused) {
+        $stripped[$key] = '__STRIPPED__';
+    }
+    return $stripped;
+}
+
+function stripHeavyMediaFromScriptResult($scriptResult) {
+    if (!is_array($scriptResult) || !isset($scriptResult['sections']) || !is_array($scriptResult['sections'])) {
+        return $scriptResult;
+    }
+
+    foreach ($scriptResult['sections'] as &$section) {
+        if (!is_array($section)) continue;
+
+        foreach (['elevenLabsAudio', 'auphonicAudio', 'speedupAudio', 'polishedAudio'] as $audioField) {
+            if (isset($section[$audioField])) {
+                $section[$audioField] = stripAudioPayloadMap($section[$audioField]);
+            }
+        }
+    }
+    unset($section);
+
+    return $scriptResult;
+}
+
+function sanitizeProjectForStorage(array $project): array {
+    if (!isset($project['history']) || !is_array($project['history'])) {
+        return $project;
+    }
+
+    foreach ($project['history'] as &$item) {
+        if (!is_array($item) || !isset($item['state']) || !is_array($item['state'])) continue;
+        if (!isset($item['state']['scriptResult'])) continue;
+
+        $item['state']['scriptResult'] = stripHeavyMediaFromScriptResult($item['state']['scriptResult']);
+    }
+    unset($item);
+
+    return $project;
+}
+
+function prepareProjectForResponse(array $project): array {
+    return sanitizeProjectForStorage($project);
+}
+
 function readIndex(): array {
     global $indexFile;
 
@@ -190,7 +239,7 @@ function loadSingleProject(string $id): ?array {
     if (!is_array($data)) return null;
 
     $data['id'] = $id;
-    return $data;
+    return prepareProjectForResponse($data);
 }
 
 function saveProject(array $project): void {
@@ -201,6 +250,7 @@ function saveProject(array $project): void {
     }
 
     $project['id'] = sanitizeId($project['id']);
+    $project = sanitizeProjectForStorage($project);
 
     if (!is_dir($projectDir)) {
         if (!mkdir($projectDir, 0777, true)) {
