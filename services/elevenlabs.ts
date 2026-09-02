@@ -15,7 +15,20 @@ export const getElevenLabsUserInfo = async (): Promise<{ used: number, limit: nu
   });
 
   if (!response.ok) {
-    throw new Error(`Fehler beim Abrufen der ElevenLabs Nutzerdaten: ${response.statusText}`);
+    let errDetail = response.statusText || `HTTP ${response.status}`;
+    try {
+      const errData = await response.json();
+      errDetail = errData?.detail?.message || errData?.detail || errData?.message || errDetail;
+      if (typeof errDetail === 'object') errDetail = JSON.stringify(errDetail);
+    } catch {
+      try { errDetail = await response.text() || errDetail; } catch {}
+    }
+
+    let errHint = '';
+    if (response.status === 401) errHint = ' (API Key ungueltig, abgelaufen oder kein echter sk_-Key)';
+    else if (response.status === 429) errHint = ' (Rate-Limit erreicht)';
+
+    throw new Error(`Fehler beim Abrufen der ElevenLabs Nutzerdaten: ${errDetail}${errHint}`);
   }
 
   const data = await response.json();

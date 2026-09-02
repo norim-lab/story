@@ -77,6 +77,13 @@ async function postDeepInfra(apiKey: string, model: string, systemPrompt: string
                     const errData = await response.json();
                     errMsg = errData?.error?.message || errData?.detail || errMsg;
                 } catch {}
+                if (response.status === 401) {
+                    errMsg = "DeepInfra API Key ungueltig oder abgelaufen. Bitte in den Einstellungen pruefen.";
+                } else if (response.status === 402) {
+                    errMsg = "DeepInfra-Guthaben aufgebraucht. Bitte Balance aufladen oder Top-up aktivieren.";
+                } else if (response.status === 429) {
+                    errMsg = "DeepInfra Rate-Limit erreicht. Bitte kurz warten und erneut versuchen.";
+                }
                 throw new Error(errMsg);
             }
 
