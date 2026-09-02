@@ -1,4 +1,6 @@
-const AUDIO_API_URL = 'https://story.zeitblytz.media/audio.php';
+import { buildServerUrl } from './serverUrls';
+
+const AUDIO_API_URL = buildServerUrl('/audio.php');
 
 export interface AudioVersion {
     version: number;

@@ -1,4 +1,5 @@
 import { getAuphonicKey, getAuphonicPresetUuid, getSettings } from './settings';
+import { buildServerUrl } from './serverUrls';
 
 export interface SpeedupResult {
   success?: boolean;
@@ -30,7 +31,7 @@ export const applySpeedup = async (base64Audio: string): Promise<SpeedupResult> 
     };
   }
 
-  const speedupUrl = 'https://story.zeitblytz.media/speedup.php';
+  const speedupUrl = buildServerUrl('/speedup.php');
   const formData = new FormData();
   formData.append('audio_base64', base64Audio);
   formData.append('preset', speedupPreset);
@@ -179,7 +180,7 @@ export const processWithAuphonic = async (base64Audio: string): Promise<string> 
 
   // 3. Fetch the processed file to store it as base64 locally
   // We use our PHP proxy to bypass CORS issues on the redirect to the R2 storage bucket
-  const proxyUrl = `https://story.zeitblytz.media/proxy.php?url=${encodeURIComponent(downloadUrl)}`;
+  const proxyUrl = `${buildServerUrl('/proxy.php')}?url=${encodeURIComponent(downloadUrl)}`;
   const fileResponse = await fetch(proxyUrl, {
     headers: {
       'Authorization': `Bearer ${token}`

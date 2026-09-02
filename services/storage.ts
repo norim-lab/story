@@ -1,11 +1,10 @@
 import { ProjectSession } from '../types';
+import { buildServerUrl } from './serverUrls';
 
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_URL = isLocalhost ? 'https://story.zeitblytz.media/track.php' : './track.php';
+const API_URL = buildServerUrl('/track.php');
 
 const fetchOptions = (overrides: RequestInit = {}): RequestInit => ({
-    ...overrides,
-    ...(isLocalhost ? { mode: 'cors' as RequestMode } : {})
+    ...overrides
 });
 
 export const initStorage = async (): Promise<boolean> => {

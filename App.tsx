@@ -39,6 +39,7 @@ const MAX_HISTORY_STEPS = 50;
 const MAIN_ID = "main-script";
 const AUTO_SAVE_DELAY = 2000; // 2 seconds
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+const HEARTBEAT_FAILURE_THRESHOLD = 3;
 
 type SlotPrefix = 'short' | 'long' | 'dialogue' | 'insta';
 const SLOT_PREFIXES: SlotPrefix[] = ['short', 'long', 'dialogue', 'insta'];
@@ -618,6 +619,7 @@ export const App: React.FC = () => {
             setCloudStatus(CloudStatus.CONNECTING);
             const success = await initStorage();
             if (success) {
+                failedHeartbeatCountRef.current = 0;
                 setCloudStatus(CloudStatus.ONLINE);
                 try {
                     const cloudProjects = await listProjects();
@@ -657,8 +659,9 @@ export const App: React.FC = () => {
                     addLog("Konnte Projekte nicht laden", "error");
                 }
             } else {
+                failedHeartbeatCountRef.current = HEARTBEAT_FAILURE_THRESHOLD;
                 setCloudStatus(CloudStatus.OFFLINE);
-                addLog("Web-Speicher nicht erreichbar (track.php fehlt?)", "info");
+                addLog("Web-Speicher nicht erreichbar", "info");
             }
             setIsCloudLoading(false);
         };
@@ -670,12 +673,14 @@ export const App: React.FC = () => {
             if (cloudStatus === CloudStatus.ONLINE || cloudStatus === CloudStatus.SAVED || cloudStatus === CloudStatus.OFFLINE || cloudStatus === CloudStatus.ERROR) {
                 const isOnline = await checkConnection();
                 if (isOnline) {
+                    failedHeartbeatCountRef.current = 0;
                     if (cloudStatus === CloudStatus.OFFLINE || cloudStatus === CloudStatus.ERROR) {
                         setCloudStatus(CloudStatus.ONLINE);
                         addLog("Cloud Verbindung wiederhergestellt", "success");
                     }
                 } else {
-                    if (cloudStatus !== CloudStatus.OFFLINE) {
+                    failedHeartbeatCountRef.current += 1;
+                    if (failedHeartbeatCountRef.current >= HEARTBEAT_FAILURE_THRESHOLD && cloudStatus !== CloudStatus.OFFLINE) {
                         setCloudStatus(CloudStatus.OFFLINE);
                         addLog("Verbindung zum Server verloren", "error");
                     }
@@ -687,6 +692,7 @@ export const App: React.FC = () => {
 
     const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const prevActiveProjectRef = useRef<string>("");
+    const failedHeartbeatCountRef = useRef(0);
 
     useEffect(() => {
         if (!activeProject) return;
