@@ -550,7 +550,15 @@ export const App: React.FC = () => {
             const currentActive = currentProjects.find(p => p.id === activeProjectId);
             if (!currentActive) return currentProjects;
 
-            const updatedProject = { ...currentActive, ...updates, lastModified: Date.now() };
+            const shouldExitEditMode =
+                Object.prototype.hasOwnProperty.call(updates, 'scriptResult') &&
+                !Object.prototype.hasOwnProperty.call(updates, 'isEditing');
+
+            const normalizedUpdates: Partial<ProjectSession> = shouldExitEditMode
+                ? { ...updates, isEditing: false, manualEditText: "" }
+                : updates;
+
+            const updatedProject = { ...currentActive, ...normalizedUpdates, lastModified: Date.now() };
             const snapshot = createSnapshot(updatedProject);
             
             const historyTrail = currentActive.history.slice(0, currentActive.historyIndex + 1);
